@@ -4,7 +4,27 @@
 [![Deploy](https://github.com/paiml/ubuntu-config-scripts/workflows/Deploy/badge.svg)](https://github.com/paiml/ubuntu-config-scripts/actions/workflows/deploy.yml)
 [![Powered by Gunner](https://img.shields.io/badge/Powered%20by-Gunner-blue)](https://github.com/paiml/gunner)
 
-A collection of Deno TypeScript scripts for configuring and managing Ubuntu systems.
+A collection of Deno TypeScript scripts for configuring and managing Ubuntu systems, with experimental Ruchy language migration support.
+
+## 🦀 Ruchy Migration Project
+
+This repository is part of an ongoing migration from TypeScript to [Ruchy](https://github.com/paiml/ruchy), a systems programming language designed for Ubuntu configuration management. 
+
+### Migration Status
+- **TypeScript (Production)**: All scripts fully functional in TypeScript/Deno
+- **Ruchy (Experimental)**: Bridge architecture for gradual migration
+- **Hybrid Support**: Both TypeScript and Ruchy scripts can coexist
+
+### Key Components
+- **Bridge Transformer** (`scripts/dev/bridge-transformer.ts`): Automated TypeScript to Ruchy conversion
+- **Ruchy Scripts** (`ruchy-scripts/`): Experimental Ruchy implementations
+- **Rust Modules** (`src/`): Native Rust implementations for performance-critical operations
+- **Quality Gates**: PMAT integration for code quality metrics
+
+### Learn More
+- [Migration Roadmap](docs/migration/RUCHY_MIGRATION_ROADMAP.md)
+- [Sprint Documentation](docs/sprints/)
+- [Ruchy Book](book/src/SUMMARY.md) - Comprehensive migration guide
 
 ## Features
 
@@ -355,4 +375,4 @@ See [docs/architecture/ubuntu-config-scripts-1.0.md](docs/architecture/ubuntu-co
 
 ## License
 
-[License information here]
+MIT License - see [LICENSE](LICENSE) file for details.
