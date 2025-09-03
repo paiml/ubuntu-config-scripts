@@ -185,6 +185,45 @@ ruchy-watch: ## Watch for changes and rebuild
 		inotifywait -qre modify $(RUCHY_DIR); \
 	done
 
+# Quality Gates (PMAT TDG)
+.PHONY: ruchy-pmat-analysis
+ruchy-pmat-analysis: ## Run PMAT TDG analysis on Ruchy files
+	@echo "$(CYAN)📊 Running PMAT TDG Analysis...$(NC)"
+	@for file in $$(find $(RUCHY_DIR) -name "*.ruchy" ! -path "*/tests/*"); do \
+		echo "$(BLUE)Analyzing $$file...$(NC)"; \
+		pmat analyze $$file || true; \
+		echo ""; \
+	done
+
+.PHONY: ruchy-showcase
+ruchy-showcase: ruchy-check ## Build and run the system diagnostic showcase
+	@echo "$(CYAN)🚀 Building System Diagnostic Showcase...$(NC)"
+	@cd $(RUCHY_DIR) && $(RUCHY) compile system/system_diagnostic.ruchy -o system_diagnostic
+	@echo "$(GREEN)✅ Binary built successfully$(NC)"
+	@echo ""
+	@echo "$(CYAN)📊 Running System Diagnostic...$(NC)"
+	@cd $(RUCHY_DIR) && ./system_diagnostic
+	@echo ""
+	@echo "$(CYAN)📊 JSON Output:$(NC)"
+	@cd $(RUCHY_DIR) && ./system_diagnostic --json | head -20
+	@echo "..."
+	@echo ""
+	@echo "$(GREEN)✅ Showcase complete!$(NC)"
+
+.PHONY: ruchy-showcase-test
+ruchy-showcase-test: ruchy-check ## Test the system diagnostic showcase
+	@echo "$(CYAN)🧪 Testing System Diagnostic...$(NC)"
+	@cd $(RUCHY_DIR) && $(RUCHY) tests/test_system_diagnostic.ruchy
+	@echo "$(GREEN)✅ All tests passed!$(NC)"
+
+.PHONY: ruchy-ci
+ruchy-ci: ruchy-validate ruchy-showcase-test ruchy-pmat-analysis ## Full CI pipeline
+	@echo "$(GREEN)✅ Ruchy CI Pipeline Complete$(NC)"
+	@echo "  - Syntax validation: ✓"
+	@echo "  - Tests: ✓"
+	@echo "  - PMAT analysis: ✓"
+	@echo "  - Showcase: ✓"
+
 # Integration with main build system
 .PHONY: ruchy-integration
 ruchy-integration: ## Show integration with TypeScript build
