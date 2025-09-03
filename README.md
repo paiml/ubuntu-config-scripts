@@ -110,7 +110,7 @@ make ruchy-ci             # Full CI pipeline with quality gates
 1. Clone this repository:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/paiml/ubuntu-config-scripts.git
 cd ubuntu-config-scripts
 ```
 

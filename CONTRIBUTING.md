@@ -1,6 +1,14 @@
 # Contributing to Ubuntu Config Scripts
 
-Thank you for your interest in contributing to Ubuntu Config Scripts! We welcome contributions from the community.
+Thank you for your interest in contributing to Ubuntu Config Scripts! We welcome contributions to our hybrid TypeScript/Ruchy architecture.
+
+## 🚀 Quick Start
+
+### For the Ruchy Showcase
+1. **Run the showcase**: `make ruchy-showcase`
+2. **Run tests**: `make ruchy-showcase-test`
+3. **View source**: Check out `ruchy-scripts/system/system_diagnostic.ruchy`
+4. **Read docs**: See [Architecture Overview](docs/architecture/ubuntu-config-scripts-1.0.md)
 
 ## How to Contribute
 
@@ -59,38 +67,70 @@ Thank you for your interest in contributing to Ubuntu Config Scripts! We welcome
 
 ### Code Quality
 
+#### TypeScript Requirements
 - **TypeScript**: Use strict TypeScript with no implicit `any`
-- **Testing**: Maintain minimum 80% test coverage
+- **Testing**: Maintain minimum 95% test coverage
 - **Property Testing**: Use fast-check for complex logic
 - **No Bash Scripts**: All functionality must be in TypeScript/Deno
+
+#### Ruchy Requirements (Experimental)
+- **Ruchy Score**: ≥ 0.90 (use `ruchy score <file>`)
+- **PMAT TDG**: ≥ 0.85 (use `pmat analyze <file>`)
+- **TDD Approach**: Write tests first in `ruchy-scripts/tests/`
+- **Performance**: < 1 second execution, < 5MB binaries
 
 ### Project Structure
 
 ```
-scripts/
-├── lib/        # Shared libraries
-├── audio/      # Audio management scripts
-├── system/     # System configuration scripts
-└── dev/        # Development tools
-
-tests/          # Test files mirror script structure
+ubuntu-config-scripts/
+├── scripts/              # TypeScript implementations (production)
+│   ├── lib/             # Core libraries (common, logger, schema)
+│   ├── audio/           # Audio management scripts
+│   ├── system/          # System configuration scripts
+│   └── dev/             # Development tools & bridge transformer
+├── ruchy-scripts/        # Ruchy implementations (experimental)
+│   ├── lib/             # Core libraries in Ruchy
+│   ├── system/          # System scripts in Ruchy
+│   └── tests/           # TDD tests for Ruchy code
+├── tests/               # TypeScript test files
+├── docs/                # Documentation
+│   ├── architecture/    # Architecture documentation  
+│   ├── migration/       # Migration guides
+│   └── sprints/         # Sprint planning documents
+└── book/                # Migration guide book
 ```
 
 ### Testing
 
+#### TypeScript Tests
 ```bash
-make test           # Run all tests
+make test           # Run all TypeScript tests
 make test-property  # Run property-based tests
 make test-coverage  # Generate coverage report
 make test-watch     # Run tests in watch mode
 ```
 
+#### Ruchy Tests (Experimental)
+```bash
+make ruchy-showcase-test    # Run system diagnostic tests
+make ruchy-ci              # Full quality pipeline
+make ruchy-pmat-analysis   # PMAT TDG analysis
+```
+
 ### Building and Deployment
 
+#### TypeScript/Deno
 ```bash
 make build          # Build the project
 make deploy         # Create binary distributions
 make dev-deploy     # Deploy specific categories
+```
+
+#### Ruchy (Experimental)
+```bash
+make ruchy-showcase # Build and run system diagnostic
+make ruchy-build    # Build all Ruchy scripts to binaries
+make ruchy-package  # Create distribution package
 ```
 
 ## Code of Conduct
