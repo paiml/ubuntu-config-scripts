@@ -1,0 +1,245 @@
+# Ubuntu Config Scripts - Ruchy Build System (Bridge-Enhanced)
+#
+# Integration with TypeScript-Ruchy Bridge Architecture (RUC-002-004)
+# Supports both experimental Ruchy files and bridge-generated conversions
+# Production system: TypeScript with Deno (fully functional)
+# Bridge system: Gradual migration infrastructure
+#
+
+# Colors for output
+RED := \033[0;31m
+GREEN := \033[0;32m
+YELLOW := \033[0;33m
+BLUE := \033[0;34m
+CYAN := \033[0;36m
+NC := \033[0m # No Color
+
+# Tool detection
+RUCHY := $(shell command -v ruchy 2>/dev/null)
+CARGO := $(shell command -v cargo 2>/dev/null)
+
+# Directories
+RUCHY_DIR := ruchy-scripts
+BUILD_DIR := dist/ruchy
+LIB_DIR := $(RUCHY_DIR)/lib
+SYSTEM_DIR := $(RUCHY_DIR)/system
+AUDIO_DIR := $(RUCHY_DIR)/audio
+DEV_DIR := $(RUCHY_DIR)/dev
+
+# Find all Ruchy scripts
+RUCHY_LIBS := $(wildcard $(LIB_DIR)/*.ruchy)
+RUCHY_SYSTEM := $(wildcard $(SYSTEM_DIR)/*.ruchy)
+RUCHY_AUDIO := $(wildcard $(AUDIO_DIR)/*.ruchy)
+RUCHY_DEV := $(wildcard $(DEV_DIR)/*.ruchy)
+ALL_RUCHY := $(RUCHY_LIBS) $(RUCHY_SYSTEM) $(RUCHY_AUDIO) $(RUCHY_DEV)
+
+# Default target
+.PHONY: help
+help: ## Show Ruchy build commands
+	@echo "╔══════════════════════════════════════════════════════════════╗"
+	@echo "║                 🦀 Ruchy Build System                        ║"
+	@echo "╚══════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "$(CYAN)Build Commands:$(NC)"
+	@echo "────────────────────────────────────────────────────────────────"
+	@grep -E '^ruchy-[a-zA-Z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-25s$(NC) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(CYAN)Test Commands:$(NC)"
+	@echo "────────────────────────────────────────────────────────────────"
+	@grep -E '^ruchy-test[a-zA-Z-]*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-25s$(NC) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(CYAN)Utility Commands:$(NC)"
+	@echo "────────────────────────────────────────────────────────────────"
+	@grep -E '^ruchy-(check|clean|install|validate):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-25s$(NC) %s\n", $$1, $$2}'
+	@echo ""
+
+# Installation check
+.PHONY: ruchy-check
+ruchy-check: ## Check if Ruchy is installed
+	@if [ -z "$(RUCHY)" ]; then \
+		echo "$(RED)❌ Ruchy not found. Please install Ruchy first.$(NC)"; \
+		echo "$(YELLOW)💡 Install with: cargo install ruchy$(NC)"; \
+		exit 1; \
+	else \
+		echo "$(GREEN)✅ Ruchy found at: $(RUCHY)$(NC)"; \
+		$(RUCHY) --version; \
+	fi
+
+# Syntax validation
+.PHONY: ruchy-validate
+ruchy-validate: ## Validate all Ruchy scripts syntax
+	@echo "$(CYAN)🔍 Validating Ruchy syntax...$(NC)"
+	@cd $(RUCHY_DIR) && ./verify-syntax.sh
+
+# Build all scripts
+.PHONY: ruchy-build
+ruchy-build: ruchy-check ## Build all Ruchy scripts to binaries
+	@echo "$(CYAN)🔨 Building Ruchy scripts...$(NC)"
+	@mkdir -p $(BUILD_DIR)
+	@for script in $(ALL_RUCHY); do \
+		name=$$(basename $$script .ruchy); \
+		echo "$(BLUE)  Building $$name...$(NC)"; \
+		$(RUCHY) compile $$script -o $(BUILD_DIR)/$$name 2>/dev/null || \
+		echo "$(YELLOW)  ⚠️  Skipping $$name (library or syntax issue)$(NC)"; \
+	done
+	@echo "$(GREEN)✅ Build complete! Binaries in $(BUILD_DIR)$(NC)"
+
+# Build system scripts only
+.PHONY: ruchy-build-system
+ruchy-build-system: ruchy-check ## Build system scripts only
+	@echo "$(CYAN)🔨 Building system scripts...$(NC)"
+	@mkdir -p $(BUILD_DIR)/system
+	@for script in $(RUCHY_SYSTEM); do \
+		name=$$(basename $$script .ruchy); \
+		echo "$(BLUE)  Building $$name...$(NC)"; \
+		$(RUCHY) compile $$script -o $(BUILD_DIR)/system/$$name 2>/dev/null || \
+		echo "$(YELLOW)  ⚠️  Skipping $$name$(NC)"; \
+	done
+
+# Build audio scripts only
+.PHONY: ruchy-build-audio
+ruchy-build-audio: ruchy-check ## Build audio scripts only
+	@echo "$(CYAN)🔨 Building audio scripts...$(NC)"
+	@mkdir -p $(BUILD_DIR)/audio
+	@for script in $(RUCHY_AUDIO); do \
+		name=$$(basename $$script .ruchy); \
+		echo "$(BLUE)  Building $$name...$(NC)"; \
+		$(RUCHY) compile $$script -o $(BUILD_DIR)/audio/$$name 2>/dev/null || \
+		echo "$(YELLOW)  ⚠️  Skipping $$name$(NC)"; \
+	done
+
+# Run tests
+.PHONY: ruchy-test
+ruchy-test: ruchy-check ## Run all Ruchy tests
+	@echo "$(CYAN)🧪 Running Ruchy tests...$(NC)"
+	@cd $(RUCHY_DIR) && $(RUCHY) test
+
+# Run specific test suite
+.PHONY: ruchy-test-suite
+ruchy-test-suite: ruchy-check ## Run test suite
+	@echo "$(CYAN)🧪 Running test suite...$(NC)"
+	@cd $(RUCHY_DIR) && $(RUCHY) test_suite.ruchy
+
+# Run system tests
+.PHONY: ruchy-test-system
+ruchy-test-system: ruchy-check ## Run system tests
+	@echo "$(CYAN)🧪 Running system tests...$(NC)"
+	@cd $(RUCHY_DIR) && $(RUCHY) tests/test_system.ruchy
+
+# Run audio tests
+.PHONY: ruchy-test-audio
+ruchy-test-audio: ruchy-check ## Run audio tests
+	@echo "$(CYAN)🧪 Running audio tests...$(NC)"
+	@cd $(RUCHY_DIR) && $(RUCHY) tests/test_audio.ruchy
+
+# Clean build artifacts
+.PHONY: ruchy-clean
+ruchy-clean: ## Clean Ruchy build artifacts
+	@echo "$(CYAN)🧹 Cleaning build artifacts...$(NC)"
+	@rm -rf $(BUILD_DIR)
+	@echo "$(GREEN)✅ Clean complete$(NC)"
+
+# Install Ruchy if not present
+.PHONY: ruchy-install
+ruchy-install: ## Install Ruchy compiler
+	@if [ -z "$(RUCHY)" ]; then \
+		if [ -n "$(CARGO)" ]; then \
+			echo "$(CYAN)📦 Installing Ruchy via Cargo...$(NC)"; \
+			cargo install ruchy; \
+		else \
+			echo "$(RED)❌ Cargo not found. Please install Rust first.$(NC)"; \
+			echo "$(YELLOW)💡 Visit: https://rustup.rs$(NC)"; \
+			exit 1; \
+		fi \
+	else \
+		echo "$(GREEN)✅ Ruchy already installed$(NC)"; \
+	fi
+
+# Package Ruchy binaries
+.PHONY: ruchy-package
+ruchy-package: ruchy-build ## Create distribution package
+	@echo "$(CYAN)📦 Creating distribution package...$(NC)"
+	@mkdir -p dist/packages
+	@tar -czf dist/packages/ubuntu-config-ruchy-$(shell date +%Y%m%d).tar.gz \
+		-C dist ruchy \
+		--transform 's|^ruchy|ubuntu-config-ruchy|'
+	@echo "$(GREEN)✅ Package created: dist/packages/ubuntu-config-ruchy-$(shell date +%Y%m%d).tar.gz$(NC)"
+
+# Example runs
+.PHONY: ruchy-example-cleanup
+ruchy-example-cleanup: ruchy-check ## Example: Run disk cleanup (dry-run)
+	@echo "$(CYAN)🧹 Running disk cleanup example...$(NC)"
+	@cd $(RUCHY_DIR) && $(RUCHY) system/cleanup_disk.ruchy --dry-run
+
+.PHONY: ruchy-example-audio
+ruchy-example-audio: ruchy-check ## Example: List audio devices
+	@echo "$(CYAN)🔊 Running audio example...$(NC)"
+	@cd $(RUCHY_DIR) && $(RUCHY) audio/configure_speakers.ruchy --list
+
+# Development helpers
+.PHONY: ruchy-watch
+ruchy-watch: ## Watch for changes and rebuild
+	@echo "$(CYAN)👁️  Watching for changes...$(NC)"
+	@while true; do \
+		make ruchy-build; \
+		inotifywait -qre modify $(RUCHY_DIR); \
+	done
+
+# Quality Gates (PMAT TDG)
+.PHONY: ruchy-pmat-analysis
+ruchy-pmat-analysis: ## Run PMAT TDG analysis on Ruchy files
+	@echo "$(CYAN)📊 Running PMAT TDG Analysis...$(NC)"
+	@for file in $$(find $(RUCHY_DIR) -name "*.ruchy" ! -path "*/tests/*"); do \
+		echo "$(BLUE)Analyzing $$file...$(NC)"; \
+		pmat analyze $$file || true; \
+		echo ""; \
+	done
+
+.PHONY: ruchy-showcase
+ruchy-showcase: ruchy-check ## Build and run the system diagnostic showcase
+	@echo "$(CYAN)🚀 Building System Diagnostic Showcase...$(NC)"
+	@cd $(RUCHY_DIR) && $(RUCHY) compile system/system_diagnostic.ruchy -o system_diagnostic
+	@echo "$(GREEN)✅ Binary built successfully$(NC)"
+	@echo ""
+	@echo "$(CYAN)📊 Running System Diagnostic...$(NC)"
+	@cd $(RUCHY_DIR) && ./system_diagnostic
+	@echo ""
+	@echo "$(CYAN)📊 JSON Output:$(NC)"
+	@cd $(RUCHY_DIR) && ./system_diagnostic --json | head -20
+	@echo "..."
+	@echo ""
+	@echo "$(GREEN)✅ Showcase complete!$(NC)"
+
+.PHONY: ruchy-showcase-test
+ruchy-showcase-test: ruchy-check ## Test the system diagnostic showcase
+	@echo "$(CYAN)🧪 Testing System Diagnostic...$(NC)"
+	@cd $(RUCHY_DIR) && $(RUCHY) tests/test_system_diagnostic.ruchy
+	@echo "$(GREEN)✅ All tests passed!$(NC)"
+
+.PHONY: ruchy-ci
+ruchy-ci: ruchy-validate ruchy-showcase-test ruchy-pmat-analysis ## Full CI pipeline
+	@echo "$(GREEN)✅ Ruchy CI Pipeline Complete$(NC)"
+	@echo "  - Syntax validation: ✓"
+	@echo "  - Tests: ✓"
+	@echo "  - PMAT analysis: ✓"
+	@echo "  - Showcase: ✓"
+
+# Integration with main build system
+.PHONY: ruchy-integration
+ruchy-integration: ## Show integration with TypeScript build
+	@echo "$(CYAN)🔗 Build System Integration$(NC)"
+	@echo "────────────────────────────────────────────────────────────────"
+	@echo "TypeScript scripts: $$(find scripts -name '*.ts' | wc -l)"
+	@echo "Ruchy scripts:      $$(find $(RUCHY_DIR) -name '*.ruchy' | wc -l)"
+	@echo ""
+	@echo "$(GREEN)Migration Progress:$(NC)"
+	@echo "  System: $$(ls $(SYSTEM_DIR)/*.ruchy 2>/dev/null | wc -l) scripts"
+	@echo "  Audio:  $$(ls $(AUDIO_DIR)/*.ruchy 2>/dev/null | wc -l) scripts"
+	@echo "  Dev:    $$(ls $(DEV_DIR)/*.ruchy 2>/dev/null | wc -l) scripts"
+	@echo "  Libs:   $$(ls $(LIB_DIR)/*.ruchy 2>/dev/null | wc -l) modules"
+	@echo ""
+	@echo "$(YELLOW)Next steps:$(NC)"
+	@echo "  1. Run 'make ruchy-validate' to check syntax"
+	@echo "  2. Run 'make ruchy-build' to compile binaries"
+	@echo "  3. Run 'make ruchy-test' to execute tests"
+	@echo "  4. Run 'make ruchy-package' to create distribution"

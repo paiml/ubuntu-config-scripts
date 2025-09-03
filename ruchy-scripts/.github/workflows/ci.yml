@@ -1,0 +1,296 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DENO_VERSION: v2.x
+  AUTO_UPDATE_DENO: false  # Disable auto-update in CI
+
+jobs:
+  lint:
+    name: Test Lint
+    runs-on: [self-hosted, Linux, X64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        run: |
+          # Install Deno manually by downloading the binary directly
+          if ! command -v deno &> /dev/null; then
+            echo "Installing Deno..."
+            mkdir -p $HOME/.deno/bin
+            # Download latest Deno binary for Linux x64
+            curl -fsSL https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip || \
+            wget -O /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip
+            
+            # Try to extract with available tools
+            if command -v unzip &> /dev/null; then
+              unzip -o /tmp/deno.zip -d $HOME/.deno/bin
+            elif command -v python3 &> /dev/null; then
+              # Use Python to extract if unzip is not available
+              python3 -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+            else
+              echo "Error: No tool available to extract Deno"
+              exit 1
+            fi
+            
+            chmod +x $HOME/.deno/bin/deno
+            echo "$HOME/.deno/bin" >> $GITHUB_PATH
+            export PATH="$HOME/.deno/bin:$PATH"
+          fi
+          export PATH="$HOME/.deno/bin:$PATH"
+          deno --version || echo "Deno installation failed"
+
+      - name: Format check
+        run: make lint
+
+      - name: Type check
+        run: make check
+
+  test:
+    name: Test Suite
+    runs-on: [self-hosted, Linux, X64]
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        run: |
+          # Install Deno manually by downloading the binary directly
+          if ! command -v deno &> /dev/null; then
+            echo "Installing Deno..."
+            mkdir -p $HOME/.deno/bin
+            # Download latest Deno binary for Linux x64
+            curl -fsSL https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip || \
+            wget -O /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip
+            
+            # Try to extract with available tools
+            if command -v unzip &> /dev/null; then
+              unzip -o /tmp/deno.zip -d $HOME/.deno/bin
+            elif command -v python3 &> /dev/null; then
+              # Use Python to extract if unzip is not available
+              python3 -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+            else
+              echo "Error: No tool available to extract Deno"
+              exit 1
+            fi
+            
+            chmod +x $HOME/.deno/bin/deno
+            echo "$HOME/.deno/bin" >> $GITHUB_PATH
+            export PATH="$HOME/.deno/bin:$PATH"
+          fi
+          export PATH="$HOME/.deno/bin:$PATH"
+          deno --version || echo "Deno installation failed"
+
+      - name: Run tests
+        run: make test
+
+      - name: Generate coverage report
+        run: make test-coverage
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage/
+            coverage.lcov
+
+  validate-deps:
+    name: Test Dependencies
+    runs-on: [self-hosted, Linux, X64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        run: |
+          # Install Deno manually by downloading the binary directly
+          if ! command -v deno &> /dev/null; then
+            echo "Installing Deno..."
+            mkdir -p $HOME/.deno/bin
+            # Download latest Deno binary for Linux x64
+            curl -fsSL https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip || \
+            wget -O /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip
+            
+            # Try to extract with available tools
+            if command -v unzip &> /dev/null; then
+              unzip -o /tmp/deno.zip -d $HOME/.deno/bin
+            elif command -v python3 &> /dev/null; then
+              # Use Python to extract if unzip is not available
+              python3 -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+            else
+              echo "Error: No tool available to extract Deno"
+              exit 1
+            fi
+            
+            chmod +x $HOME/.deno/bin/deno
+            echo "$HOME/.deno/bin" >> $GITHUB_PATH
+            export PATH="$HOME/.deno/bin:$PATH"
+          fi
+          export PATH="$HOME/.deno/bin:$PATH"
+          deno --version || echo "Deno installation failed"
+
+      - name: Verify dependencies
+        run: make deps-verify
+
+      - name: Check for outdated dependencies
+        run: make deps-outdated
+        continue-on-error: true  # Don't fail if deps are outdated
+
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: [self-hosted, Linux, X64]
+    needs: [lint, test]
+    strategy:
+      matrix:
+        include:
+          - target: linux
+            runner_label: gunner
+          - target: arm64
+            runner_label: gunner
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        run: |
+          # Install Deno manually by downloading the binary directly
+          if ! command -v deno &> /dev/null; then
+            echo "Installing Deno..."
+            mkdir -p $HOME/.deno/bin
+            # Download latest Deno binary for Linux x64
+            curl -fsSL https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip || \
+            wget -O /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip
+            
+            # Try to extract with available tools
+            if command -v unzip &> /dev/null; then
+              unzip -o /tmp/deno.zip -d $HOME/.deno/bin
+            elif command -v python3 &> /dev/null; then
+              # Use Python to extract if unzip is not available
+              python3 -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+            else
+              echo "Error: No tool available to extract Deno"
+              exit 1
+            fi
+            
+            chmod +x $HOME/.deno/bin/deno
+            echo "$HOME/.deno/bin" >> $GITHUB_PATH
+            export PATH="$HOME/.deno/bin:$PATH"
+          fi
+          export PATH="$HOME/.deno/bin:$PATH"
+          deno --version || echo "Deno installation failed"
+
+      - name: Deploy binaries
+        run: make deploy TARGETS=${{ matrix.target }}
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.target }}
+          path: dist/
+
+  package:
+    name: Create Release Package
+    runs-on: [self-hosted, Linux, X64]
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        run: |
+          # Install Deno manually by downloading the binary directly
+          if ! command -v deno &> /dev/null; then
+            echo "Installing Deno..."
+            mkdir -p $HOME/.deno/bin
+            # Download latest Deno binary for Linux x64
+            curl -fsSL https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip || \
+            wget -O /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip
+            
+            # Try to extract with available tools
+            if command -v unzip &> /dev/null; then
+              unzip -o /tmp/deno.zip -d $HOME/.deno/bin
+            elif command -v python3 &> /dev/null; then
+              # Use Python to extract if unzip is not available
+              python3 -c "import zipfile; zipfile.ZipFile('/tmp/deno.zip').extractall('$HOME/.deno/bin')"
+            else
+              echo "Error: No tool available to extract Deno"
+              exit 1
+            fi
+            
+            chmod +x $HOME/.deno/bin/deno
+            echo "$HOME/.deno/bin" >> $GITHUB_PATH
+            export PATH="$HOME/.deno/bin:$PATH"
+          fi
+          export PATH="$HOME/.deno/bin:$PATH"
+          deno --version || echo "Deno installation failed"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Create deployment package
+        run: |
+          mkdir -p dist
+          cp -r artifacts/binaries-*/* dist/ 2>/dev/null || true
+          make deploy-package
+
+      - name: Upload release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-package
+          path: dist/*.tar.gz
+          retention-days: 30
+
+  security-scan:
+    name: Test Security
+    runs-on: [self-hosted, Linux, X64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "🔍 Scanning for potential secrets..."
+          if grep -r -E "(password|secret|key|token)\s*[:=]\s*['\"]|API_KEY|SECRET_KEY|PRIVATE_KEY" scripts/ --exclude="*.test.ts" --exclude-dir="node_modules" | grep -v "^[[:space:]]*//\|^[[:space:]]*\*" | grep -v "parseArgs\|getEnv\|strict-config.ts\|const key ="; then
+            echo "⚠️  Potential secrets found in code"
+            exit 1
+          fi
+          echo "✅ No secrets found"
+
+      - name: Check for unsafe patterns
+        run: |
+          echo "🔍 Scanning for unsafe code patterns..."
+          if grep -r "eval\|Function(" scripts/ --exclude="*.test.ts" --exclude-dir="node_modules"; then
+            echo "⚠️  Unsafe code execution patterns found"
+            exit 1
+          fi
+          echo "✅ No unsafe patterns found"
+
+
+  summary:
+    name: CI Summary
+    runs-on: [self-hosted, Linux, X64]
+    needs: [lint, test, validate-deps, security-scan]
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## CI Summary"
+          echo "- Lint: ${{ needs.lint.result }}"
+          echo "- Test: ${{ needs.test.result }}"
+          echo "- Dependencies: ${{ needs.validate-deps.result }}"
+          echo "- Security: ${{ needs.security-scan.result }}"
+          
+          if [ "${{ needs.lint.result }}" = "success" ] && \
+             [ "${{ needs.test.result }}" = "success" ] && \
+             [ "${{ needs.security-scan.result }}" = "success" ]; then
+            echo "✅ All checks passed!"
+          else
+            echo "❌ Some checks failed"
+            exit 1
+          fi

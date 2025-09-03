@@ -1,0 +1,12 @@
+name: Simple Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test Simple
+    runs-on: [self-hosted, Linux, X64]
+    steps:
+      - name: Echo
+        run: echo "Hello from Gunner runner!"
