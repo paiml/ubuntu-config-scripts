@@ -1,0 +1,142 @@
+# Gunner Configuration for Ubuntu Config Scripts
+name: ubuntu-config-scripts
+region: us-east-1
+
+# GitHub Configuration
+github:
+  organization: ${GITHUB_ORG}  # Set via environment variable
+  repository: ubuntu-config-scripts
+  # Use GitHub App if available, otherwise use PAT
+  app_id: ${GUNNER_GITHUB_APP_ID}
+  app_key_path: ${GUNNER_GITHUB_APP_KEY_PATH}
+
+# Runner Configuration
+runners:
+  labels:
+    - self-hosted
+    - linux
+    - x64
+    - gunner
+  
+  # Instance configuration
+  instance_types:
+    # For regular CI jobs (Deno builds are lightweight)
+    - type: t3a.medium  # 2 vCPUs, 4GB RAM
+      labels: [gunner]
+      weight: 70  # 70% of jobs
+    
+    # For Rust builds (more resource intensive)
+    - type: t3a.large   # 2 vCPUs, 8GB RAM
+      labels: [gunner, rust]
+      weight: 20  # 20% of jobs
+    
+    # For deployment jobs
+    - type: t3a.small
+      labels: [gunner, deploy]
+      weight: 10  # 10% of jobs
+  
+  # Scaling configuration
+  scaling:
+    min_instances: 0
+    max_instances: 3  # Small project, don't need many
+    scale_down_delay_seconds: 300  # 5 minutes
+    idle_timeout_seconds: 600      # 10 minutes
+  
+  # Cost optimization
+  spot:
+    enabled: true
+    max_price_percentage: 80  # Max 80% of on-demand price
+    fallback_to_on_demand: true
+    interruption_behavior: terminate
+
+# AMI Configuration
+ami:
+  base_image: ami-0c94855ba95c574c9  # Amazon Linux 2023
+  builder:
+    instance_type: t3.small
+    subnet_id: ${GUNNER_BUILDER_SUBNET_ID}
+    security_group_ids: 
+      - ${GUNNER_BUILDER_SECURITY_GROUP_ID}
+  
+  # Tools to install
+  tools:
+    - deno: latest
+    - git: latest
+    - make: latest
+    - tar: latest
+    - gzip: latest
+    - curl: latest
+    - pulseaudio-utils: latest  # For audio scripts
+    - alsa-utils: latest        # For audio scripts
+    - rust: latest              # For Rust migration
+    - cargo: latest             # Rust package manager
+    - pkg-config: latest        # For Rust dependencies
+    - libssl-dev: latest        # For Rust SSL support
+    - build-essential: latest   # For Rust compilation
+
+# Network Configuration
+network:
+  vpc_id: ${GUNNER_VPC_ID}
+  subnets:
+    - ${GUNNER_SUBNET_1}
+    - ${GUNNER_SUBNET_2}
+  
+  # Security groups
+  security_groups:
+    runner: ${GUNNER_RUNNER_SECURITY_GROUP_ID}
+    lambda: ${GUNNER_LAMBDA_SECURITY_GROUP_ID}
+
+# Monitoring Configuration
+monitoring:
+  cloudwatch:
+    namespace: Gunner/UbuntuConfigScripts
+    metrics_enabled: true
+    logs_retention_days: 7
+  
+  alerts:
+    - name: HighErrorRate
+      metric: ErrorRate
+      threshold: 0.10  # 10% error rate
+      comparison: GreaterThanThreshold
+    
+    - name: LongQueueTime
+      metric: JobQueueTime
+      threshold: 600  # 10 minutes
+      comparison: GreaterThanThreshold
+
+# Cost Configuration
+cost:
+  budget:
+    monthly_limit: 50.0  # $50/month (small project)
+    alert_thresholds: [50, 80, 95]
+  
+  optimization:
+    enable_recommendations: true
+    target_cost_per_job: 0.01  # $0.01 per job
+    review_frequency: weekly
+
+# Security Configuration
+security:
+  encryption:
+    at_rest: true
+    in_transit: true
+  
+  secrets_manager:
+    enabled: false  # Not needed for this project
+  
+  iam:
+    enable_least_privilege: true
+    enable_session_manager: false  # Don't need SSH
+  
+  network:
+    enable_flow_logs: false  # Keep costs down
+    enable_nacls: true
+    enable_waf: false  # Not needed
+
+# Tags
+tags:
+  Project: UbuntuConfigScripts
+  Environment: Development
+  ManagedBy: Gunner
+  Purpose: CI/CD
+  CostCenter: Development

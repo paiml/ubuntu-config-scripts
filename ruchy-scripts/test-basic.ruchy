@@ -1,0 +1,8 @@
+fun test_addition() {
+    let result = 2 + 3
+    if result == 5 {
+        println!("✅ Test passed")
+    } else {
+        println!("❌ Test failed")
+    }
+}

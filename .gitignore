@@ -1,0 +1,53 @@
+# Deno
+.deno_cache/
+coverage/
+coverage.lcov
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Build outputs
+dist/
+build/
+out/
+*.tar.gz
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test artifacts
+test-results/
+*.test-results.xml
+
+# Dependencies (if any npm/node usage)
+node_modules/
+
+# Backup files
+*.bak
+*.backup
+
+# Config overrides
+*.local.json
+config.local.json
+dist/
+target/

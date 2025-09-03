@@ -1,0 +1,65 @@
+# Ubuntu Config Scripts Book Build System
+
+# Colors
+CYAN := \033[0;36m
+GREEN := \033[0;32m
+YELLOW := \033[0;33m
+NC := \033[0m
+
+.PHONY: book-help book-build book-serve book-clean book-check book-install
+
+book-help: ## Show book commands
+	@echo "╔══════════════════════════════════════════════════════════════╗"
+	@echo "║            📚 Ubuntu Config Scripts Book                     ║"
+	@echo "╚══════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "$(CYAN)Commands:$(NC)"
+	@echo "  $(GREEN)book-build$(NC)    - Build the book"
+	@echo "  $(GREEN)book-serve$(NC)    - Serve book locally (http://localhost:3000)"
+	@echo "  $(GREEN)book-check$(NC)    - Check book for issues"  
+	@echo "  $(GREEN)book-clean$(NC)    - Clean build artifacts"
+	@echo "  $(GREEN)book-install$(NC)  - Install mdbook if not present"
+	@echo ""
+
+book-install: ## Install mdbook if not present
+	@echo "$(CYAN)📦 Installing mdbook...$(NC)"
+	@if ! command -v mdbook >/dev/null 2>&1; then \
+		echo "Installing mdbook via cargo..."; \
+		cargo install mdbook; \
+	else \
+		echo "$(GREEN)✅ mdbook already installed$(NC)"; \
+	fi
+
+book-build: book-install ## Build the book
+	@echo "$(CYAN)📚 Building ubuntu-config-scripts book...$(NC)"
+	@mdbook build
+	@echo "$(GREEN)✅ Book built successfully!$(NC)"
+	@echo "$(YELLOW)📖 Open: book/output/index.html$(NC)"
+
+book-serve: book-install ## Serve book locally
+	@echo "$(CYAN)🌐 Starting book server...$(NC)"
+	@echo "$(YELLOW)📖 Open: http://localhost:3000$(NC)"
+	@mdbook serve --open
+
+book-check: book-install ## Check book for issues
+	@echo "$(CYAN)🔍 Checking book...$(NC)"
+	@mdbook test
+
+book-clean: ## Clean build artifacts
+	@echo "$(CYAN)🧹 Cleaning book build artifacts...$(NC)"
+	@rm -rf book/output
+	@echo "$(GREEN)✅ Clean complete$(NC)"
+
+# Create placeholder chapters
+book-scaffold: ## Create placeholder chapters from SUMMARY.md
+	@echo "$(CYAN)🏗️  Scaffolding book chapters...$(NC)"
+	@find book/src -name "*.md" -not -name "SUMMARY.md" | while read file; do \
+		if [ ! -s "$$file" ]; then \
+			title=$$(basename "$$file" .md | sed 's/-/ /g' | sed 's/ch[0-9][0-9] [0-9][0-9] //'); \
+			echo "# $$title" > "$$file"; \
+			echo "" >> "$$file"; \
+			echo "*This chapter is under development.*" >> "$$file"; \
+			echo "Created placeholder: $$file"; \
+		fi; \
+	done
+	@echo "$(GREEN)✅ Scaffolding complete$(NC)"

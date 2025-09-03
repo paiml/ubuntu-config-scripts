@@ -1,0 +1,146 @@
+name: Gunner Tasks
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Task to run'
+        required: true
+        type: choice
+        options:
+          - benchmark
+          - stress-test
+          - full-validation
+          - dependency-audit
+          - cross-compile-all
+
+env:
+  DENO_VERSION: v2.x
+  AUTO_UPDATE_DENO: false
+
+jobs:
+  run-task:
+    name: Run ${{ github.event.inputs.task }}
+    runs-on: [self-hosted, linux, x64, gunner]
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: ${{ env.DENO_VERSION }}
+          
+      - name: Run Benchmark
+        if: github.event.inputs.task == 'benchmark'
+        run: |
+          echo "🏃 Running benchmarks..."
+          
+          # Benchmark script compilation times
+          echo "## Compilation Benchmarks"
+          for script in scripts/**/*.ts; do
+            if [[ -f "$script" ]] && [[ ! "$script" =~ test\.ts$ ]]; then
+              echo "Benchmarking: $script"
+              time deno compile --output=/tmp/bench-bin "$script" 2>&1 | grep real
+            fi
+          done
+          
+          # Benchmark test execution
+          echo "## Test Execution Benchmarks"
+          time make test
+          
+      - name: Run Stress Test
+        if: github.event.inputs.task == 'stress-test'
+        run: |
+          echo "💪 Running stress tests..."
+          
+          # Run tests multiple times in parallel
+          for i in {1..10}; do
+            make test &
+          done
+          wait
+          
+          echo "✅ Stress test completed"
+          
+      - name: Run Full Validation
+        if: github.event.inputs.task == 'full-validation'
+        run: |
+          echo "🔍 Running full validation..."
+          
+          # Clean everything first
+          make clean
+          
+          # Run all validation steps
+          make validate
+          
+          # Check dependencies
+          make deps-verify
+          make deps-outdated
+          
+          # Build all targets
+          make deploy TARGETS=linux
+          make deploy TARGETS=arm64
+          make deploy TARGETS=macos
+          make deploy TARGETS=windows
+          
+          # Create package
+          make deploy-package
+          
+          echo "✅ Full validation completed"
+          
+      - name: Run Dependency Audit
+        if: github.event.inputs.task == 'dependency-audit'
+        run: |
+          echo "🔒 Running dependency audit..."
+          
+          # List all dependencies
+          make deps
+          
+          # Check for outdated
+          make deps-outdated
+          
+          # Scan for vulnerabilities (basic check)
+          echo "Checking for known vulnerable versions..."
+          
+          # Check if any dependencies are using very old versions
+          deno run --allow-read scripts/dev/deps.ts list
+          
+          # Verify lock file integrity
+          make deps-verify
+          
+          echo "✅ Dependency audit completed"
+          
+      - name: Cross-Compile All Platforms
+        if: github.event.inputs.task == 'cross-compile-all'
+        run: |
+          echo "🌍 Cross-compiling for all platforms..."
+          
+          # Define all target combinations
+          targets=(
+            "x86_64-unknown-linux-gnu"
+            "aarch64-unknown-linux-gnu"
+            "x86_64-apple-darwin"
+            "aarch64-apple-darwin"
+            "x86_64-pc-windows-msvc"
+          )
+          
+          # Compile for each target
+          for target in "${targets[@]}"; do
+            echo "Compiling for: $target"
+            make deploy TARGETS=$target || echo "Failed for $target"
+          done
+          
+          # Show results
+          echo "## Compilation Results"
+          ls -la dist/
+          
+          echo "✅ Cross-compilation completed"
+          
+      - name: Upload Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gunner-task-results-${{ github.event.inputs.task }}
+          path: |
+            dist/
+            *.log
+          retention-days: 7

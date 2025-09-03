@@ -1,0 +1,175 @@
+[package]
+name = "ubuntu-config-scripts"
+version = "1.0.0"
+edition = "2021"
+authors = ["Ubuntu Config Scripts Team"]
+description = "Ruchy-based scripts for Ubuntu system configuration and management"
+license = "MIT"
+repository = "https://github.com/noahshinn024/ubuntu-config-scripts"
+readme = "README.md"
+keywords = ["ubuntu", "configuration", "system", "audio", "scripts"]
+categories = ["command-line-utilities", "os", "multimedia::audio"]
+
+[lib]
+name = "ubuntu_config_scripts"
+path = "src/lib.rs"
+
+# System Scripts
+[[bin]]
+name = "cleanup_disk"
+path = "src/system/cleanup_disk.rs"
+
+[[bin]]
+name = "configure_obs"
+path = "src/system/configure_obs.rs"
+
+[[bin]]
+name = "configure_time"
+path = "src/system/configure_time.rs"
+
+[[bin]]
+name = "create_pipewire_monitor"
+path = "src/system/create_pipewire_monitor.rs"
+
+[[bin]]
+name = "diagnose_av_issues"
+path = "src/system/diagnose_av_issues.rs"
+
+[[bin]]
+name = "refresh_kde_desktop"
+path = "src/system/refresh_kde_desktop.rs"
+
+[[bin]]
+name = "sudo_wrapper"
+path = "src/system/sudo_wrapper.rs"
+
+[[bin]]
+name = "update_ruchy"
+path = "src/system/update_ruchy.rs"
+
+[[bin]]
+name = "upgrade_nvidia_driver"
+path = "src/system/upgrade_nvidia_driver.rs"
+
+# Audio Scripts
+[[bin]]
+name = "configure_speakers"
+path = "src/audio/configure_speakers.rs"
+
+[[bin]]
+name = "enable_mic"
+path = "src/audio/enable_mic.rs"
+
+[[bin]]
+name = "fix_audio"
+path = "src/audio/fix_audio.rs"
+
+# Development Scripts
+[[bin]]
+name = "deploy"
+path = "src/dev/deploy.rs"
+
+[[bin]]
+name = "manage_deps"
+path = "src/dev/deps.rs"
+
+[dependencies]
+# Core dependencies for system interaction
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.0", features = ["derive"] }
+anyhow = "1.0"
+thiserror = "1.0"
+
+# System and process management
+nix = "0.27"
+which = "5.0"
+home = "0.5"
+
+# File and directory operations
+walkdir = "2.0"
+tempfile = "3.0"
+
+# Logging and diagnostics
+env_logger = "0.10"
+log = "0.4"
+chrono = "0.4"
+
+# Text processing and serialization
+regex = "1.10"
+toml = "0.8"
+
+# Property-based testing and test utilities
+[dev-dependencies]
+proptest = "1.0"
+tempfile = "3.0"
+tokio-test = "0.4"
+
+# Test configuration
+[[test]]
+name = "lib_common"
+path = "tests/lib/common.rs"
+
+[[test]]
+name = "lib_logger"
+path = "tests/lib/logger.rs"
+
+[[test]]
+name = "lib_schema"
+path = "tests/lib/schema.rs"
+
+[[test]]
+name = "lib_deps_manager"
+path = "tests/lib/deps_manager.rs"
+
+[[test]]
+name = "integration_system"
+path = "tests/integration/system_scripts.rs"
+
+# Configuration for different profiles
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.dev]
+opt-level = 0
+debug = true
+overflow-checks = true
+
+# Workspace configuration for modular development
+[workspace]
+
+# Feature flags for optional functionality
+[features]
+default = ["audio", "system", "dev"]
+audio = []
+system = []
+dev = []
+
+# Linting configuration
+[lints.rust]
+unsafe_code = "forbid"
+unused_imports = "warn"
+dead_code = "warn"
+
+[lints.clippy]
+# Focus on the most important lints only for now
+suspicious = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+correctness = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+# Allow detailed documentation requirements for migration phase
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+missing_docs_in_private_items = "allow"
+# Allow formatting and style issues
+uninlined_format_args = "allow"
+doc_markdown = "allow"
+must_use_candidate = "allow"
+map_unwrap_or = "allow"
+unused_async = "allow"
+# Allow multiple crate versions for dependencies
+multiple_crate_versions = "allow"
