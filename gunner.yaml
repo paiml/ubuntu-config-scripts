@@ -60,7 +60,6 @@ ami:
   
   # Tools to install
   tools:
-    - deno: latest
     - git: latest
     - make: latest
     - tar: latest
@@ -68,11 +67,13 @@ ami:
     - curl: latest
     - pulseaudio-utils: latest  # For audio scripts
     - alsa-utils: latest        # For audio scripts
-    - rust: latest              # For Rust migration
+    - rust: latest              # Primary language
     - cargo: latest             # Rust package manager
     - pkg-config: latest        # For Rust dependencies
     - libssl-dev: latest        # For Rust SSL support
     - build-essential: latest   # For Rust compilation
+    - llvm: latest              # For coverage
+    - clang: latest             # For LLVM toolchain
 
 # Network Configuration
 network:

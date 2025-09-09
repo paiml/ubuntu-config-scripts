@@ -1,0 +1,179 @@
+# PMAT Configuration for Ubuntu Config Scripts
+[project]
+name = "ubuntu-config-scripts"
+version = "0.1.0"
+description = "Ubuntu system configuration and management scripts in Ruchy"
+language = "ruchy"
+
+[quality_gates]
+# Test coverage requirements
+min_coverage = 80.0
+coverage_threshold = 85.0
+
+# Complexity limits
+max_complexity = 10
+max_function_length = 50
+max_nesting_depth = 4
+
+# Code quality metrics
+min_documentation_coverage = 70.0
+max_technical_debt = 0.15
+min_maintainability_index = 70
+
+# Security requirements
+security_level = "strict"
+allow_unsafe_code = false
+require_input_validation = true
+
+# Performance requirements
+max_build_time_seconds = 300
+max_binary_size_mb = 10
+min_performance_score = 0.85
+
+[testing]
+# Property-based testing configuration
+enable_property_tests = true
+property_test_iterations = 1000
+shrinking_enabled = true
+
+# TDD configuration
+enforce_tdd = true
+require_test_first = true
+min_test_to_code_ratio = 0.3
+
+# Test types
+unit_tests = true
+integration_tests = true
+performance_tests = true
+security_tests = true
+
+[analysis]
+# Static analysis settings
+enable_clippy = true
+clippy_deny_level = "warnings"
+enable_rustfmt = true
+rustfmt_check = true
+
+# PMAT-specific analysis
+enable_tdg_analysis = true
+tdg_min_score = 0.85
+enable_complexity_analysis = true
+enable_maintainability_analysis = true
+
+# Dependency analysis
+check_dependency_licenses = true
+allow_copyleft_licenses = false
+check_vulnerability_database = true
+
+[build]
+# Build configuration
+target = "x86_64-unknown-linux-gnu"
+profile = "release"
+features = ["property-tests"]
+
+# Optimization settings
+opt_level = 3
+lto = true
+codegen_units = 1
+strip_symbols = true
+
+[deploy]
+# Package formats
+create_deb_package = true
+create_appimage = false
+create_tarball = true
+
+# Distribution settings
+sign_packages = false
+generate_checksums = true
+upload_to_registry = false
+
+[monitoring]
+# Runtime monitoring
+enable_telemetry = false
+log_level = "info"
+metrics_endpoint = ""
+
+# Performance monitoring
+track_memory_usage = true
+track_cpu_usage = true
+benchmark_regression_threshold = 0.05
+
+[documentation]
+# Documentation requirements
+require_module_docs = true
+require_function_docs = true
+require_public_api_docs = true
+
+# Documentation formats
+generate_rustdoc = true
+generate_book = false
+generate_api_docs = true
+
+[git_hooks]
+# Pre-commit hooks
+run_tests = true
+run_clippy = true
+run_rustfmt = true
+run_pmat_check = true
+
+# Pre-push hooks
+run_full_test_suite = true
+run_security_audit = true
+check_coverage = true
+
+[ci_cd]
+# CI/CD integration
+provider = "github"
+runner_labels = ["self-hosted", "Linux", "X64"]
+
+# Pipeline stages
+stages = ["validate", "test", "build", "deploy"]
+parallel_jobs = 3
+timeout_minutes = 60
+
+# Quality gates in CI
+fail_on_coverage_drop = true
+fail_on_complexity_increase = true
+fail_on_security_issues = true
+
+[notifications]
+# Notification settings
+slack_webhook = ""
+discord_webhook = ""
+email_notifications = false
+
+# Alert conditions
+alert_on_failure = true
+alert_on_coverage_drop = true
+alert_on_security_issues = true
+
+[paths]
+# Source paths
+source_dirs = ["src", "lib", "audio", "system", "dev"]
+test_dirs = ["tests"]
+bench_dirs = ["benches"]
+
+# Exclude paths
+exclude_dirs = ["target", ".git", "node_modules"]
+exclude_files = ["*.bak", "*.tmp"]
+
+# Documentation paths
+doc_dir = "docs"
+readme_file = "README.md"
+
+[tools]
+# External tool configuration
+ruchy_path = "ruchy"
+cargo_path = "cargo"
+rustc_path = "rustc"
+
+# Tool versions
+min_ruchy_version = "1.89.0"
+min_rust_version = "1.70.0"
+min_cargo_version = "1.70.0"
+
+# Additional tools
+llvm_cov_path = "cargo-llvm-cov"
+clippy_path = "cargo-clippy"
+rustfmt_path = "rustfmt"

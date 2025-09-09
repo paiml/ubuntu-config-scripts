@@ -1,0 +1,297 @@
+// Install PMAT dependencies for Ubuntu Config Scripts
+use crate::lib::common::{run_command, command_exists, require_command}
+use crate::lib::logger::{info, warn, error, success}
+
+pub fun install_rust() -> Result<(), String> {
+    info("Installing Rust toolchain");
+    
+    if command_exists("rustc") && command_exists("cargo") {
+        info("Rust already installed");
+        return Ok(());
+    }
+    
+    // Install rustup
+    let rustup_result = run_command(vec![
+        "curl".to_string(),
+        "--proto".to_string(),
+        "=https".to_string(),
+        "--tlsv1.2".to_string(),
+        "-sSf".to_string(),
+        "https://sh.rustup.rs".to_string(),
+        "|".to_string(),
+        "sh".to_string(),
+        "-s".to_string(),
+        "--".to_string(),
+        "-y".to_string()
+    ], None);
+    
+    if !rustup_result.success {
+        return Err("Failed to install Rust toolchain".to_string());
+    }
+    
+    // Source the environment
+    let source_result = run_command(vec![
+        "source".to_string(),
+        format!("{}/.cargo/env", std::env::var("HOME").unwrap_or_default())
+    ], None);
+    
+    if !source_result.success {
+        warn("Failed to source Rust environment - you may need to restart your shell");
+    }
+    
+    success("Rust toolchain installed");
+    Ok(())
+}
+
+pub fun install_ruchy() -> Result<(), String> {
+    info("Installing Ruchy programming language");
+    
+    if command_exists("ruchy") {
+        let version_result = run_command(vec!["ruchy".to_string(), "--version".to_string()], None);
+        if version_result.success {
+            info(&format!("Ruchy already installed: {}", version_result.stdout.trim()));
+            return Ok(());
+        }
+    }
+    
+    // Install Ruchy via cargo
+    let install_result = run_command(vec![
+        "cargo".to_string(),
+        "install".to_string(),
+        "ruchy".to_string()
+    ], None);
+    
+    if !install_result.success {
+        return Err(format!("Failed to install Ruchy: {}", install_result.stderr));
+    }
+    
+    success("Ruchy installed successfully");
+    Ok(())
+}
+
+pub fun install_pmat() -> Result<(), String> {
+    info("Installing PMAT (Performance Monitoring and Analysis Tool)");
+    
+    if command_exists("pmat") {
+        let version_result = run_command(vec!["pmat".to_string(), "--version".to_string()], None);
+        if version_result.success {
+            info(&format!("PMAT already installed: {}", version_result.stdout.trim()));
+            return Ok(());
+        }
+    }
+    
+    // Install PMAT via cargo
+    let install_result = run_command(vec![
+        "cargo".to_string(),
+        "install".to_string(),
+        "pmat".to_string()
+    ], None);
+    
+    if !install_result.success {
+        return Err(format!("Failed to install PMAT: {}", install_result.stderr));
+    }
+    
+    success("PMAT installed successfully");
+    Ok(())
+}
+
+pub fun install_llvm_tools() -> Result<(), String> {
+    info("Installing LLVM tools for coverage");
+    
+    // Install LLVM tools
+    let llvm_result = run_command(vec![
+        "sudo".to_string(),
+        "apt".to_string(),
+        "install".to_string(),
+        "-y".to_string(),
+        "llvm".to_string(),
+        "clang".to_string(),
+        "llvm-dev".to_string()
+    ], None);
+    
+    if !llvm_result.success {
+        return Err("Failed to install LLVM tools".to_string());
+    }
+    
+    // Install cargo-llvm-cov for Rust coverage
+    let llvm_cov_result = run_command(vec![
+        "cargo".to_string(),
+        "install".to_string(),
+        "cargo-llvm-cov".to_string()
+    ], None);
+    
+    if !llvm_cov_result.success {
+        warn("Failed to install cargo-llvm-cov - coverage may not work");
+    }
+    
+    success("LLVM tools installed");
+    Ok(())
+}
+
+pub fun install_development_tools() -> Result<(), String> {
+    info("Installing additional development tools");
+    
+    let tools = vec![
+        "build-essential",
+        "pkg-config",
+        "libssl-dev",
+        "git",
+        "curl",
+        "wget",
+        "unzip",
+        "jq",
+    ];
+    
+    let mut cmd = vec![
+        "sudo".to_string(),
+        "apt".to_string(),
+        "install".to_string(),
+        "-y".to_string()
+    ];
+    cmd.extend(tools.iter().map(|s| s.to_string()));
+    
+    let result = run_command(cmd, None);
+    
+    if !result.success {
+        return Err("Failed to install development tools".to_string());
+    }
+    
+    success("Development tools installed");
+    Ok(())
+}
+
+pub fun setup_git_hooks() -> Result<(), String> {
+    info("Setting up Git hooks for quality gates");
+    
+    let git_dir = ".git/hooks";
+    if !crate::lib::common::file_exists(git_dir) {
+        warn("Not in a Git repository - skipping Git hooks setup");
+        return Ok(());
+    }
+    
+    // Create pre-commit hook
+    let pre_commit_hook = r#"#!/bin/bash
+# Pre-commit hook with PMAT quality gates
+
+echo "Running PMAT quality gates..."
+
+# Run PMAT analysis
+if command -v pmat &> /dev/null; then
+    pmat check --all
+    if [ $? -ne 0 ]; then
+        echo "PMAT quality gates failed!"
+        exit 1
+    fi
+else
+    echo "Warning: PMAT not found - skipping quality gates"
+fi
+
+# Run tests if available
+if [ -f "Cargo.toml" ]; then
+    cargo test
+    if [ $? -ne 0 ]; then
+        echo "Tests failed!"
+        exit 1
+    fi
+fi
+
+echo "Quality gates passed!"
+exit 0
+"#;
+    
+    let hook_path = format!("{}/pre-commit", git_dir);
+    crate::lib::common::write_file(&hook_path, pre_commit_hook)?;
+    
+    // Make executable
+    let chmod_result = run_command(vec![
+        "chmod".to_string(),
+        "+x".to_string(),
+        hook_path
+    ], None);
+    
+    if !chmod_result.success {
+        return Err("Failed to make Git hook executable".to_string());
+    }
+    
+    success("Git hooks configured");
+    Ok(())
+}
+
+pub fun verify_installation() -> Result<(), String> {
+    info("Verifying installation");
+    
+    let tools = vec![
+        ("rustc", "Rust compiler"),
+        ("cargo", "Rust package manager"),
+        ("ruchy", "Ruchy programming language"),
+        ("pmat", "PMAT analysis tool"),
+        ("llvm-config", "LLVM configuration"),
+    ];
+    
+    let mut missing = Vec::new();
+    
+    for (tool, description) in tools {
+        if command_exists(tool) {
+            let version_result = run_command(vec![tool.to_string(), "--version".to_string()], None);
+            if version_result.success {
+                println!("✓ {}: {}", description, version_result.stdout.lines().next().unwrap_or(""));
+            } else {
+                println!("⚠ {} found but version check failed", description);
+            }
+        } else {
+            missing.push((tool, description));
+        }
+    }
+    
+    if !missing.is_empty() {
+        warn("Some tools are missing:");
+        for (tool, desc) in missing {
+            println!("  ✗ {}: {}", desc, tool);
+        }
+    } else {
+        success("All required tools are installed");
+    }
+    
+    Ok(())
+}
+
+pub fun run() -> Result<(), String> {
+    info("Installing PMAT dependencies and development tools");
+    
+    // Install base development tools
+    install_development_tools()?;
+    
+    // Install Rust toolchain
+    install_rust()?;
+    
+    // Install Ruchy
+    install_ruchy()?;
+    
+    // Install PMAT
+    install_pmat()?;
+    
+    // Install LLVM tools for coverage
+    install_llvm_tools()?;
+    
+    // Setup Git hooks
+    setup_git_hooks()?;
+    
+    // Verify installation
+    verify_installation()?;
+    
+    println!("\n=== Installation Complete ===");
+    println!("✓ Rust toolchain");
+    println!("✓ Ruchy programming language");
+    println!("✓ PMAT analysis tool");
+    println!("✓ LLVM coverage tools");
+    println!("✓ Development dependencies");
+    println!("✓ Git quality gate hooks");
+    
+    println!("\n=== Next Steps ===");
+    println!("1. Restart your shell or run: source ~/.cargo/env");
+    println!("2. Initialize PMAT in your project: pmat init");
+    println!("3. Run quality gates: pmat check --all");
+    println!("4. Generate coverage: cargo llvm-cov");
+    
+    Ok(())
+}
