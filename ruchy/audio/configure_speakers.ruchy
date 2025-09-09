@@ -1,0 +1,312 @@
+// Configure external speakers for Ubuntu
+use std::collections::HashMap
+use std::process::exit
+use crate::lib::common::{run_command, command_exists, require_command, confirm}
+use crate::lib::logger::{Logger, LogLevel, info, warn, error, success}
+use serde::{Serialize, Deserialize}
+use regex::Regex
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpeakerDevice {
+    pub id: String,
+    pub name: String,
+    pub card: String,
+    pub device: String,
+    pub is_muted: bool,
+    pub volume: u32,
+    pub is_default: bool,
+    pub profile_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AudioProfile {
+    pub name: String,
+    pub description: String,
+    pub available: bool,
+    pub active: bool,
+}
+
+pub fun get_pulseaudio_sinks() -> Result<Vec<SpeakerDevice>, String> {
+    let mut devices = Vec::new();
+    
+    let sinks_result = run_command(vec!["pactl".to_string(), "list".to_string(), "sinks".to_string()], None);
+    if !sinks_result.success {
+        return Err(format!("Failed to list audio sinks: {}", sinks_result.stderr));
+    }
+    
+    let default_sink_result = run_command(vec!["pactl".to_string(), "get-default-sink".to_string()], None);
+    let default_sink = if default_sink_result.success {
+        default_sink_result.stdout.trim().to_string()
+    } else {
+        String::new()
+    };
+    
+    let sinks: Vec<&str> = sinks_result.stdout.split("\n\n").collect();
+    
+    for sink in sinks {
+        if !sink.contains("Sink #") {
+            continue;
+        }
+        
+        let id_re = Regex::new(r"Sink #(\d+)").unwrap();
+        let name_re = Regex::new(r"Name: (.+)").unwrap();
+        let desc_re = Regex::new(r"Description: (.+)").unwrap();
+        let mute_re = Regex::new(r"Mute: (.+)").unwrap();
+        let volume_re = Regex::new(r"Volume:.*?(\d+)%").unwrap();
+        let card_re = Regex::new(r#"alsa\.card = "(\d+)""#).unwrap();
+        let device_re = Regex::new(r#"alsa\.device = "(\d+)""#).unwrap();
+        let profile_re = Regex::new(r#"device\.profile\.name = "(.+)""#).unwrap();
+        
+        if let (Some(id_match), Some(name_match)) = (id_re.captures(sink), name_re.captures(sink)) {
+            let sink_name = name_match.get(1).unwrap().as_str();
+            let device = SpeakerDevice {
+                id: id_match.get(1).unwrap().as_str().to_string(),
+                name: desc_re.captures(sink)
+                    .and_then(|m| m.get(1))
+                    .map(|m| m.as_str().to_string())
+                    .unwrap_or_else(|| sink_name.to_string()),
+                card: card_re.captures(sink)
+                    .and_then(|m| m.get(1))
+                    .map(|m| m.as_str().to_string())
+                    .unwrap_or_else(|| "unknown".to_string()),
+                device: device_re.captures(sink)
+                    .and_then(|m| m.get(1))
+                    .map(|m| m.as_str().to_string())
+                    .unwrap_or_else(|| "unknown".to_string()),
+                is_muted: mute_re.captures(sink)
+                    .and_then(|m| m.get(1))
+                    .map(|m| m.as_str() == "yes")
+                    .unwrap_or(false),
+                volume: volume_re.captures(sink)
+                    .and_then(|m| m.get(1))
+                    .and_then(|m| m.as_str().parse().ok())
+                    .unwrap_or(0),
+                is_default: sink_name == default_sink,
+                profile_name: profile_re.captures(sink)
+                    .and_then(|m| m.get(1))
+                    .map(|m| m.as_str().to_string()),
+            };
+            devices.push(device);
+        }
+    }
+    
+    Ok(devices)
+}
+
+pub fun get_card_profiles(card_id: &str) -> Result<Vec<AudioProfile>, String> {
+    let mut profiles = Vec::new();
+    
+    let result = run_command(vec!["pactl".to_string(), "list".to_string(), "cards".to_string()], None);
+    if !result.success {
+        return Ok(profiles);
+    }
+    
+    let cards: Vec<&str> = result.stdout.split("\n\n").collect();
+    for card in cards {
+        if !card.contains(&format!("Card #{}", card_id)) {
+            continue;
+        }
+        
+        let profile_re = Regex::new(r"Profiles:\n([\s\S]*?)(?:\n\t[A-Z]|$)").unwrap();
+        if let Some(profile_section) = profile_re.captures(card) {
+            let profile_lines: Vec<&str> = profile_section.get(1).unwrap().as_str().lines().collect();
+            
+            for line in profile_lines {
+                let line_re = Regex::new(r"\t\t(.+?):\s+(.+?)\s+\(.*?priority[^)]*\)(\s+\(available:[^)]+\))?").unwrap();
+                if let Some(profile_match) = line_re.captures(line) {
+                    let is_available = line.contains("available: yes") || 
+                                      line.contains("available: unknown");
+                    let is_active = line.ends_with("(sinks: 1, sources: 1, priority:") ||
+                                   line.contains("(HDMI");
+                    
+                    profiles.push(AudioProfile {
+                        name: profile_match.get(1).unwrap().as_str().to_string(),
+                        description: profile_match.get(2).unwrap().as_str().to_string(),
+                        available: is_available,
+                        active: is_active,
+                    });
+                }
+            }
+        }
+    }
+    
+    Ok(profiles)
+}
+
+pub fun set_card_profile(card_id: &str, profile_name: &str) -> Result<(), String> {
+    info(&format!("Setting card {} to profile {}", card_id, profile_name));
+    
+    let result = run_command(vec![
+        "pactl".to_string(),
+        "set-card-profile".to_string(),
+        card_id.to_string(),
+        profile_name.to_string()
+    ], None);
+    
+    if !result.success {
+        return Err(format!("Failed to set card profile: {}", result.stderr));
+    }
+    
+    Ok(())
+}
+
+pub fun set_default_sink(sink_name: &str) -> Result<(), String> {
+    info(&format!("Setting default sink to {}", sink_name));
+    
+    let result = run_command(vec![
+        "pactl".to_string(),
+        "set-default-sink".to_string(),
+        sink_name.to_string()
+    ], None);
+    
+    if !result.success {
+        return Err(format!("Failed to set default sink: {}", result.stderr));
+    }
+    
+    Ok(())
+}
+
+pub fun set_sink_volume(sink_id: &str, volume: u32) -> Result<(), String> {
+    let volume_percent = volume.min(100);
+    info(&format!("Setting sink {} volume to {}%", sink_id, volume_percent));
+    
+    let result = run_command(vec![
+        "pactl".to_string(),
+        "set-sink-volume".to_string(),
+        sink_id.to_string(),
+        format!("{}%", volume_percent)
+    ], None);
+    
+    if !result.success {
+        return Err(format!("Failed to set sink volume: {}", result.stderr));
+    }
+    
+    Ok(())
+}
+
+pub fun unmute_sink(sink_id: &str) -> Result<(), String> {
+    info(&format!("Unmuting sink {}", sink_id));
+    
+    let result = run_command(vec![
+        "pactl".to_string(),
+        "set-sink-mute".to_string(),
+        sink_id.to_string(),
+        "0".to_string()
+    ], None);
+    
+    if !result.success {
+        return Err(format!("Failed to unmute sink: {}", result.stderr));
+    }
+    
+    Ok(())
+}
+
+pub fun test_audio(sink_name: &str) -> Result<(), String> {
+    info(&format!("Testing audio on sink {}", sink_name));
+    
+    let result = run_command(vec![
+        "speaker-test".to_string(),
+        "-D".to_string(),
+        format!("pulse:{}", sink_name),
+        "-c".to_string(),
+        "2".to_string(),
+        "-t".to_string(),
+        "wav".to_string(),
+        "-l".to_string(),
+        "1".to_string()
+    ], None);
+    
+    if !result.success {
+        warn(&format!("Audio test may have issues: {}", result.stderr));
+    }
+    
+    Ok(())
+}
+
+pub fun run() -> Result<(), String> {
+    info("Configuring external speakers");
+    
+    // Check for required commands
+    require_command("pactl")?;
+    require_command("speaker-test")?;
+    
+    // Get current audio sinks
+    let sinks = get_pulseaudio_sinks()?;
+    
+    if sinks.is_empty() {
+        return Err("No audio sinks found".to_string());
+    }
+    
+    info(&format!("Found {} audio sink(s):", sinks.len()));
+    for (i, sink) in sinks.iter().enumerate() {
+        let default_marker = if sink.is_default { " [DEFAULT]" } else { "" };
+        let mute_status = if sink.is_muted { " [MUTED]" } else { "" };
+        println!("  {}. {} (Card: {}, Device: {}, Volume: {}%){}{}", 
+                i + 1, 
+                sink.name, 
+                sink.card, 
+                sink.device, 
+                sink.volume,
+                default_marker,
+                mute_status);
+    }
+    
+    // Find external speaker devices (typically HDMI or USB)
+    let external_sinks: Vec<&SpeakerDevice> = sinks.iter()
+        .filter(|s| s.name.contains("HDMI") || 
+                   s.name.contains("USB") || 
+                   s.name.contains("Digital") ||
+                   s.name.contains("S/PDIF"))
+        .collect();
+    
+    if external_sinks.is_empty() {
+        warn("No external speaker devices detected");
+        warn("Make sure your external speakers are connected");
+        return Ok(());
+    }
+    
+    info(&format!("Found {} external speaker device(s)", external_sinks.len()));
+    
+    // Configure first external device
+    let target_sink = external_sinks[0];
+    
+    // Check and set appropriate profile
+    if target_sink.card != "unknown" {
+        let profiles = get_card_profiles(&target_sink.card)?;
+        
+        // Find stereo output profile
+        let stereo_profile = profiles.iter()
+            .find(|p| p.available && 
+                     (p.name.contains("output:stereo") || 
+                      p.name.contains("output:hdmi-stereo")));
+        
+        if let Some(profile) = stereo_profile {
+            if !profile.active {
+                set_card_profile(&target_sink.card, &profile.name)?;
+            }
+        }
+    }
+    
+    // Set as default sink
+    if !target_sink.is_default {
+        set_default_sink(&target_sink.id)?;
+    }
+    
+    // Unmute and set volume
+    if target_sink.is_muted {
+        unmute_sink(&target_sink.id)?;
+    }
+    
+    if target_sink.volume < 50 {
+        set_sink_volume(&target_sink.id, 75)?;
+    }
+    
+    success(&format!("Configured external speakers: {}", target_sink.name));
+    
+    // Test audio
+    if confirm("Would you like to test the audio output?", true) {
+        test_audio(&target_sink.id)?;
+    }
+    
+    Ok(())
+}

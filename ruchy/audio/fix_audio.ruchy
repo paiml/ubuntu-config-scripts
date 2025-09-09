@@ -1,0 +1,306 @@
+// Fix common audio issues on Ubuntu
+use crate::lib::common::{run_command, require_command, is_root}
+use crate::lib::logger::{info, warn, error, success}
+use std::thread::sleep
+use std::time::Duration
+
+pub fun restart_pulseaudio() -> Result<(), String> {
+    info("Restarting PulseAudio service");
+    
+    // Kill PulseAudio (it will auto-restart)
+    let _ = run_command(vec!["pulseaudio".to_string(), "--kill".to_string()], None);
+    
+    // Wait a moment
+    sleep(Duration::from_secs(2));
+    
+    // Start PulseAudio if not auto-started
+    let result = run_command(vec!["pulseaudio".to_string(), "--start".to_string()], None);
+    
+    if !result.success && !result.stderr.contains("already running") {
+        return Err(format!("Failed to start PulseAudio: {}", result.stderr));
+    }
+    
+    Ok(())
+}
+
+pub fun restart_pipewire() -> Result<(), String> {
+    info("Restarting PipeWire services");
+    
+    let services = vec![
+        "pipewire",
+        "pipewire-pulse",
+        "wireplumber"
+    ];
+    
+    for service in services {
+        let result = run_command(vec![
+            "systemctl".to_string(),
+            "--user".to_string(),
+            "restart".to_string(),
+            format!("{}.service", service)
+        ], None);
+        
+        if !result.success {
+            warn(&format!("Failed to restart {}: {}", service, result.stderr));
+        }
+    }
+    
+    // Wait for services to stabilize
+    sleep(Duration::from_secs(3));
+    
+    Ok(())
+}
+
+pub fun clear_audio_cache() -> Result<(), String> {
+    info("Clearing audio cache");
+    
+    let home = std::env::var("HOME").map_err(|e| format!("Failed to get HOME: {}", e))?;
+    let cache_dirs = vec![
+        format!("{}/.config/pulse", home),
+        format!("{}/.cache/pipewire", home),
+    ];
+    
+    for dir in cache_dirs {
+        let result = run_command(vec!["rm".to_string(), "-rf".to_string(), dir], None);
+        if !result.success {
+            warn(&format!("Failed to remove {}: {}", dir, result.stderr));
+        }
+    }
+    
+    Ok(())
+}
+
+pub fun reload_alsa() -> Result<(), String> {
+    if !is_root() {
+        warn("ALSA reload requires root privileges, skipping");
+        return Ok(());
+    }
+    
+    info("Reloading ALSA modules");
+    
+    // Store current state
+    let _ = run_command(vec!["alsactl".to_string(), "store".to_string()], None);
+    
+    // Reload ALSA
+    let result = run_command(vec!["alsa".to_string(), "force-reload".to_string()], None);
+    
+    if !result.success {
+        warn(&format!("Failed to reload ALSA: {}", result.stderr));
+    }
+    
+    // Restore state
+    let _ = run_command(vec!["alsactl".to_string(), "restore".to_string()], None);
+    
+    Ok(())
+}
+
+pub fun check_audio_groups() -> Result<(), String> {
+    info("Checking audio group membership");
+    
+    let user = std::env::var("USER").map_err(|e| format!("Failed to get USER: {}", e))?;
+    let groups_result = run_command(vec!["groups".to_string(), user.clone()], None);
+    
+    if !groups_result.success {
+        return Err(format!("Failed to check groups: {}", groups_result.stderr));
+    }
+    
+    let groups = groups_result.stdout;
+    let required_groups = vec!["audio", "pulse-access"];
+    let mut missing_groups = Vec::new();
+    
+    for group in required_groups {
+        if !groups.contains(group) {
+            missing_groups.push(group);
+        }
+    }
+    
+    if !missing_groups.is_empty() {
+        if is_root() {
+            for group in missing_groups {
+                info(&format!("Adding user {} to group {}", user, group));
+                let result = run_command(vec![
+                    "usermod".to_string(),
+                    "-a".to_string(),
+                    "-G".to_string(),
+                    group.to_string(),
+                    user.clone()
+                ], None);
+                
+                if !result.success {
+                    warn(&format!("Failed to add user to group {}: {}", group, result.stderr));
+                }
+            }
+            warn("You may need to log out and back in for group changes to take effect");
+        } else {
+            warn(&format!("User is not in required audio groups: {:?}", missing_groups));
+            warn("Run this script with sudo to fix group membership");
+        }
+    }
+    
+    Ok(())
+}
+
+pub fun reset_audio_settings() -> Result<(), String> {
+    info("Resetting audio settings to defaults");
+    
+    // Reset PulseAudio/PipeWire settings
+    let result = run_command(vec![
+        "pactl".to_string(),
+        "set-sink-volume".to_string(),
+        "@DEFAULT_SINK@".to_string(),
+        "50%".to_string()
+    ], None);
+    
+    if !result.success {
+        warn(&format!("Failed to reset sink volume: {}", result.stderr));
+    }
+    
+    let result = run_command(vec![
+        "pactl".to_string(),
+        "set-source-volume".to_string(),
+        "@DEFAULT_SOURCE@".to_string(),
+        "50%".to_string()
+    ], None);
+    
+    if !result.success {
+        warn(&format!("Failed to reset source volume: {}", result.stderr));
+    }
+    
+    // Unmute devices
+    let _ = run_command(vec![
+        "pactl".to_string(),
+        "set-sink-mute".to_string(),
+        "@DEFAULT_SINK@".to_string(),
+        "0".to_string()
+    ], None);
+    
+    let _ = run_command(vec![
+        "pactl".to_string(),
+        "set-source-mute".to_string(),
+        "@DEFAULT_SOURCE@".to_string(),
+        "0".to_string()
+    ], None);
+    
+    Ok(())
+}
+
+pub fun diagnose_audio() -> Result<String, String> {
+    info("Running audio diagnostics");
+    
+    let mut issues = Vec::new();
+    let mut fixes = Vec::new();
+    
+    // Check if audio services are running
+    let pipewire_result = run_command(vec![
+        "systemctl".to_string(),
+        "--user".to_string(),
+        "is-active".to_string(),
+        "pipewire".to_string()
+    ], None);
+    
+    let pulseaudio_result = run_command(vec![
+        "systemctl".to_string(),
+        "--user".to_string(),
+        "is-active".to_string(),
+        "pulseaudio".to_string()
+    ], None);
+    
+    if pipewire_result.stdout.trim() == "active" {
+        info("PipeWire is active");
+    } else if pulseaudio_result.stdout.trim() == "active" {
+        info("PulseAudio is active");
+    } else {
+        issues.push("No audio service is running");
+        fixes.push("Restart audio services");
+    }
+    
+    // Check for audio devices
+    let aplay_result = run_command(vec!["aplay".to_string(), "-l".to_string()], None);
+    
+    if !aplay_result.success || aplay_result.stdout.contains("no soundcards found") {
+        issues.push("No sound cards detected");
+        fixes.push("Check hardware connections and drivers");
+    }
+    
+    // Check default sink/source
+    let sink_result = run_command(vec!["pactl".to_string(), "get-default-sink".to_string()], None);
+    let source_result = run_command(vec!["pactl".to_string(), "get-default-source".to_string()], None);
+    
+    if !sink_result.success || sink_result.stdout.trim().is_empty() {
+        issues.push("No default audio output device");
+        fixes.push("Set a default audio output device");
+    }
+    
+    if !source_result.success || source_result.stdout.trim().is_empty() {
+        issues.push("No default audio input device");
+        fixes.push("Set a default audio input device");
+    }
+    
+    let diagnosis = if issues.is_empty() {
+        "No audio issues detected".to_string()
+    } else {
+        format!("Issues found:\n{}\n\nSuggested fixes:\n{}", 
+                issues.join("\n- "),
+                fixes.join("\n- "))
+    };
+    
+    Ok(diagnosis)
+}
+
+pub fun run() -> Result<(), String> {
+    info("Fixing audio issues on Ubuntu");
+    
+    // Check for required commands
+    require_command("pactl")?;
+    require_command("aplay")?;
+    
+    // Run diagnostics first
+    let diagnosis = diagnose_audio()?;
+    println!("\n{}\n", diagnosis);
+    
+    // Check if using PipeWire or PulseAudio
+    let pipewire_active = run_command(vec![
+        "systemctl".to_string(),
+        "--user".to_string(),
+        "is-active".to_string(),
+        "pipewire".to_string()
+    ], None).stdout.trim() == "active";
+    
+    if pipewire_active {
+        info("Using PipeWire audio system");
+        
+        // Clear cache
+        clear_audio_cache()?;
+        
+        // Restart PipeWire
+        restart_pipewire()?;
+    } else {
+        info("Using PulseAudio system");
+        
+        // Clear cache
+        clear_audio_cache()?;
+        
+        // Restart PulseAudio
+        restart_pulseaudio()?;
+    }
+    
+    // Check group membership
+    check_audio_groups()?;
+    
+    // Reset audio settings
+    reset_audio_settings()?;
+    
+    // Reload ALSA if root
+    if is_root() {
+        reload_alsa()?;
+    }
+    
+    success("Audio troubleshooting complete");
+    info("If issues persist, try:");
+    println!("  1. Reboot your system");
+    println!("  2. Check hardware connections");
+    println!("  3. Update audio drivers");
+    println!("  4. Check BIOS/UEFI audio settings");
+    
+    Ok(())
+}
