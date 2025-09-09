@@ -1,0 +1,369 @@
+// Configure OBS Studio for Ubuntu
+use crate::lib::common::{run_command, file_exists, ensure_dir, write_file}
+use crate::lib::logger::{info, warn, error, success}
+use serde_json::{json, Value};
+
+pub fun get_obs_config_dir() -> String {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/home/user".to_string());
+    format!("{}/.config/obs-studio", home)
+}
+
+pub fun detect_hardware_encoder() -> String {
+    // Check for NVIDIA NVENC
+    if run_command(vec!["nvidia-smi".to_string()], None).success {
+        info("NVIDIA GPU detected - using NVENC");
+        return "ffmpeg_nvenc".to_string();
+    }
+    
+    // Check for Intel Quick Sync
+    if file_exists("/dev/dri/renderD128") {
+        let vainfo = run_command(vec!["vainfo".to_string()], None);
+        if vainfo.success && vainfo.stdout.contains("H264") {
+            info("Intel Quick Sync detected - using VAAPI");
+            return "ffmpeg_vaapi".to_string();
+        }
+    }
+    
+    // Check for AMD VCE
+    if file_exists("/dev/kfd") {
+        info("AMD GPU detected - using AMF");
+        return "amd_amf_h264".to_string();
+    }
+    
+    info("No hardware encoder detected - using x264");
+    "obs_x264".to_string()
+}
+
+pub fun create_recording_profile() -> Value {
+    let encoder = detect_hardware_encoder();
+    
+    let mut settings = json!({
+        "RecFormat": "mov",  // MOV format for DaVinci Resolve compatibility
+        "RecTracks": 1,
+        "RecEncoder": encoder,
+        "RecQuality": "High",
+        "RecRateControl": "CRF",
+        "RecCRF": 16,  // High quality for editing
+        "RecKeyintSec": 2,
+        "RecProfile": "high",
+        "RecPreset": "quality",
+        "RecBitrate": 50000,
+        "RecMaxBitrate": 60000,
+        "RecBufferSize": 0,
+        "RecCustomSettings": "",
+    });
+    
+    // Add encoder-specific settings
+    match encoder.as_str() {
+        "ffmpeg_nvenc" => {
+            settings["RecCustomSettings"] = json!("preset=p7 profile=high rc=vbr_hq");
+        }
+        "ffmpeg_vaapi" => {
+            settings["RecCustomSettings"] = json!("profile=high compression_level=1");
+        }
+        "obs_x264" => {
+            settings["RecPreset"] = json!("slow");
+            settings["RecProfile"] = json!("high");
+        }
+        _ => {}
+    }
+    
+    settings
+}
+
+pub fun create_audio_config() -> Value {
+    // Configure audio for high quality recording
+    json!({
+        "Desktop1": {
+            "Name": "Desktop Audio",
+            "Volume": 1.0,
+            "SyncOffset": 0,
+            "Monitoring": "none",
+            "Muted": false
+        },
+        "Mic1": {
+            "Name": "Microphone",
+            "Volume": 0.7,
+            "SyncOffset": 0,
+            "Monitoring": "none",
+            "Filters": [
+                {
+                    "name": "Noise Suppression",
+                    "type": "noise_suppress_v2",
+                    "settings": {
+                        "method": "rnnoise",
+                        "suppress_level": 20
+                    }
+                },
+                {
+                    "name": "Compressor",
+                    "type": "compressor",
+                    "settings": {
+                        "ratio": 4.0,
+                        "threshold": -18.0,
+                        "attack": 6.0,
+                        "release": 60.0,
+                        "output_gain": 0.0
+                    }
+                }
+            ],
+            "Muted": false
+        },
+        "SampleRate": 48000,
+        "ChannelSetup": "Stereo"
+    })
+}
+
+pub fun create_video_settings() -> Value {
+    json!({
+        "BaseCX": 1920,
+        "BaseCY": 1080,
+        "OutputCX": 1920,
+        "OutputCY": 1080,
+        "FPSType": 0,
+        "FPSCommon": 30,
+        "FPSNum": 30,
+        "FPSDen": 1,
+        "ScaleType": "lanczos",
+        "ColorFormat": "NV12",
+        "ColorSpace": "709",
+        "ColorRange": "Partial"
+    })
+}
+
+pub fun create_hotkeys() -> Value {
+    json!({
+        "StartRecording": [{
+            "key": "F9"
+        }],
+        "StopRecording": [{
+            "key": "F9"
+        }],
+        "PauseRecording": [{
+            "key": "F10"
+        }],
+        "Screenshot": [{
+            "key": "F11"
+        }],
+        "MuteMic": [{
+            "key": "F8"
+        }]
+    })
+}
+
+pub fun create_scenes_collection() -> Value {
+    json!({
+        "scenes": [
+            {
+                "name": "Screen Recording",
+                "sources": [
+                    {
+                        "name": "Display Capture",
+                        "type": "xshm_input",  // Use XSHM for X11 compatibility
+                        "settings": {
+                            "capture_cursor": true,
+                            "show_cursor": true
+                        }
+                    },
+                    {
+                        "name": "Webcam",
+                        "type": "v4l2_input",
+                        "settings": {
+                            "device_id": "/dev/video0",
+                            "resolution": "1280x720",
+                            "framerate": 30
+                        },
+                        "visible": false  // Hidden by default
+                    }
+                ]
+            },
+            {
+                "name": "Window Capture",
+                "sources": [
+                    {
+                        "name": "Window",
+                        "type": "xcomposite_input",
+                        "settings": {
+                            "capture_cursor": true
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "Webcam Only",
+                "sources": [
+                    {
+                        "name": "Webcam Full",
+                        "type": "v4l2_input",
+                        "settings": {
+                            "device_id": "/dev/video0",
+                            "resolution": "1920x1080",
+                            "framerate": 30
+                        }
+                    }
+                ]
+            }
+        ]
+    })
+}
+
+pub fun write_obs_config(config_dir: &str) -> Result<(), String> {
+    info("Writing OBS configuration files");
+    
+    // Create directories
+    ensure_dir(&format!("{}/basic", config_dir))?;
+    ensure_dir(&format!("{}/basic/profiles", config_dir))?;
+    ensure_dir(&format!("{}/basic/scenes", config_dir))?;
+    
+    // Write recording profile
+    let recording_profile = create_recording_profile();
+    let profile_path = format!("{}/basic/profiles/Recording/basic.ini", config_dir);
+    ensure_dir(&format!("{}/basic/profiles/Recording", config_dir))?;
+    
+    // Convert JSON to INI format for OBS
+    let mut ini_content = String::from("[General]\n");
+    ini_content.push_str("Name=Recording\n\n");
+    ini_content.push_str("[SimpleOutput]\n");
+    
+    if let Value::Object(map) = recording_profile {
+        for (key, value) in map {
+            ini_content.push_str(&format!("{}={}\n", key, value));
+        }
+    }
+    
+    write_file(&profile_path, &ini_content)?;
+    
+    // Write video settings
+    let video_settings = create_video_settings();
+    let video_path = format!("{}/basic/profiles/Recording/video.json", config_dir);
+    write_file(&video_path, &serde_json::to_string_pretty(&video_settings).unwrap())?;
+    
+    // Write audio settings
+    let audio_settings = create_audio_config();
+    let audio_path = format!("{}/basic/profiles/Recording/audio.json", config_dir);
+    write_file(&audio_path, &serde_json::to_string_pretty(&audio_settings).unwrap())?;
+    
+    // Write scenes
+    let scenes = create_scenes_collection();
+    let scenes_path = format!("{}/basic/scenes/Default.json", config_dir);
+    write_file(&scenes_path, &serde_json::to_string_pretty(&scenes).unwrap())?;
+    
+    // Write hotkeys
+    let hotkeys = create_hotkeys();
+    let hotkeys_path = format!("{}/basic/hotkeys.json", config_dir);
+    write_file(&hotkeys_path, &serde_json::to_string_pretty(&hotkeys).unwrap())?;
+    
+    Ok(())
+}
+
+pub fun install_obs() -> Result<(), String> {
+    info("Checking OBS Studio installation");
+    
+    if !run_command(vec!["which".to_string(), "obs".to_string()], None).success {
+        warn("OBS Studio not found. Installing...");
+        
+        // Add OBS PPA
+        let add_ppa = run_command(vec![
+            "sudo".to_string(),
+            "add-apt-repository".to_string(),
+            "-y".to_string(),
+            "ppa:obsproject/obs-studio".to_string()
+        ], None);
+        
+        if !add_ppa.success {
+            return Err("Failed to add OBS PPA".to_string());
+        }
+        
+        // Update package list
+        let update = run_command(vec![
+            "sudo".to_string(),
+            "apt".to_string(),
+            "update".to_string()
+        ], None);
+        
+        if !update.success {
+            return Err("Failed to update package list".to_string());
+        }
+        
+        // Install OBS
+        let install = run_command(vec![
+            "sudo".to_string(),
+            "apt".to_string(),
+            "install".to_string(),
+            "-y".to_string(),
+            "obs-studio".to_string()
+        ], None);
+        
+        if !install.success {
+            return Err("Failed to install OBS Studio".to_string());
+        }
+        
+        success("OBS Studio installed successfully");
+    } else {
+        info("OBS Studio is already installed");
+    }
+    
+    Ok(())
+}
+
+pub fun run() -> Result<(), String> {
+    info("Configuring OBS Studio for screencasting and recording");
+    
+    // Install OBS if needed
+    install_obs()?;
+    
+    // Get config directory
+    let config_dir = get_obs_config_dir();
+    
+    // Check if config exists
+    if file_exists(&config_dir) {
+        println!("\nOBS configuration already exists.");
+        println!("Would you like to backup and replace it? [y/N]: ");
+        
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();
+        
+        if input.trim().to_lowercase().starts_with('y') {
+            // Backup existing config
+            let backup_path = format!("{}.backup.{}", config_dir, 
+                chrono::Utc::now().timestamp());
+            run_command(vec![
+                "mv".to_string(),
+                config_dir.clone(),
+                backup_path.clone()
+            ], None);
+            info(&format!("Backed up existing config to {}", backup_path));
+        } else {
+            info("Keeping existing configuration");
+            return Ok(());
+        }
+    }
+    
+    // Create configuration
+    ensure_dir(&config_dir)?;
+    write_obs_config(&config_dir)?;
+    
+    success("OBS Studio configured successfully");
+    
+    println!("\n=== Configuration Summary ===");
+    println!("✓ Video: 1080p @ 30 FPS");
+    println!("✓ Recording format: MOV (DaVinci Resolve compatible)");
+    println!("✓ Audio: 48kHz stereo with noise suppression");
+    println!("✓ Encoder: {}", detect_hardware_encoder());
+    println!("\n=== Hotkeys ===");
+    println!("F8: Mute/Unmute microphone");
+    println!("F9: Start/Stop recording");
+    println!("F10: Pause/Resume recording");
+    println!("F11: Take screenshot");
+    
+    println!("\nWould you like to launch OBS Studio now? [Y/n]: ");
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
+    
+    if input.trim().is_empty() || input.trim().to_lowercase().starts_with('y') {
+        run_command(vec!["obs".to_string(), "&".to_string()], None);
+        info("OBS Studio launched");
+    }
+    
+    Ok(())
+}

@@ -1,0 +1,242 @@
+// Check DaVinci Resolve version and installation
+use crate::lib::common::{run_command, file_exists}
+use crate::lib::logger::{info, warn, error, success}
+use std::path::Path
+
+pub fun get_davinci_install_path() -> Option<String> {
+    let common_paths = vec![
+        "/opt/resolve",
+        "/opt/DaVinciResolve",
+        "/usr/local/DaVinciResolve",
+        format!("{}/DaVinciResolve", std::env::var("HOME").unwrap_or_default()),
+    ];
+    
+    for path in common_paths {
+        if file_exists(&path) {
+            return Some(path);
+        }
+    }
+    
+    None
+}
+
+pub fun get_davinci_version(install_path: &str) -> Result<String, String> {
+    // Check for version file
+    let version_file = format!("{}/docs/ReadMe.txt", install_path);
+    if file_exists(&version_file) {
+        let content = std::fs::read_to_string(&version_file)
+            .map_err(|e| format!("Failed to read version file: {}", e))?;
+        
+        // Extract version from readme
+        for line in content.lines() {
+            if line.contains("DaVinci Resolve") && line.contains("Version") {
+                return Ok(line.to_string());
+            }
+        }
+    }
+    
+    // Try to get version from binary
+    let binary = format!("{}/bin/resolve", install_path);
+    if file_exists(&binary) {
+        let result = run_command(vec![binary, "--version".to_string()], None);
+        if result.success && !result.stdout.is_empty() {
+            return Ok(result.stdout.trim().to_string());
+        }
+    }
+    
+    Err("Could not determine DaVinci Resolve version".to_string())
+}
+
+pub fun check_gpu_requirements() -> Result<String, String> {
+    // Check for NVIDIA GPU
+    let nvidia_result = run_command(vec!["nvidia-smi".to_string()], None);
+    
+    if nvidia_result.success {
+        // Parse GPU info
+        let mut gpu_info = String::new();
+        for line in nvidia_result.stdout.lines() {
+            if line.contains("NVIDIA") && !line.contains("nvidia-smi") {
+                gpu_info.push_str(&format!("GPU: {}\n", line.trim()));
+            }
+        }
+        
+        // Check CUDA version
+        let cuda_result = run_command(vec!["nvcc".to_string(), "--version".to_string()], None);
+        if cuda_result.success {
+            for line in cuda_result.stdout.lines() {
+                if line.contains("release") {
+                    gpu_info.push_str(&format!("CUDA: {}\n", line.trim()));
+                }
+            }
+        }
+        
+        // Check driver version
+        for line in nvidia_result.stdout.lines() {
+            if line.contains("Driver Version") {
+                gpu_info.push_str(&format!("{}\n", line.trim()));
+            }
+        }
+        
+        Ok(gpu_info)
+    } else {
+        Err("No NVIDIA GPU detected. DaVinci Resolve requires an NVIDIA GPU on Linux.".to_string())
+    }
+}
+
+pub fun check_system_requirements() -> Vec<String> {
+    let mut issues = Vec::new();
+    
+    // Check RAM
+    let meminfo_result = run_command(vec!["free".to_string(), "-h".to_string()], None);
+    if meminfo_result.success {
+        for line in meminfo_result.stdout.lines() {
+            if line.starts_with("Mem:") {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() > 1 {
+                    info(&format!("System RAM: {}", parts[1]));
+                    // Parse RAM amount
+                    if let Some(ram_str) = parts.get(1) {
+                        if ram_str.ends_with("G") {
+                            if let Ok(ram_gb) = ram_str.trim_end_matches('G').parse::<f32>() {
+                                if ram_gb < 16.0 {
+                                    issues.push(format!("Low RAM: {}GB (16GB+ recommended)", ram_gb));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Check disk space
+    let df_result = run_command(vec!["df".to_string(), "-h".to_string(), "/".to_string()], None);
+    if df_result.success {
+        for line in df_result.stdout.lines().skip(1) {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() > 3 {
+                info(&format!("Disk space available: {}", parts[3]));
+            }
+        }
+    }
+    
+    // Check OpenCL
+    if !run_command(vec!["clinfo".to_string()], None).success {
+        issues.push("OpenCL not available (install ocl-icd-opencl-dev)".to_string());
+    }
+    
+    // Check required libraries
+    let required_libs = vec![
+        "libglu1-mesa",
+        "libgomp1",
+        "libpango-1.0-0",
+        "libpangocairo-1.0-0",
+    ];
+    
+    for lib in required_libs {
+        let result = run_command(vec![
+            "dpkg".to_string(),
+            "-l".to_string(),
+            lib.to_string()
+        ], None);
+        
+        if !result.success || !result.stdout.contains("ii") {
+            issues.push(format!("Missing library: {}", lib));
+        }
+    }
+    
+    issues
+}
+
+pub fun check_audio_config() -> String {
+    info("Checking audio configuration for DaVinci Resolve");
+    
+    let mut config = String::new();
+    
+    // Check if using JACK
+    let jack_result = run_command(vec!["jack_control".to_string(), "status".to_string()], None);
+    if jack_result.success && jack_result.stdout.contains("started") {
+        config.push_str("✓ JACK audio server is running\n");
+    } else {
+        config.push_str("⚠ JACK audio not running (optional but recommended)\n");
+    }
+    
+    // Check PulseAudio/PipeWire
+    let pulse_result = run_command(vec!["pactl".to_string(), "info".to_string()], None);
+    if pulse_result.success {
+        for line in pulse_result.stdout.lines() {
+            if line.contains("Server Name") {
+                config.push_str(&format!("Audio Server: {}\n", line.split(':').nth(1).unwrap_or("").trim()));
+            }
+        }
+    }
+    
+    config.push_str("\n⚠ Note: DaVinci Resolve on Linux works best with WAV/AIFF files\n");
+    config.push_str("  AAC audio may not work properly on Linux version\n");
+    
+    config
+}
+
+pub fun run() -> Result<(), String> {
+    info("Checking DaVinci Resolve installation and requirements");
+    
+    // Find DaVinci Resolve installation
+    match get_davinci_install_path() {
+        Some(path) => {
+            success(&format!("Found DaVinci Resolve at: {}", path));
+            
+            // Get version
+            match get_davinci_version(&path) {
+                Ok(version) => info(&format!("Version: {}", version)),
+                Err(e) => warn(&format!("Could not determine version: {}", e)),
+            }
+        }
+        None => {
+            error("DaVinci Resolve not found");
+            println!("\nInstallation instructions:");
+            println!("1. Download from: https://www.blackmagicdesign.com/products/davinciresolve");
+            println!("2. Extract the downloaded archive");
+            println!("3. Run the installer with: sudo ./DaVinci_Resolve_*_Linux.run");
+            return Err("DaVinci Resolve not installed".to_string());
+        }
+    }
+    
+    println!("\n=== GPU Requirements ===");
+    match check_gpu_requirements() {
+        Ok(gpu_info) => {
+            success("GPU requirements met");
+            println!("{}", gpu_info);
+        }
+        Err(e) => {
+            error(&e);
+            println!("\nTo use DaVinci Resolve on Linux, you need:");
+            println!("- NVIDIA GPU (GTX 1060 or better recommended)");
+            println!("- NVIDIA proprietary drivers (535+ recommended)");
+            println!("- CUDA toolkit (optional but improves performance)");
+        }
+    }
+    
+    println!("\n=== System Requirements ===");
+    let issues = check_system_requirements();
+    if issues.is_empty() {
+        success("All system requirements met");
+    } else {
+        warn("Some requirements not met:");
+        for issue in issues {
+            println!("  - {}", issue);
+        }
+    }
+    
+    println!("\n=== Audio Configuration ===");
+    let audio_config = check_audio_config();
+    println!("{}", audio_config);
+    
+    println!("\n=== Optimization Tips ===");
+    println!("1. Use 'sudo prime-select nvidia' to ensure dedicated GPU is active");
+    println!("2. Disable compositor when running DaVinci Resolve");
+    println!("3. Use MOV container with ProRes or DNxHD for best compatibility");
+    println!("4. Convert AAC audio to PCM for Linux compatibility");
+    println!("5. Set memory split to favor GPU in Preferences > Memory and GPU");
+    
+    Ok(())
+}

@@ -1,0 +1,232 @@
+// Launch DaVinci Resolve with optimizations
+use crate::lib::common::{run_command, file_exists}
+use crate::lib::logger::{info, warn, error, success}
+use std::env;
+
+pub fun find_davinci_executable() -> Option<String> {
+    let paths = vec![
+        "/opt/resolve/bin/resolve",
+        "/opt/DaVinciResolve/bin/resolve",
+        "/usr/local/DaVinciResolve/bin/resolve",
+    ];
+    
+    for path in paths {
+        if file_exists(path) {
+            return Some(path.to_string());
+        }
+    }
+    
+    None
+}
+
+pub fun set_gpu_performance() -> Result<(), String> {
+    info("Setting GPU to maximum performance mode");
+    
+    // For NVIDIA GPUs
+    if run_command(vec!["which".to_string(), "nvidia-settings".to_string()], None).success {
+        let result = run_command(vec![
+            "nvidia-settings".to_string(),
+            "-a".to_string(),
+            "[gpu:0]/GPUPowerMizerMode=1".to_string()
+        ], None);
+        
+        if !result.success {
+            warn("Failed to set NVIDIA performance mode");
+        }
+    }
+    
+    Ok(())
+}
+
+pub fun disable_compositor() -> Result<(), String> {
+    info("Disabling desktop compositor for better performance");
+    
+    // KDE
+    let kde_result = run_command(vec![
+        "qdbus".to_string(),
+        "org.kde.KWin".to_string(),
+        "/Compositor".to_string(),
+        "suspend".to_string()
+    ], None);
+    
+    if kde_result.success {
+        info("KDE compositor disabled");
+        return Ok(());
+    }
+    
+    // GNOME
+    let gnome_result = run_command(vec![
+        "gsettings".to_string(),
+        "set".to_string(),
+        "org.gnome.mutter".to_string(),
+        "unredirect-fullscreen-windows".to_string(),
+        "true".to_string()
+    ], None);
+    
+    if gnome_result.success {
+        info("GNOME compositor optimized");
+    }
+    
+    Ok(())
+}
+
+pub fun setup_environment() -> HashMap<String, String> {
+    let mut env_vars = HashMap::new();
+    
+    // GPU selection
+    env_vars.insert("DRI_PRIME".to_string(), "1".to_string());
+    env_vars.insert("__NV_PRIME_RENDER_OFFLOAD".to_string(), "1".to_string());
+    env_vars.insert("__GLX_VENDOR_LIBRARY_NAME".to_string(), "nvidia".to_string());
+    
+    // Performance settings
+    env_vars.insert("__GL_YIELD".to_string(), "NOTHING".to_string());
+    env_vars.insert("__GL_THREADED_OPTIMIZATIONS".to_string(), "1".to_string());
+    
+    // Qt settings for better UI rendering
+    env_vars.insert("QT_AUTO_SCREEN_SCALE_FACTOR".to_string(), "0".to_string());
+    env_vars.insert("QT_SCALE_FACTOR".to_string(), "1".to_string());
+    
+    // Audio settings
+    env_vars.insert("PULSE_LATENCY_MSEC".to_string(), "30".to_string());
+    
+    env_vars
+}
+
+pub fun create_launch_script() -> Result<String, String> {
+    let script_path = "/tmp/launch_davinci.sh";
+    
+    let script_content = r#"#!/bin/bash
+# DaVinci Resolve Launch Script
+
+# Set GPU performance mode
+if command -v nvidia-settings &> /dev/null; then
+    nvidia-settings -a "[gpu:0]/GPUPowerMizerMode=1" &> /dev/null
+fi
+
+# Disable compositor
+if command -v qdbus &> /dev/null; then
+    qdbus org.kde.KWin /Compositor suspend &> /dev/null
+fi
+
+# Set environment variables
+export DRI_PRIME=1
+export __NV_PRIME_RENDER_OFFLOAD=1
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+export __GL_YIELD=NOTHING
+export __GL_THREADED_OPTIMIZATIONS=1
+export QT_AUTO_SCREEN_SCALE_FACTOR=0
+export QT_SCALE_FACTOR=1
+export PULSE_LATENCY_MSEC=30
+
+# Find and launch DaVinci Resolve
+RESOLVE_BIN=""
+for path in /opt/resolve/bin/resolve /opt/DaVinciResolve/bin/resolve; do
+    if [ -f "$path" ]; then
+        RESOLVE_BIN="$path"
+        break
+    fi
+done
+
+if [ -z "$RESOLVE_BIN" ]; then
+    echo "Error: DaVinci Resolve not found"
+    exit 1
+fi
+
+echo "Launching DaVinci Resolve..."
+exec "$RESOLVE_BIN" "$@"
+"#;
+    
+    write_file(script_path, script_content)?;
+    
+    // Make executable
+    run_command(vec![
+        "chmod".to_string(),
+        "+x".to_string(),
+        script_path.to_string()
+    ], None);
+    
+    Ok(script_path.to_string())
+}
+
+pub fun run() -> Result<(), String> {
+    info("Launching DaVinci Resolve with optimizations");
+    
+    // Find DaVinci Resolve
+    let resolve_path = match find_davinci_executable() {
+        Some(path) => path,
+        None => {
+            error("DaVinci Resolve not found");
+            println!("\nPlease install DaVinci Resolve from:");
+            println!("https://www.blackmagicdesign.com/products/davinciresolve");
+            return Err("DaVinci Resolve not installed".to_string());
+        }
+    };
+    
+    info(&format!("Found DaVinci Resolve at: {}", resolve_path));
+    
+    // Check GPU
+    if !run_command(vec!["nvidia-smi".to_string()], None).success {
+        warn("NVIDIA GPU not detected. DaVinci Resolve may not work properly on Linux without NVIDIA GPU.");
+        println!("\nContinue anyway? [y/N]: ");
+        
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();
+        
+        if !input.trim().to_lowercase().starts_with('y') {
+            return Ok(());
+        }
+    }
+    
+    // Set performance mode
+    set_gpu_performance()?;
+    
+    // Disable compositor
+    disable_compositor()?;
+    
+    // Setup environment
+    let env_vars = setup_environment();
+    
+    info("Starting DaVinci Resolve...");
+    
+    // Launch DaVinci Resolve with environment variables
+    let mut cmd = vec![resolve_path];
+    
+    // Convert HashMap to environment variables for the command
+    let result = run_command(cmd, Some(env_vars));
+    
+    if !result.success {
+        error(&format!("Failed to launch DaVinci Resolve: {}", result.stderr));
+        
+        // Try creating and using a launch script
+        info("Trying alternative launch method...");
+        match create_launch_script() {
+            Ok(script_path) => {
+                info(&format!("Created launch script: {}", script_path));
+                println!("\nYou can launch DaVinci Resolve with:");
+                println!("  {}", script_path);
+                
+                // Try to launch with the script
+                let script_result = run_command(vec![script_path], None);
+                if !script_result.success {
+                    return Err("Failed to launch DaVinci Resolve".to_string());
+                }
+            }
+            Err(e) => {
+                return Err(format!("Failed to create launch script: {}", e));
+            }
+        }
+    }
+    
+    success("DaVinci Resolve launched successfully");
+    
+    // Re-enable compositor when DaVinci closes
+    info("Re-enabling compositor...");
+    let _ = run_command(vec![
+        "qdbus".to_string(),
+        "org.kde.KWin".to_string(),
+        "/Compositor".to_string(),
+        "resume".to_string()
+    ], None);
+    
+    Ok(())
+}
