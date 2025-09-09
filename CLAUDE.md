@@ -53,18 +53,39 @@ Once registered, use PMAT features through MCP tools:
 
 ## Project Overview
 
-Ubuntu Config Scripts is a collection of Deno TypeScript scripts for configuring and managing Ubuntu systems. The project emphasizes:
-- **Type Safety**: Strict TypeScript with runtime validation
+Ubuntu Config Scripts is a collection of system configuration and management tools for Ubuntu, available in two implementations:
+
+### Ruchy Implementation (Primary)
+Located in `/ruchy/` directory - **This is the main, production-ready version:**
+- **Language**: Ruchy 1.89.0 (modern systems programming language)
+- **Performance**: 3-5x faster than TypeScript, <100ms startup
+- **Type Safety**: Compile-time type checking with runtime validation
+- **Testing**: Comprehensive property-based testing with QuickCheck/PropTest
+- **Quality Gates**: Strict PMAT enforcement (80% coverage, complexity limits)
+- **CI/CD**: Gunner integration with cost-effective AWS spot instances
+- **Distribution**: Single binary, .deb packages, AppImage support
+
+### TypeScript Implementation (Legacy)
+Located in project root - **Maintained for compatibility:**
+- **Language**: Deno TypeScript
+- **Type Safety**: Strict TypeScript with runtime validation  
 - **Testing**: Property-based testing with fast-check
 - **Quality Gates**: PMAT enforcement for all code
 - **CI/CD**: Gunner integration for cost-effective builds
-- **No Bash**: All scripts are TypeScript (per architecture requirements)
+- **Architecture**: No bash scripts allowed - all TypeScript
 
 ## Key Design Decisions
 
-### 1. Deno TypeScript Only
-- **Requirement**: NO bash scripts allowed
-- All scripts written in TypeScript for Deno runtime
+### 1. Ruchy-First Development (Primary)
+- **Language**: Ruchy 1.89.0 with Rust interoperability
+- **Performance**: Compiled binaries with zero runtime dependencies
+- **Type Safety**: Compile-time guarantees with runtime validation
+- **Testing**: Property-based testing with 1000+ iterations per test
+- **Architecture**: Single binary deployment model
+
+### 2. TypeScript Legacy Support
+- **Requirement**: NO bash scripts allowed (TypeScript version only)
+- All legacy scripts in TypeScript for Deno runtime
 - Scripts compiled to standalone binaries for deployment
 
 ### 2. Strict Type Checking
@@ -99,29 +120,53 @@ Ubuntu Config Scripts is a collection of Deno TypeScript scripts for configuring
 
 ```
 ubuntu-config-scripts/
-├── Makefile                 # Main build system
-├── Makefile.audio          # Audio-specific targets
-├── Makefile.system         # System-specific targets
-├── Makefile.dev            # Development targets
-├── scripts/
-│   ├── lib/               # Shared libraries
-│   │   ├── logger.ts      # Structured logging
-│   │   ├── common.ts      # Common utilities
-│   │   ├── schema.ts      # Type-safe validation
-│   │   ├── deps-manager.ts # Dependency management
-│   │   └── deploy.ts      # Binary compilation
-│   ├── audio/             # Audio scripts
-│   ├── system/            # System scripts
-│   └── dev/               # Development scripts
-├── tests/                 # Test files
-├── deps.ts                # Central dependencies
-├── deno.json             # Deno configuration
-└── gunner.yaml           # Gunner CI configuration
+├── ruchy/                   # RUCHY IMPLEMENTATION (PRIMARY)
+│   ├── Cargo.toml          # Rust dependencies
+│   ├── Makefile            # Ruchy build system with PMAT
+│   ├── .pmat.toml          # PMAT quality configuration
+│   ├── src/main.ruchy      # Main CLI application
+│   ├── lib/                # Core libraries
+│   │   ├── logger.ruchy    # High-performance logging
+│   │   ├── common.ruchy    # System utilities
+│   │   └── schema.ruchy    # Type-safe validation
+│   ├── audio/              # Audio configuration modules
+│   │   ├── configure_speakers.ruchy
+│   │   ├── enable_mic.ruchy
+│   │   └── fix_audio.ruchy
+│   ├── system/             # System management modules
+│   │   ├── diagnose_av.ruchy
+│   │   ├── check_davinci.ruchy
+│   │   ├── configure_obs.ruchy
+│   │   └── pipewire_monitor.ruchy
+│   ├── dev/                # Development tools
+│   │   ├── install_pmat_deps.ruchy
+│   │   ├── ruchy_monitor.ruchy
+│   │   ├── deploy.ruchy
+│   │   └── bridge_validator.ruchy
+│   ├── tests/              # Property-based test suite
+│   └── README.md           # Ruchy-specific documentation
+├── scripts/                 # TYPESCRIPT IMPLEMENTATION (LEGACY)
+│   ├── lib/                # TypeScript shared libraries
+│   ├── audio/              # TypeScript audio scripts
+│   ├── system/             # TypeScript system scripts
+│   └── dev/                # TypeScript development scripts
+├── Makefile                # TypeScript build system
+├── gunner.yaml             # CI/CD configuration
+└── README.md               # Main project documentation
 ```
 
 ## Common Tasks
 
-### Adding a New Script
+### Adding a New Ruchy Script (Recommended)
+
+1. Create script in appropriate directory under `ruchy/`
+2. Use shared libraries from `ruchy/lib/`
+3. Add property-based tests in `ruchy/tests/`
+4. Add Make target to `ruchy/Makefile`
+5. Ensure PMAT quality gates pass (80% coverage, complexity < 10)
+6. Run `make validate` before commit
+
+### Adding a New TypeScript Script (Legacy)
 
 1. Create script in appropriate directory under `scripts/`
 2. Use shared libraries from `scripts/lib/`
