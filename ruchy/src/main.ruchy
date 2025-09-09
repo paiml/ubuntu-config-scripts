@@ -1,0 +1,123 @@
+// Main entry point for Ubuntu Config Scripts
+use clap::{Parser, Subcommand}
+use std::process::exit
+
+mod lib;
+mod audio;
+mod system;
+mod dev;
+
+#[derive(Parser)]
+#[command(name = "ubuntu-config")]
+#[command(about = "Ubuntu system configuration and management", long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+    
+    #[arg(short, long)]
+    verbose: bool,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Audio system configuration
+    Audio {
+        #[command(subcommand)]
+        action: AudioCommands,
+    },
+    /// System configuration and management
+    System {
+        #[command(subcommand)]
+        action: SystemCommands,
+    },
+    /// Development tools and utilities
+    Dev {
+        #[command(subcommand)]
+        action: DevCommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum AudioCommands {
+    /// Configure external speakers
+    ConfigureSpeakers,
+    /// Enable microphone
+    EnableMic,
+    /// Fix audio issues
+    FixAudio,
+}
+
+#[derive(Subcommand)]
+enum SystemCommands {
+    /// Diagnose audio/video issues
+    DiagnoseAV,
+    /// Check DaVinci Resolve version
+    CheckDavinci,
+    /// Refresh KDE desktop
+    RefreshKDE,
+    /// Configure OBS Studio
+    ConfigureOBS,
+    /// Launch DaVinci Resolve
+    LaunchDavinci,
+    /// Create PipeWire monitor service
+    PipewireMonitor,
+}
+
+#[derive(Subcommand)]
+enum DevCommands {
+    /// Install PMAT dependencies
+    InstallPmatDeps,
+    /// Monitor Ruchy version
+    RuchyMonitor,
+    /// Deploy scripts
+    Deploy,
+    /// Validate bridge configuration
+    BridgeValidator,
+}
+
+fun main() {
+    let cli = Cli::parse();
+    
+    // Set log level based on verbose flag
+    if cli.verbose {
+        lib::logger::LOGGER.set_level(lib::logger::LogLevel::Debug);
+    }
+    
+    let result = match cli.command {
+        Commands::Audio { action } => {
+            match action {
+                AudioCommands::ConfigureSpeakers => audio::configure_speakers::run(),
+                AudioCommands::EnableMic => audio::enable_mic::run(),
+                AudioCommands::FixAudio => audio::fix_audio::run(),
+            }
+        }
+        Commands::System { action } => {
+            match action {
+                SystemCommands::DiagnoseAV => system::diagnose_av::run(),
+                SystemCommands::CheckDavinci => system::check_davinci::run(),
+                SystemCommands::RefreshKDE => system::refresh_kde::run(),
+                SystemCommands::ConfigureOBS => system::configure_obs::run(),
+                SystemCommands::LaunchDavinci => system::launch_davinci::run(),
+                SystemCommands::PipewireMonitor => system::pipewire_monitor::run(),
+            }
+        }
+        Commands::Dev { action } => {
+            match action {
+                DevCommands::InstallPmatDeps => dev::install_pmat_deps::run(),
+                DevCommands::RuchyMonitor => dev::ruchy_monitor::run(),
+                DevCommands::Deploy => dev::deploy::run(),
+                DevCommands::BridgeValidator => dev::bridge_validator::run(),
+            }
+        }
+    };
+    
+    match result {
+        Ok(()) => {
+            lib::logger::success("Command completed successfully");
+        }
+        Err(e) => {
+            lib::logger::error(&format!("Command failed: {}", e));
+            exit(1);
+        }
+    }
+}

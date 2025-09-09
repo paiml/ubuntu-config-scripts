@@ -1,0 +1,358 @@
+// Type-safe schema validation for Ruchy
+use std::collections::HashMap
+use std::fmt::{Display, Debug}
+use serde::{Serialize, Deserialize}
+use regex::Regex
+
+// Base trait for all schemas
+pub trait Schema: Clone {
+    type Output;
+    
+    fun parse(&self, value: &dyn std::any::Any) -> Result<Self::Output, String>;
+    fun validate(&self, value: &dyn std::any::Any) -> bool {
+        self.parse(value).is_ok()
+    }
+}
+
+// String schema with validation rules
+#[derive(Clone, Debug)]
+pub struct StringSchema {
+    min_length: Option<usize>,
+    max_length: Option<usize>,
+    pattern: Option<Regex>,
+}
+
+impl StringSchema {
+    pub fun new() -> Self {
+        StringSchema {
+            min_length: None,
+            max_length: None,
+            pattern: None,
+        }
+    }
+    
+    pub fun min(mut self, length: usize) -> Self {
+        self.min_length = Some(length);
+        self
+    }
+    
+    pub fun max(mut self, length: usize) -> Self {
+        self.max_length = Some(length);
+        self
+    }
+    
+    pub fun regex(mut self, pattern: &str) -> Result<Self, String> {
+        match Regex::new(pattern) {
+            Ok(re) => {
+                self.pattern = Some(re);
+                Ok(self)
+            }
+            Err(e) => Err(format!("Invalid regex pattern: {}", e))
+        }
+    }
+}
+
+impl Schema for StringSchema {
+    type Output = String;
+    
+    fun parse(&self, value: &dyn std::any::Any) -> Result<String, String> {
+        if let Some(s) = value.downcast_ref::<String>() {
+            if let Some(min) = self.min_length {
+                if s.len() < min {
+                    return Err(format!("String must be at least {} characters", min));
+                }
+            }
+            
+            if let Some(max) = self.max_length {
+                if s.len() > max {
+                    return Err(format!("String must be at most {} characters", max));
+                }
+            }
+            
+            if let Some(ref pattern) = self.pattern {
+                if !pattern.is_match(s) {
+                    return Err(format!("String does not match pattern"));
+                }
+            }
+            
+            Ok(s.clone())
+        } else if let Some(s) = value.downcast_ref::<&str>() {
+            self.parse(&s.to_string() as &dyn std::any::Any)
+        } else {
+            Err("Expected string".to_string())
+        }
+    }
+}
+
+// Number schema with validation rules
+#[derive(Clone, Debug)]
+pub struct NumberSchema {
+    minimum: Option<f64>,
+    maximum: Option<f64>,
+    is_integer: bool,
+}
+
+impl NumberSchema {
+    pub fun new() -> Self {
+        NumberSchema {
+            minimum: None,
+            maximum: None,
+            is_integer: false,
+        }
+    }
+    
+    pub fun min(mut self, value: f64) -> Self {
+        self.minimum = Some(value);
+        self
+    }
+    
+    pub fun max(mut self, value: f64) -> Self {
+        self.maximum = Some(value);
+        self
+    }
+    
+    pub fun int(mut self) -> Self {
+        self.is_integer = true;
+        self
+    }
+}
+
+impl Schema for NumberSchema {
+    type Output = f64;
+    
+    fun parse(&self, value: &dyn std::any::Any) -> Result<f64, String> {
+        let num = if let Some(n) = value.downcast_ref::<f64>() {
+            *n
+        } else if let Some(n) = value.downcast_ref::<f32>() {
+            *n as f64
+        } else if let Some(n) = value.downcast_ref::<i64>() {
+            *n as f64
+        } else if let Some(n) = value.downcast_ref::<i32>() {
+            *n as f64
+        } else if let Some(n) = value.downcast_ref::<usize>() {
+            *n as f64
+        } else {
+            return Err("Expected number".to_string());
+        };
+        
+        if self.is_integer && num.fract() != 0.0 {
+            return Err("Expected integer".to_string());
+        }
+        
+        if let Some(min) = self.minimum {
+            if num < min {
+                return Err(format!("Number must be at least {}", min));
+            }
+        }
+        
+        if let Some(max) = self.maximum {
+            if num > max {
+                return Err(format!("Number must be at most {}", max));
+            }
+        }
+        
+        Ok(num)
+    }
+}
+
+// Boolean schema
+#[derive(Clone, Debug)]
+pub struct BooleanSchema;
+
+impl BooleanSchema {
+    pub fun new() -> Self {
+        BooleanSchema
+    }
+}
+
+impl Schema for BooleanSchema {
+    type Output = bool;
+    
+    fun parse(&self, value: &dyn std::any::Any) -> Result<bool, String> {
+        if let Some(b) = value.downcast_ref::<bool>() {
+            Ok(*b)
+        } else {
+            Err("Expected boolean".to_string())
+        }
+    }
+}
+
+// Array schema
+#[derive(Clone, Debug)]
+pub struct ArraySchema<T: Schema> {
+    item_schema: T,
+    min_length: Option<usize>,
+    max_length: Option<usize>,
+}
+
+impl<T: Schema> ArraySchema<T> {
+    pub fun new(item_schema: T) -> Self {
+        ArraySchema {
+            item_schema,
+            min_length: None,
+            max_length: None,
+        }
+    }
+    
+    pub fun min(mut self, length: usize) -> Self {
+        self.min_length = Some(length);
+        self
+    }
+    
+    pub fun max(mut self, length: usize) -> Self {
+        self.max_length = Some(length);
+        self
+    }
+}
+
+impl<T: Schema> Schema for ArraySchema<T> {
+    type Output = Vec<T::Output>;
+    
+    fun parse(&self, value: &dyn std::any::Any) -> Result<Vec<T::Output>, String> {
+        if let Some(arr) = value.downcast_ref::<Vec<Box<dyn std::any::Any>>>() {
+            if let Some(min) = self.min_length {
+                if arr.len() < min {
+                    return Err(format!("Array must have at least {} items", min));
+                }
+            }
+            
+            if let Some(max) = self.max_length {
+                if arr.len() > max {
+                    return Err(format!("Array must have at most {} items", max));
+                }
+            }
+            
+            let mut results = Vec::new();
+            for (i, item) in arr.iter().enumerate() {
+                match self.item_schema.parse(item.as_ref()) {
+                    Ok(parsed) => results.push(parsed),
+                    Err(e) => return Err(format!("Invalid item at index {}: {}", i, e)),
+                }
+            }
+            
+            Ok(results)
+        } else {
+            Err("Expected array".to_string())
+        }
+    }
+}
+
+// Object schema for structured data
+#[derive(Clone, Debug)]
+pub struct ObjectSchema {
+    fields: HashMap<String, Box<dyn Schema<Output = Box<dyn std::any::Any>>>>,
+}
+
+impl ObjectSchema {
+    pub fun new() -> Self {
+        ObjectSchema {
+            fields: HashMap::new(),
+        }
+    }
+    
+    pub fun field<T: Schema + 'static>(mut self, name: &str, schema: T) -> Self 
+    where T::Output: 'static {
+        self.fields.insert(name.to_string(), Box::new(WrapperSchema(schema)));
+        self
+    }
+}
+
+// Wrapper to box schema outputs
+struct WrapperSchema<T: Schema>(T);
+
+impl<T: Schema> Clone for WrapperSchema<T> {
+    fun clone(&self) -> Self {
+        WrapperSchema(self.0.clone())
+    }
+}
+
+impl<T: Schema> Schema for WrapperSchema<T> 
+where T::Output: 'static {
+    type Output = Box<dyn std::any::Any>;
+    
+    fun parse(&self, value: &dyn std::any::Any) -> Result<Box<dyn std::any::Any>, String> {
+        self.0.parse(value).map(|v| Box::new(v) as Box<dyn std::any::Any>)
+    }
+}
+
+impl Schema for ObjectSchema {
+    type Output = HashMap<String, Box<dyn std::any::Any>>;
+    
+    fun parse(&self, value: &dyn std::any::Any) -> Result<HashMap<String, Box<dyn std::any::Any>>, String> {
+        if let Some(obj) = value.downcast_ref::<HashMap<String, Box<dyn std::any::Any>>>() {
+            let mut result = HashMap::new();
+            
+            for (key, schema) in &self.fields {
+                if let Some(field_value) = obj.get(key) {
+                    match schema.parse(field_value.as_ref()) {
+                        Ok(parsed) => {
+                            result.insert(key.clone(), parsed);
+                        }
+                        Err(e) => {
+                            return Err(format!("Invalid field '{}': {}", key, e));
+                        }
+                    }
+                } else {
+                    return Err(format!("Missing required field '{}'", key));
+                }
+            }
+            
+            Ok(result)
+        } else {
+            Err("Expected object".to_string())
+        }
+    }
+}
+
+// Optional schema wrapper
+#[derive(Clone, Debug)]
+pub struct OptionalSchema<T: Schema> {
+    inner: T,
+}
+
+impl<T: Schema> OptionalSchema<T> {
+    pub fun new(inner: T) -> Self {
+        OptionalSchema { inner }
+    }
+}
+
+impl<T: Schema> Schema for OptionalSchema<T> {
+    type Output = Option<T::Output>;
+    
+    fun parse(&self, value: &dyn std::any::Any) -> Result<Option<T::Output>, String> {
+        if value.is::<()>() {
+            Ok(None)
+        } else {
+            self.inner.parse(value).map(Some)
+        }
+    }
+}
+
+// Factory functions for ergonomic schema creation
+pub mod z {
+    use super::*;
+    
+    pub fun string() -> StringSchema {
+        StringSchema::new()
+    }
+    
+    pub fun number() -> NumberSchema {
+        NumberSchema::new()
+    }
+    
+    pub fun boolean() -> BooleanSchema {
+        BooleanSchema::new()
+    }
+    
+    pub fun array<T: Schema>(item_schema: T) -> ArraySchema<T> {
+        ArraySchema::new(item_schema)
+    }
+    
+    pub fun object() -> ObjectSchema {
+        ObjectSchema::new()
+    }
+    
+    pub fun optional<T: Schema>(schema: T) -> OptionalSchema<T> {
+        OptionalSchema::new(schema)
+    }
+}
