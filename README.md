@@ -92,6 +92,7 @@ make ruchy-ci             # Full CI pipeline with quality gates
 - 📊 **System Information Collector**: Comprehensive system diagnostics with SQLite storage
 - 💾 **Disk Management**: Analyze disk usage, clean build artifacts, free up space
 - 🧹 **Smart Cleanup**: Safe cleanup of Rust targets, caches, and system files
+- 🦀 **Rust Development Optimization**: Complete system optimization for Rust development workloads
 - 🛠️ **Development Tools**: Deploy scripts as standalone binaries
 - 🔄 **Auto-Update Deno**: Automatically keeps Deno up to date
 - 📦 **Binary Deployment**: Compile scripts to self-contained executables
@@ -250,6 +251,19 @@ make system-obs-launch       # Launch OBS with screencast profile
 # Audio format conversion for DaVinci (Linux audio codec fix)
 # DaVinci on Linux requires PCM audio, not AAC
 ffmpeg -i input.mp4 -c:v copy -c:a pcm_s24le output.mov
+
+# Rust Development Optimization
+make system-rust-optimize    # Complete Rust development system optimization
+# This comprehensive tool optimizes your system for heavy Rust development:
+# - Upgrades swap from 32GB to 64GB
+# - Configures 16GB ZRAM compressed swap (priority 100)
+# - Installs mold linker (3-5x faster than default)
+# - Installs development tools (clang, htop, ncdu)
+# - Optimizes IntelliJ IDEA memory settings (8GB heap)
+# - Creates optimized Cargo configuration with sccache
+# - Tunes system memory parameters (swappiness=10)
+# - Prevents OOM crashes during coverage/testing
+# Requires sudo access and interactive confirmation
 
 # Disk usage analysis and cleanup
 make system-disk-usage       # Analyze disk usage
