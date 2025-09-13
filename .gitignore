@@ -51,3 +51,6 @@ node_modules/
 config.local.json
 dist/
 target/
+
+# System-specific configuration
+lambda-labs-box.md

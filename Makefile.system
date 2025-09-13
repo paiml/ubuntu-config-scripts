@@ -95,6 +95,34 @@ system-update-deno-force: ## Force update Deno to latest version
 	fi
 	@deno run --allow-net --allow-run --allow-env scripts/system/update-deno.ts --force
 
+# Rust development optimization
+system-rust-optimize: ## Optimize system for Rust development (64GB swap, ZRAM, tools)
+	@echo "$(CYAN)🦀 Optimizing system for Rust development...$(NC)"
+	@echo "$(YELLOW)⚠️  This script requires sudo privileges$(NC)"
+	@echo "$(YELLOW)   It will:$(NC)"
+	@echo "$(YELLOW)   - Increase swap to 64GB$(NC)"
+	@echo "$(YELLOW)   - Configure ZRAM compressed swap (16GB)$(NC)"
+	@echo "$(YELLOW)   - Install mold linker and development tools$(NC)"
+	@echo "$(YELLOW)   - Configure IntelliJ IDEA memory settings$(NC)"
+	@echo "$(YELLOW)   - Optimize system memory parameters$(NC)"
+	@printf "Continue? (y/N) "; \
+	read REPLY; \
+	case "$$REPLY" in \
+		[Yy]* ) \
+			if [ -x "/home/$$SUDO_USER/.deno/bin/deno" ]; then \
+				/home/$$SUDO_USER/.deno/bin/deno run --allow-all scripts/system/optimize-rust-dev.ts; \
+			elif [ -x "/usr/local/bin/deno" ]; then \
+				/usr/local/bin/deno run --allow-all scripts/system/optimize-rust-dev.ts; \
+			elif command -v deno >/dev/null 2>&1; then \
+				deno run --allow-all scripts/system/optimize-rust-dev.ts; \
+			else \
+				echo "$(RED)Error: Deno not found. Please install Deno first.$(NC)"; \
+				exit 1; \
+			fi ;; \
+		* ) \
+			echo "$(RED)Cancelled$(NC)" ;; \
+	esac
+
 # DaVinci Resolve configuration
 system-davinci: ## Configure NVIDIA drivers and CUDA for DaVinci Resolve
 	@echo "$(CYAN)🎬 Configuring DaVinci Resolve CUDA environment...$(NC)"

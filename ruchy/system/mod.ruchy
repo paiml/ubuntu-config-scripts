@@ -5,3 +5,4 @@ pub mod refresh_kde;
 pub mod configure_obs;
 pub mod launch_davinci;
 pub mod pipewire_monitor;
+pub mod optimize_rust_dev;

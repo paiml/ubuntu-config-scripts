@@ -25,6 +25,9 @@ tempfile = "3.8"
 proptest = "1.4"
 quickcheck = "1.0"
 criterion = "0.5"
+mockall = "0.12"
+
+[workspace]
 
 [profile.release]
 opt-level = 3
