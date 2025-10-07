@@ -20,6 +20,7 @@ DENO := $(shell command -v deno 2>/dev/null)
 .PHONY: system-setup-sudo system-sudo-test system-nvidia-upgrade
 .PHONY: system-obs system-obs-install system-obs-high system-obs-audio system-obs-launch
 .PHONY: system-bootstrap system-bootstrap-zero system-bootstrap-ruchy system-fix-apt
+.PHONY: system-setup-runner
 
 system-help: ## Show system script commands
 	@echo "╔══════════════════════════════════════════════════════════════╗"
@@ -573,3 +574,25 @@ system-fix-apt: ## Repair broken APT repositories and package lists
 		exit 1; \
 	fi
 	@$(DENO) run --allow-run --allow-read --allow-write scripts/system/fix-apt.ts
+
+# GitHub Self-Hosted Runner Setup
+system-setup-runner: ## Setup GitHub Actions self-hosted runner (Linux-VM-Noah-MacPro-Intel)
+	@echo "$(CYAN)🏃 Setting up GitHub Actions runner...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@if [ -z "$(GITHUB_REPO_URL)" ]; then \
+		echo "$(RED)❌ GITHUB_REPO_URL environment variable not set$(NC)"; \
+		echo "$(YELLOW)Set it with: export GITHUB_REPO_URL=https://github.com/OWNER/REPO$(NC)"; \
+		exit 1; \
+	fi
+	@if [ -z "$(GITHUB_RUNNER_TOKEN)" ]; then \
+		echo "$(RED)❌ GITHUB_RUNNER_TOKEN environment variable not set$(NC)"; \
+		echo "$(YELLOW)Get token from: $(GITHUB_REPO_URL)/settings/actions/runners/new$(NC)"; \
+		exit 1; \
+	fi
+	@$(DENO) run --allow-all scripts/system/setup-github-runner.ts \
+		--name Linux-VM-Noah-MacPro-Intel \
+		--url $(GITHUB_REPO_URL) \
+		--token $(GITHUB_RUNNER_TOKEN)
