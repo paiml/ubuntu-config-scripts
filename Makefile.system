@@ -19,7 +19,7 @@ DENO := $(shell command -v deno 2>/dev/null)
 .PHONY: system-davinci system-davinci-dry system-davinci-check system-davinci-fix
 .PHONY: system-setup-sudo system-sudo-test system-nvidia-upgrade
 .PHONY: system-obs system-obs-install system-obs-high system-obs-audio system-obs-launch
-.PHONY: system-bootstrap system-bootstrap-zero system-bootstrap-ruchy
+.PHONY: system-bootstrap system-bootstrap-zero system-bootstrap-ruchy system-fix-apt
 
 system-help: ## Show system script commands
 	@echo "╔══════════════════════════════════════════════════════════════╗"
@@ -564,3 +564,12 @@ system-kde-refresh-force: ## Force refresh KDE desktop even if not running KDE
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/refresh-kde-desktop.ts --force
+
+# APT Repository Repair
+system-fix-apt: ## Repair broken APT repositories and package lists
+	@echo "$(CYAN)🔧 Repairing APT repositories...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@$(DENO) run --allow-run --allow-read --allow-write scripts/system/fix-apt.ts

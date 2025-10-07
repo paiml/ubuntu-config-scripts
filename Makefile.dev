@@ -20,7 +20,7 @@ DIST_DIR := dist
 # Phony targets
 .PHONY: dev-help dev-all dev-deploy dev-deploy-audio dev-deploy-system dev-deploy-package dev-deploy-list dev-clean-dist
 .PHONY: dev-deps dev-deps-list dev-deps-outdated dev-deps-update dev-deps-lock dev-deps-verify dev-deps-clean
-.PHONY: dev-pmat-deps
+.PHONY: dev-pmat-deps dev-install-vim
 .PHONY: bridge-transform bridge-transform-all bridge-validate bridge-validate-all bridge-build bridge-test bridge-clean bridge-status
 .PHONY: ruchy-monitor ruchy-monitor-check ruchy-monitor-report
 
@@ -28,6 +28,11 @@ DIST_DIR := dist
 dev-pmat-deps: ## Check PMAT installation dependencies
 	@echo "$(CYAN)🔍 Checking PMAT dependencies...$(NC)"
 	@deno run --allow-run --allow-read scripts/dev/install-pmat-deps.ts
+
+# Vim Installation
+dev-install-vim: ## Install vim editor
+	@echo "$(CYAN)📝 Installing vim...$(NC)"
+	@deno run --allow-run --allow-read scripts/dev/install-vim.ts
 
 dev-help: ## Show development script commands
 	@echo "╔══════════════════════════════════════════════════════════════╗"
