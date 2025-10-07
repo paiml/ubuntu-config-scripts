@@ -299,6 +299,33 @@ export class UnionSchema<T extends readonly unknown[]>
   }
 }
 
+export class LiteralSchema<T extends string | number | boolean>
+  extends Schema<T> {
+  constructor(private value: T) {
+    super();
+  }
+
+  parse(input: unknown): T {
+    const result = this.safeParse(input);
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+    return result.data;
+  }
+
+  safeParse(
+    input: unknown,
+  ): { success: true; data: T } | { success: false; error: string } {
+    if (input === this.value) {
+      return { success: true, data: this.value };
+    }
+    return {
+      success: false,
+      error: `Expected literal value ${JSON.stringify(this.value)}`,
+    };
+  }
+}
+
 // Factory functions
 export const z = {
   string: () => new StringSchema(),
@@ -312,6 +339,8 @@ export const z = {
   union: <T extends readonly unknown[]>(
     ...schemas: { [K in keyof T]: Schema<T[K]> }
   ) => new UnionSchema(schemas),
+  literal: <T extends string | number | boolean>(value: T) =>
+    new LiteralSchema(value),
 };
 
 // Example usage with type inference

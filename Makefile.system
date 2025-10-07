@@ -576,6 +576,14 @@ system-fix-apt: ## Repair broken APT repositories and package lists
 	@$(DENO) run --allow-run --allow-read --allow-write scripts/system/fix-apt.ts
 
 # GitHub Self-Hosted Runner Setup
+system-configure-runner: ## Configure system for GitHub Actions self-hosted runner
+	@echo "$(CYAN)🔧 Configuring system for self-hosted runner...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@$(DENO) run --allow-all scripts/system/configure-self-hosted-runner.ts
+
 system-setup-runner: ## Setup GitHub Actions self-hosted runner (Linux-VM-Noah-MacPro-Intel)
 	@echo "$(CYAN)🏃 Setting up GitHub Actions runner...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
