@@ -9,6 +9,8 @@
 
 A collection of system configuration and management tools for Ubuntu, available in both TypeScript (legacy) and Ruchy (modern, high-performance) implementations.
 
+**Latest:** Self-hosted runner configuration system with 82% test coverage ✅
+
 ## 🦀 Ruchy Port - Complete!
 
 This repository features a complete port to [Ruchy](https://github.com/paiml/ruchy), a modern systems programming language. The Ruchy implementation provides significant performance improvements and enhanced reliability through comprehensive PMAT quality gates.
