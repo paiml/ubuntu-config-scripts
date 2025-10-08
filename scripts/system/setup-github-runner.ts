@@ -42,7 +42,7 @@ export function detectArchitecture(): string {
 /**
  * Get latest GitHub Actions runner version
  */
-export async function getLatestRunnerVersion(): Promise<RunnerInfo> {
+export function getLatestRunnerVersion(): RunnerInfo {
   const arch = detectArchitecture();
 
   // For now, use a known stable version
@@ -212,7 +212,6 @@ async function configureRunner(
  * Install runner as a systemd service
  * Currently disabled - provided for future use
  */
-// deno-lint-ignore require-await
 export async function installService(workDir: string): Promise<boolean> {
   // Marked as unused for now - will be used when service installation is enabled
   logger.info("🔧 Installing runner as systemd service...");

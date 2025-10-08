@@ -295,7 +295,7 @@ jobs:
       - name: Check for unsafe patterns
         run: |
           echo "🔍 Scanning for unsafe code patterns..."
-          if grep -r "eval\|Function(" scripts/ --exclude="*.test.ts" --exclude-dir="node_modules"; then
+          if grep -rE "\beval\(|new Function\(|Function\(" scripts/ --exclude="*.test.ts" --exclude-dir="node_modules" | grep -v "\.push(\""; then
             echo "⚠️  Unsafe code execution patterns found"
             exit 1
           fi

@@ -30,7 +30,7 @@ interface OptimizationResult {
   intellijConfigured: boolean;
 }
 
-async function checkRoot(): Promise<void> {
+function checkRoot(): void {
   requireRoot();
 }
 
@@ -420,7 +420,7 @@ async function main(): Promise<void> {
 
   try {
     // Check if running as root
-    await checkRoot();
+    checkRoot();
 
     const result: OptimizationResult = {
       swapConfigured: false,
