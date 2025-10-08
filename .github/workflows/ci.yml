@@ -18,8 +18,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Deno
+      - name: Setup build tools
         run: |
+          # Install make if not present
+          if ! command -v make &> /dev/null; then
+            echo "Installing make..."
+            sudo apt update -qq && sudo apt install -y make
+          fi
+
           # Install Deno manually by downloading the binary directly
           if ! command -v deno &> /dev/null; then
             echo "Installing Deno..."
@@ -27,7 +33,7 @@ jobs:
             # Download latest Deno binary for Linux x64
             curl -fsSL https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip || \
             wget -O /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip
-            
+
             # Try to extract with available tools
             if command -v unzip &> /dev/null; then
               unzip -o /tmp/deno.zip -d $HOME/.deno/bin
@@ -38,7 +44,7 @@ jobs:
               echo "Error: No tool available to extract Deno"
               exit 1
             fi
-            
+
             chmod +x $HOME/.deno/bin/deno
             echo "$HOME/.deno/bin" >> $GITHUB_PATH
             export PATH="$HOME/.deno/bin:$PATH"
@@ -59,8 +65,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Deno
+      - name: Setup build tools
         run: |
+          # Install make if not present
+          if ! command -v make &> /dev/null; then
+            echo "Installing make..."
+            sudo apt update -qq && sudo apt install -y make
+          fi
+
           # Install Deno manually by downloading the binary directly
           if ! command -v deno &> /dev/null; then
             echo "Installing Deno..."
@@ -68,7 +80,7 @@ jobs:
             # Download latest Deno binary for Linux x64
             curl -fsSL https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip || \
             wget -O /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip
-            
+
             # Try to extract with available tools
             if command -v unzip &> /dev/null; then
               unzip -o /tmp/deno.zip -d $HOME/.deno/bin
@@ -79,7 +91,7 @@ jobs:
               echo "Error: No tool available to extract Deno"
               exit 1
             fi
-            
+
             chmod +x $HOME/.deno/bin/deno
             echo "$HOME/.deno/bin" >> $GITHUB_PATH
             export PATH="$HOME/.deno/bin:$PATH"
@@ -107,8 +119,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Deno
+      - name: Setup build tools
         run: |
+          # Install make if not present
+          if ! command -v make &> /dev/null; then
+            echo "Installing make..."
+            sudo apt update -qq && sudo apt install -y make
+          fi
+
           # Install Deno manually by downloading the binary directly
           if ! command -v deno &> /dev/null; then
             echo "Installing Deno..."
@@ -116,7 +134,7 @@ jobs:
             # Download latest Deno binary for Linux x64
             curl -fsSL https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip || \
             wget -O /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip
-            
+
             # Try to extract with available tools
             if command -v unzip &> /dev/null; then
               unzip -o /tmp/deno.zip -d $HOME/.deno/bin
@@ -127,7 +145,7 @@ jobs:
               echo "Error: No tool available to extract Deno"
               exit 1
             fi
-            
+
             chmod +x $HOME/.deno/bin/deno
             echo "$HOME/.deno/bin" >> $GITHUB_PATH
             export PATH="$HOME/.deno/bin:$PATH"
@@ -156,8 +174,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Deno
+      - name: Setup build tools
         run: |
+          # Install make if not present
+          if ! command -v make &> /dev/null; then
+            echo "Installing make..."
+            sudo apt update -qq && sudo apt install -y make
+          fi
+
           # Install Deno manually by downloading the binary directly
           if ! command -v deno &> /dev/null; then
             echo "Installing Deno..."
@@ -165,7 +189,7 @@ jobs:
             # Download latest Deno binary for Linux x64
             curl -fsSL https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip || \
             wget -O /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip
-            
+
             # Try to extract with available tools
             if command -v unzip &> /dev/null; then
               unzip -o /tmp/deno.zip -d $HOME/.deno/bin
@@ -176,7 +200,7 @@ jobs:
               echo "Error: No tool available to extract Deno"
               exit 1
             fi
-            
+
             chmod +x $HOME/.deno/bin/deno
             echo "$HOME/.deno/bin" >> $GITHUB_PATH
             export PATH="$HOME/.deno/bin:$PATH"
@@ -201,8 +225,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Deno
+      - name: Setup build tools
         run: |
+          # Install make if not present
+          if ! command -v make &> /dev/null; then
+            echo "Installing make..."
+            sudo apt update -qq && sudo apt install -y make
+          fi
+
           # Install Deno manually by downloading the binary directly
           if ! command -v deno &> /dev/null; then
             echo "Installing Deno..."
@@ -210,7 +240,7 @@ jobs:
             # Download latest Deno binary for Linux x64
             curl -fsSL https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip || \
             wget -O /tmp/deno.zip https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip
-            
+
             # Try to extract with available tools
             if command -v unzip &> /dev/null; then
               unzip -o /tmp/deno.zip -d $HOME/.deno/bin
@@ -221,7 +251,7 @@ jobs:
               echo "Error: No tool available to extract Deno"
               exit 1
             fi
-            
+
             chmod +x $HOME/.deno/bin/deno
             echo "$HOME/.deno/bin" >> $GITHUB_PATH
             export PATH="$HOME/.deno/bin:$PATH"
