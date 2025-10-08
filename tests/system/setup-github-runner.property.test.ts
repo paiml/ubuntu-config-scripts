@@ -3,8 +3,8 @@ import { fc } from "../../deps.ts";
 import {
   detectArchitecture,
   getLatestRunnerVersion,
-  validateConfig,
   isRunnerInstalled,
+  validateConfig,
 } from "../../scripts/system/setup-github-runner.ts";
 
 Deno.test("GitHub runner setup property tests", async (t) => {
@@ -41,7 +41,9 @@ Deno.test("GitHub runner setup property tests", async (t) => {
     // Download URL should be valid
     assertEquals(typeof info.downloadUrl, "string");
     assertEquals(
-      info.downloadUrl.startsWith("https://github.com/actions/runner/releases/"),
+      info.downloadUrl.startsWith(
+        "https://github.com/actions/runner/releases/",
+      ),
       true,
       "Download URL should point to GitHub releases",
     );
@@ -76,7 +78,11 @@ Deno.test("GitHub runner setup property tests", async (t) => {
       token: "test-token",
     };
 
-    assertEquals(validateConfig(config), false, "Empty name should be rejected");
+    assertEquals(
+      validateConfig(config),
+      false,
+      "Empty name should be rejected",
+    );
   });
 
   await t.step("validateConfig rejects invalid URL", () => {
@@ -109,7 +115,11 @@ Deno.test("GitHub runner setup property tests", async (t) => {
       token: "",
     };
 
-    assertEquals(validateConfig(config), false, "Empty token should be rejected");
+    assertEquals(
+      validateConfig(config),
+      false,
+      "Empty token should be rejected",
+    );
   });
 
   await t.step("validateConfig accepts valid configuration", () => {
@@ -119,7 +129,11 @@ Deno.test("GitHub runner setup property tests", async (t) => {
       token: "test-token-12345",
     };
 
-    assertEquals(validateConfig(config), true, "Valid config should be accepted");
+    assertEquals(
+      validateConfig(config),
+      true,
+      "Valid config should be accepted",
+    );
   });
 
   await t.step("runner name validation properties", () => {
@@ -217,21 +231,24 @@ Deno.test("GitHub runner file operation property tests", {
   permissions: { read: true },
   ignore: true, // Ignore in CI to avoid file system issues
 }, async (t) => {
-  await t.step("isRunnerInstalled handles non-existent directories", async () => {
-    const nonExistentPaths = [
-      "/tmp/nonexistent-runner-test",
-      "/tmp/another-nonexistent-path",
-    ];
+  await t.step(
+    "isRunnerInstalled handles non-existent directories",
+    async () => {
+      const nonExistentPaths = [
+        "/tmp/nonexistent-runner-test",
+        "/tmp/another-nonexistent-path",
+      ];
 
-    for (const path of nonExistentPaths) {
-      const installed = await isRunnerInstalled(path);
-      assertEquals(
-        installed,
-        false,
-        "Non-existent directory should return false",
-      );
-    }
-  });
+      for (const path of nonExistentPaths) {
+        const installed = await isRunnerInstalled(path);
+        assertEquals(
+          installed,
+          false,
+          "Non-existent directory should return false",
+        );
+      }
+    },
+  );
 });
 
 // Property tests for configuration invariants

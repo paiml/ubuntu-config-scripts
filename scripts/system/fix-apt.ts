@@ -148,7 +148,14 @@ async function fixApt(): Promise<boolean> {
     },
     {
       name: "Upgrade packages (skip broken)",
-      command: ["sudo", "apt-get", "upgrade", "-y", "--fix-missing", "--allow-downgrades"],
+      command: [
+        "sudo",
+        "apt-get",
+        "upgrade",
+        "-y",
+        "--fix-missing",
+        "--allow-downgrades",
+      ],
       critical: false,
       description: "Upgrading packages (will skip unavailable packages)...",
     },
@@ -179,22 +186,32 @@ async function fixApt(): Promise<boolean> {
     logger.success("✅ APT is now healthy!");
     return true;
   } else {
-    logger.warn("⚠️  APT may still have some issues, but basic functionality should work");
+    logger.warn(
+      "⚠️  APT may still have some issues, but basic functionality should work",
+    );
     logger.info("You can continue to use apt for new installations");
     return true;
   }
 }
 
 async function main() {
-  console.log("╔══════════════════════════════════════════════════════════════╗");
-  console.log("║              🔧 APT Repository Repair Tool                   ║");
-  console.log("╚══════════════════════════════════════════════════════════════╝");
+  console.log(
+    "╔══════════════════════════════════════════════════════════════╗",
+  );
+  console.log(
+    "║              🔧 APT Repository Repair Tool                   ║",
+  );
+  console.log(
+    "╚══════════════════════════════════════════════════════════════╝",
+  );
   console.log("");
 
   const success = await fixApt();
 
   console.log("");
-  console.log("════════════════════════════════════════════════════════════════");
+  console.log(
+    "════════════════════════════════════════════════════════════════",
+  );
 
   if (success) {
     logger.success("🎉 APT repair completed successfully!");

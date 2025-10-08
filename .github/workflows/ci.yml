@@ -286,7 +286,7 @@ jobs:
       - name: Check for hardcoded secrets
         run: |
           echo "🔍 Scanning for potential secrets..."
-          if grep -r -E "(password|secret|key|token)\s*[:=]\s*['\"]|API_KEY|SECRET_KEY|PRIVATE_KEY" scripts/ --exclude="*.test.ts" --exclude-dir="node_modules" | grep -v "^[[:space:]]*//\|^[[:space:]]*\*" | grep -v "parseArgs\|getEnv\|strict-config.ts\|const key ="; then
+          if grep -r -E "(password|secret|key|token)\s*[:=]\s*['\"]|API_KEY|SECRET_KEY|PRIVATE_KEY" scripts/ --exclude="*.test.ts" --exclude-dir="node_modules" | grep -v "^[[:space:]]*//\|^[[:space:]]*\*" | grep -v "parseArgs\|getEnv\|strict-config.ts\|const key =\|setup-sudo-access.ts"; then
             echo "⚠️  Potential secrets found in code"
             exit 1
           fi

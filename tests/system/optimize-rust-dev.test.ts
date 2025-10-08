@@ -2,7 +2,10 @@
  * Tests for optimize-rust-dev.ts
  */
 
-import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import {
+  assert,
+  assertEquals,
+} from "https://deno.land/std@0.224.0/assert/mod.ts";
 import fc from "https://esm.sh/fast-check@3.19.0";
 
 // Test swap configuration validation
@@ -27,8 +30,8 @@ Deno.test("SwapConfig validation", () => {
         assert(config.targetSizeGb > 0);
         // Cache pressure should be reasonable
         assert(config.cachePressure >= 0 && config.cachePressure <= 200);
-      }
-    )
+      },
+    ),
   );
 });
 
@@ -41,8 +44,8 @@ Deno.test("Swap size conversion", () => {
         const sizeGb = Number(sizeBytes / (1024n * 1024n * 1024n));
         assert(sizeGb >= 0);
         assert(sizeGb <= 1024); // Max 1TB
-      }
-    )
+      },
+    ),
   );
 });
 
@@ -140,8 +143,8 @@ Deno.test("Sysctl parameter validation", () => {
           assert(key.startsWith("vm."));
           assert(value.length > 0);
         });
-      }
-    )
+      },
+    ),
   );
 });
 
@@ -183,8 +186,8 @@ Deno.test("Backup path generation", () => {
 
         assert(backupPath.endsWith(".backup"));
         assert(backupPath.includes(filename));
-      }
-    )
+      },
+    ),
   );
 });
 
@@ -197,7 +200,7 @@ Deno.test("Error message formats", () => {
     "Failed to install mold",
   ];
 
-  errors.forEach(error => {
+  errors.forEach((error) => {
     assert(error.includes("Failed"));
     assert(error.length > 10);
   });
@@ -216,12 +219,12 @@ Deno.test("Configuration directory paths", () => {
         ];
 
         assertEquals(configDirs.length, 2);
-        configDirs.forEach(dir => {
+        configDirs.forEach((dir) => {
           assert(dir.startsWith(`/home/${username}`));
           assert(dir.includes("JetBrains"));
         });
-      }
-    )
+      },
+    ),
   );
 });
 
@@ -243,10 +246,10 @@ Deno.test("Optimization result combinations", () => {
           intellijConfigured: intellij,
         };
 
-        const configuredCount = Object.values(result).filter(v => v).length;
+        const configuredCount = Object.values(result).filter((v) => v).length;
         assert(configuredCount >= 0 && configuredCount <= 5);
-      }
-    )
+      },
+    ),
   );
 });
 
@@ -280,8 +283,8 @@ Deno.test("Memory size boundaries", () => {
           // Should be capped at maxHeap
           assert(maxHeap <= 32768);
         }
-      }
-    )
+      },
+    ),
   );
 });
 
@@ -323,7 +326,7 @@ Deno.test("Summary output completeness", () => {
   ];
 
   assertEquals(summaryItems.length, 5);
-  summaryItems.forEach(item => {
+  summaryItems.forEach((item) => {
     assert(item.length > 0);
   });
 });

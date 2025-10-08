@@ -199,7 +199,9 @@ export async function installDeno(url: string): Promise<boolean> {
   // Check if already installed
   if (await commandExists("deno")) {
     const versionResult = await runCommand(["deno", "--version"]);
-    logger.info(`Deno already installed: ${versionResult.stdout.split("\n")[0]}`);
+    logger.info(
+      `Deno already installed: ${versionResult.stdout.split("\n")[0]}`,
+    );
     return true;
   }
 
@@ -245,9 +247,9 @@ export async function verifyInstallations(
 
   // Add system packages
   if (config.packages.system) {
-    requiredCommands.push(...config.packages.system.filter((pkg: string) =>
-      !pkg.includes("-")
-    ));
+    requiredCommands.push(
+      ...config.packages.system.filter((pkg: string) => !pkg.includes("-")),
+    );
   }
 
   // Add Rust components
@@ -350,7 +352,9 @@ export async function configureRunner(
   logger.success("✅ Self-hosted runner configuration complete!");
   logger.info(`Next steps:`);
   logger.info(`  1. Set environment variables:`);
-  logger.info(`     export GITHUB_REPO_URL=https://github.com/${config.github.organization}`);
+  logger.info(
+    `     export GITHUB_REPO_URL=https://github.com/${config.github.organization}`,
+  );
   logger.info(`     export GITHUB_RUNNER_TOKEN=<your_token>`);
   logger.info(`  2. Run: make system-setup-runner`);
 

@@ -15,7 +15,11 @@ Deno.test("fix-apt property tests", async (t) => {
           "http://archive.ubuntu.com",
         );
 
-        assertEquals(pattern1, pattern1Again, "US mirror replacement should be idempotent");
+        assertEquals(
+          pattern1,
+          pattern1Again,
+          "US mirror replacement should be idempotent",
+        );
 
         // Test security mirror replacement
         const pattern2 = url.replace(
@@ -27,7 +31,11 @@ Deno.test("fix-apt property tests", async (t) => {
           "http://archive.ubuntu.com",
         );
 
-        assertEquals(pattern2, pattern2Again, "Security mirror replacement should be idempotent");
+        assertEquals(
+          pattern2,
+          pattern2Again,
+          "Security mirror replacement should be idempotent",
+        );
       }),
     );
   });
@@ -100,7 +108,14 @@ Deno.test("fix-apt property tests", async (t) => {
       ["sudo", "apt-get", "update", "--fix-missing"],
       ["sudo", "apt-get", "install", "-f", "-y"],
       ["sudo", "dpkg", "--configure", "-a"],
-      ["sudo", "apt-get", "upgrade", "-y", "--fix-missing", "--allow-downgrades"],
+      [
+        "sudo",
+        "apt-get",
+        "upgrade",
+        "-y",
+        "--fix-missing",
+        "--allow-downgrades",
+      ],
       ["sudo", "apt-get", "autoremove", "-y"],
       ["sudo", "apt-get", "check"],
     ];
@@ -178,8 +193,16 @@ Deno.test("fix-apt property tests", async (t) => {
     for (const step of mockSteps) {
       // Each step must have all required properties
       assertEquals(typeof step.name, "string", "name should be string");
-      assertEquals(Array.isArray(step.command), true, "command should be array");
-      assertEquals(typeof step.critical, "boolean", "critical should be boolean");
+      assertEquals(
+        Array.isArray(step.command),
+        true,
+        "command should be array",
+      );
+      assertEquals(
+        typeof step.critical,
+        "boolean",
+        "critical should be boolean",
+      );
       assertEquals(
         typeof step.description,
         "string",
@@ -195,7 +218,11 @@ Deno.test("fix-apt property tests", async (t) => {
       );
 
       // Command should not be empty
-      assertEquals(step.command.length > 0, true, "command should not be empty");
+      assertEquals(
+        step.command.length > 0,
+        true,
+        "command should not be empty",
+      );
     }
   });
 });
@@ -251,7 +278,11 @@ Deno.test("fix-apt integration property tests", async (t) => {
 
     for (const pattern of patterns) {
       // Should start with s and end with g
-      assertEquals(pattern.startsWith("s|"), true, "Pattern should start with s|");
+      assertEquals(
+        pattern.startsWith("s|"),
+        true,
+        "Pattern should start with s|",
+      );
       assertEquals(pattern.endsWith("|g"), true, "Pattern should end with |g");
 
       // Should have exactly 3 pipe characters (s|search|replace|flags)

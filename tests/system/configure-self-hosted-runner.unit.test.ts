@@ -8,15 +8,15 @@
 import { assertEquals, assertExists } from "../../deps.ts";
 import {
   cleanCache,
+  configureRunner,
   installAptPackages,
   installDeno,
   installRust,
   loadConfig,
-  updateSystem,
-  verifyInstallations,
-  configureRunner,
   main,
   type RunnerConfig,
+  updateSystem,
+  verifyInstallations,
 } from "../../scripts/system/configure-self-hosted-runner.ts";
 
 // Test updateSystem function

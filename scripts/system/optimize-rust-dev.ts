@@ -6,7 +6,7 @@
  */
 
 import { Logger } from "../lib/logger.ts";
-import { runCommand, commandExists, requireRoot } from "../lib/common.ts";
+import { commandExists, requireRoot, runCommand } from "../lib/common.ts";
 import { z } from "../lib/schema.ts";
 import * as fs from "https://deno.land/std@0.224.0/fs/mod.ts";
 import * as path from "https://deno.land/std@0.224.0/path/mod.ts";
@@ -36,7 +36,12 @@ async function checkRoot(): Promise<void> {
 
 async function getCurrentSwapSize(): Promise<number> {
   try {
-    const result = await runCommand(["swapon", "--show", "--bytes", "--noheadings"]);
+    const result = await runCommand([
+      "swapon",
+      "--show",
+      "--bytes",
+      "--noheadings",
+    ]);
     if (!result.success || !result.stdout) return 0;
 
     const lines = result.stdout.trim().split("\n");
@@ -54,7 +59,9 @@ async function getCurrentSwapSize(): Promise<number> {
 }
 
 async function configureSwap(config: SwapConfig): Promise<boolean> {
-  logger.info(`Configuring swap: ${config.currentSizeGb}GB -> ${config.targetSizeGb}GB`);
+  logger.info(
+    `Configuring swap: ${config.currentSizeGb}GB -> ${config.targetSizeGb}GB`,
+  );
 
   if (config.currentSizeGb >= config.targetSizeGb) {
     logger.info("Swap is already adequately sized");
@@ -85,7 +92,10 @@ async function configureSwap(config: SwapConfig): Promise<boolean> {
   const fstab = await Deno.readTextFile("/etc/fstab");
   if (!fstab.includes("/swapfile")) {
     logger.info("Adding swap to /etc/fstab...");
-    await Deno.writeTextFile("/etc/fstab", fstab + "\n/swapfile none swap sw 0 0\n");
+    await Deno.writeTextFile(
+      "/etc/fstab",
+      fstab + "\n/swapfile none swap sw 0 0\n",
+    );
   }
 
   logger.success(`Swap configured: ${config.targetSizeGb}GB`);
@@ -107,9 +117,15 @@ async function configureSysctl(config: SwapConfig): Promise<boolean> {
     await runCommand(["sysctl", `${key}=${value}`]);
 
     // Make permanent
-    const sysctlConf = await Deno.readTextFile("/etc/sysctl.conf").catch(() => "");
+    const sysctlConf = await Deno.readTextFile("/etc/sysctl.conf").catch(() =>
+      ""
+    );
     if (!sysctlConf.includes(key)) {
-      await Deno.writeTextFile("/etc/sysctl.conf", sysctlConf + `\n${key}=${value}\n`, { append: true });
+      await Deno.writeTextFile(
+        "/etc/sysctl.conf",
+        sysctlConf + `\n${key}=${value}\n`,
+        { append: true },
+      );
     }
   }
 
@@ -135,7 +151,8 @@ async function setupZram(): Promise<boolean> {
 
     // Reset zram0 if it's already in use
     if (await fs.exists("/sys/block/zram0/disksize")) {
-      const disksize = await Deno.readTextFile("/sys/block/zram0/disksize").catch(() => "0");
+      const disksize = await Deno.readTextFile("/sys/block/zram0/disksize")
+        .catch(() => "0");
       if (disksize.trim() !== "0") {
         await runCommand(["swapoff", "/dev/zram0"]).catch(() => {});
         await Deno.writeTextFile("/sys/block/zram0/reset", "1");
@@ -172,7 +189,10 @@ ExecStart=/usr/local/bin/setup-zram.sh
 WantedBy=multi-user.target
 `;
 
-    await Deno.writeTextFile("/etc/systemd/system/zram.service", serviceContent);
+    await Deno.writeTextFile(
+      "/etc/systemd/system/zram.service",
+      serviceContent,
+    );
 
     // Create setup script
     const scriptContent = `#!/bin/bash
@@ -271,8 +291,15 @@ async function configureIntelliJ(): Promise<boolean> {
   for (const configDir of configDirs) {
     if (await fs.exists(configDir)) {
       for await (const entry of Deno.readDir(configDir)) {
-        if (entry.name.includes("IntelliJIdea") || entry.name.includes("IdeaIC") || entry.name.includes("IdeaIU")) {
-          const vmoptionsPath = path.join(configDir, entry.name, "idea64.vmoptions");
+        if (
+          entry.name.includes("IntelliJIdea") ||
+          entry.name.includes("IdeaIC") || entry.name.includes("IdeaIU")
+        ) {
+          const vmoptionsPath = path.join(
+            configDir,
+            entry.name,
+            "idea64.vmoptions",
+          );
           logger.info(`Writing IntelliJ config to: ${vmoptionsPath}`);
           await Deno.writeTextFile(vmoptionsPath, vmOptions);
           await runCommand(["chown", `${sudoUser}:${sudoUser}`, vmoptionsPath]);
@@ -286,7 +313,12 @@ async function configureIntelliJ(): Promise<boolean> {
   const globalConfig = `${homeDir}/.config/JetBrains/idea64.vmoptions`;
   await fs.ensureDir(`${homeDir}/.config/JetBrains`);
   await Deno.writeTextFile(globalConfig, vmOptions);
-  await runCommand(["chown", "-R", `${sudoUser}:${sudoUser}`, `${homeDir}/.config/JetBrains`]);
+  await runCommand([
+    "chown",
+    "-R",
+    `${sudoUser}:${sudoUser}`,
+    `${homeDir}/.config/JetBrains`,
+  ]);
 
   if (configured) {
     logger.success("IntelliJ IDEA memory settings configured");

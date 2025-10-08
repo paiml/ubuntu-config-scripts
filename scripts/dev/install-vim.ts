@@ -42,7 +42,13 @@ export async function installVim(): Promise<boolean> {
   }
 
   // Install vim
-  const installResult = await runCommand(["sudo", "apt", "install", "-y", "vim"]);
+  const installResult = await runCommand([
+    "sudo",
+    "apt",
+    "install",
+    "-y",
+    "vim",
+  ]);
   if (!installResult.success) {
     logger.error("Failed to install vim");
     logger.error(installResult.stderr);
@@ -58,7 +64,9 @@ async function main() {
 
   if (await isVimInstalled()) {
     const version = await getVimVersion();
-    logger.success(`Vim is already installed (version ${version ?? "unknown"})`);
+    logger.success(
+      `Vim is already installed (version ${version ?? "unknown"})`,
+    );
     return;
   }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read --allow-write --allow-net --allow-env
 
 import { logger } from "../lib/logger.ts";
-import { runCommand, commandExists } from "../lib/common.ts";
+import { commandExists, runCommand } from "../lib/common.ts";
 import { parseArgs } from "../lib/common.ts";
 
 /**
@@ -48,7 +48,8 @@ export async function getLatestRunnerVersion(): Promise<RunnerInfo> {
   // For now, use a known stable version
   // In production, you'd fetch from GitHub API: https://api.github.com/repos/actions/runner/releases/latest
   const version = "2.311.0";
-  const downloadUrl = `https://github.com/actions/runner/releases/download/v${version}/actions-runner-linux-${arch}-${version}.tar.gz`;
+  const downloadUrl =
+    `https://github.com/actions/runner/releases/download/v${version}/actions-runner-linux-${arch}-${version}.tar.gz`;
 
   return {
     version,
@@ -60,7 +61,9 @@ export async function getLatestRunnerVersion(): Promise<RunnerInfo> {
 /**
  * Validate runner configuration
  */
-export function validateConfig(config: Partial<RunnerConfig>): config is RunnerConfig {
+export function validateConfig(
+  config: Partial<RunnerConfig>,
+): config is RunnerConfig {
   if (!config.name || config.name.trim().length === 0) {
     logger.error("Runner name is required");
     return false;
@@ -95,7 +98,10 @@ export async function isRunnerInstalled(workDir: string): Promise<boolean> {
 /**
  * Download and extract GitHub Actions runner
  */
-async function downloadRunner(workDir: string, runnerInfo: RunnerInfo): Promise<boolean> {
+async function downloadRunner(
+  workDir: string,
+  runnerInfo: RunnerInfo,
+): Promise<boolean> {
   logger.info(`📥 Downloading GitHub Actions runner v${runnerInfo.version}...`);
   logger.debug(`Architecture: ${runnerInfo.architecture}`);
   logger.debug(`URL: ${runnerInfo.downloadUrl}`);
@@ -147,7 +153,10 @@ async function downloadRunner(workDir: string, runnerInfo: RunnerInfo): Promise<
 /**
  * Configure the runner
  */
-async function configureRunner(workDir: string, config: RunnerConfig): Promise<boolean> {
+async function configureRunner(
+  workDir: string,
+  config: RunnerConfig,
+): Promise<boolean> {
   logger.info("⚙️  Configuring runner...");
 
   const configScript = `${workDir}/config.sh`;
@@ -268,9 +277,15 @@ export async function installService(workDir: string): Promise<boolean> {
 }
 
 async function main() {
-  console.log("╔══════════════════════════════════════════════════════════════╗");
-  console.log("║         🏃 GitHub Self-Hosted Runner Setup                   ║");
-  console.log("╚══════════════════════════════════════════════════════════════╝");
+  console.log(
+    "╔══════════════════════════════════════════════════════════════╗",
+  );
+  console.log(
+    "║         🏃 GitHub Self-Hosted Runner Setup                   ║",
+  );
+  console.log(
+    "╚══════════════════════════════════════════════════════════════╝",
+  );
   console.log("");
 
   // Parse arguments
@@ -368,12 +383,16 @@ async function main() {
   logger.info("  ./run.sh");
   logger.info("");
 
-  console.log("════════════════════════════════════════════════════════════════");
+  console.log(
+    "════════════════════════════════════════════════════════════════",
+  );
   logger.success("🎉 GitHub Actions runner setup complete!");
   if (config.url) {
     const repoPath = config.url.split("github.com/")[1];
     if (repoPath) {
-      logger.info(`Check status: https://github.com/${repoPath}/settings/actions/runners`);
+      logger.info(
+        `Check status: https://github.com/${repoPath}/settings/actions/runners`,
+      );
     }
   }
 }
