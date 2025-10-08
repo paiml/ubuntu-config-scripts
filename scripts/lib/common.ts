@@ -48,8 +48,12 @@ export async function runCommand(
 }
 
 export async function commandExists(command: string): Promise<boolean> {
-  const result = await runCommand(["which", command]);
-  return result.success;
+  try {
+    const result = await runCommand(["which", command]);
+    return result.success;
+  } catch {
+    return false;
+  }
 }
 
 export async function requireCommand(command: string): Promise<void> {

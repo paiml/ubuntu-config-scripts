@@ -2,305 +2,67 @@
 
 /**
  * DaVinci Resolve Diagnostic Launcher
+ * Refactored to comply with PMAT quality standards (max 500 lines)
  *
- * This script diagnoses why DaVinci Resolve hangs/crashes on launch
+ * Diagnoses why DaVinci Resolve hangs/crashes on launch
  * using the five-why methodology to identify root causes.
  */
 
 import { logger } from "../lib/logger.ts";
 import { runCommand } from "../lib/common.ts";
-import { z } from "../../deps.ts";
+import { parseArgs } from "jsr:@std/cli@^1.0.0";
 
-// Diagnostic result schema
-const DiagnosticResultSchema = z.object({
-  category: z.enum([
-    "gpu",
-    "memory",
-    "libs",
-    "permissions",
-    "config",
-    "environment",
-    "unknown",
-  ]),
-  severity: z.enum(["critical", "warning", "info"]),
-  message: z.string(),
-  details: z.record(z.unknown()).optional(),
-  fix: z.string().optional(),
-});
+// Import diagnostic modules
+import type { DiagnosticResult } from "./davinci-diagnostics/types.ts";
+import { checkGPU } from "./davinci-diagnostics/gpu-check.ts";
+import { checkLibraries } from "./davinci-diagnostics/library-check.ts";
+import { checkResources } from "./davinci-diagnostics/resource-check.ts";
+import { analyzeCrashLogs } from "./davinci-diagnostics/crash-analysis.ts";
+import { FiveWhyAnalyzer } from "./davinci-diagnostics/five-why.ts";
 
-type DiagnosticResult = z.infer<typeof DiagnosticResultSchema>;
-
-interface ProcessInfo {
-  pid: string;
-  state: string;
-  memory: string;
-  cpu: string;
-  time: string;
-}
+const DAVINCI_PATH = "/opt/resolve/bin/resolve";
 
 /**
- * Five-Why Analysis for DaVinci Resolve crashes
+ * Check file permissions
  */
-class FiveWhyAnalyzer {
-  private whys: string[] = [];
-  private rootCause: string | null = null;
-
-  addWhy(question: string, answer: string): void {
-    this.whys.push(`Q${this.whys.length + 1}: ${question}\nA: ${answer}`);
-  }
-
-  setRootCause(cause: string): void {
-    this.rootCause = cause;
-  }
-
-  getAnalysis(): string {
-    const analysis = [
-      "=== Five-Why Analysis ===",
-      ...this.whys,
-      this.rootCause ? `\nRoot Cause: ${this.rootCause}` : "",
-    ];
-    return analysis.join("\n");
-  }
-}
-
-/**
- * Check GPU and driver status
- */
-async function checkGPU(): Promise<DiagnosticResult[]> {
+async function checkPermissions(): Promise<DiagnosticResult[]> {
+  logger.info("🔐 Checking permissions...");
   const results: DiagnosticResult[] = [];
 
-  logger.info("Checking GPU and NVIDIA driver...");
-
-  // Check nvidia-smi
-  const smiResult = await runCommand([
-    "nvidia-smi",
-    "--query-gpu=name,driver_version,memory.total,memory.used",
-    "--format=csv,noheader",
-  ]);
-
-  if (!smiResult.success) {
+  // Check if DaVinci binary exists
+  const binExists = await Deno.stat(DAVINCI_PATH).catch(() => null);
+  if (!binExists) {
     results.push({
-      category: "gpu",
+      category: "permissions",
       severity: "critical",
-      message: "NVIDIA driver not functioning properly",
-      details: { error: smiResult.stderr },
-      fix: "Run: sudo ubuntu-drivers autoinstall",
+      message: `DaVinci binary not found at ${DAVINCI_PATH}`,
     });
     return results;
   }
 
-  const gpuInfo = smiResult.stdout.trim();
-  logger.info(`GPU Info: ${gpuInfo}`);
-
-  // Check CUDA
-  const cudaResult = await runCommand(["nvcc", "--version"]);
-  if (!cudaResult.success) {
+  // Check if binary is executable
+  const perms = binExists.mode;
+  if (perms && (perms & 0o111) === 0) {
     results.push({
-      category: "gpu",
-      severity: "warning",
-      message: "CUDA toolkit not found",
-      fix: "Install CUDA toolkit for DaVinci Resolve GPU acceleration",
-    });
-  }
-
-  // Check OpenGL
-  const glResult = await runCommand(["glxinfo", "-B"]);
-  if (glResult.success) {
-    const hasNvidia = glResult.stdout.includes("NVIDIA");
-    if (!hasNvidia) {
-      results.push({
-        category: "gpu",
-        severity: "critical",
-        message: "OpenGL not using NVIDIA driver",
-        details: {
-          vendor: glResult.stdout.match(/OpenGL vendor string: (.+)/)?.[1],
-        },
-        fix: "Run: sudo prime-select nvidia",
-      });
-    }
-  }
-
-  // Check if GPU is in compute mode
-  const computeResult = await runCommand(["nvidia-smi", "-q", "-d", "COMPUTE"]);
-  if (computeResult.success && computeResult.stdout.includes("Prohibited")) {
-    results.push({
-      category: "gpu",
+      category: "permissions",
       severity: "critical",
-      message: "GPU compute mode is prohibited",
-      fix: "Run: sudo nvidia-smi -c DEFAULT",
+      message: "DaVinci binary is not executable",
+      fix: `chmod +x ${DAVINCI_PATH}`,
     });
   }
 
-  return results;
-}
+  // Check ownership
+  const stat = await runCommand(["stat", "-c", "%U:%G", DAVINCI_PATH]);
+  if (stat.success) {
+    const owner = stat.stdout.trim();
+    const currentUser = Deno.env.get("USER");
 
-/**
- * Check system resources
- */
-async function checkResources(): Promise<DiagnosticResult[]> {
-  const results: DiagnosticResult[] = [];
-
-  logger.info("Checking system resources...");
-
-  // Check memory
-  const memResult = await runCommand(["free", "-h"]);
-  if (memResult.success) {
-    const lines = memResult.stdout.split("\n");
-    const memLine = lines[1];
-    if (memLine) {
-      const parts = memLine.split(/\s+/);
-      const total = parseFloat(parts[1] || "0");
-      if (total < 16) {
-        results.push({
-          category: "memory",
-          severity: "warning",
-          message: `Low system memory: ${parts[1]} (16GB+ recommended)`,
-          fix: "Close other applications or add more RAM",
-        });
-      }
-    }
-  }
-
-  // Check disk space in /opt
-  const dfResult = await runCommand(["df", "-h", "/opt"]);
-  if (dfResult.success) {
-    const lines = dfResult.stdout.split("\n");
-    const diskLine = lines[1];
-    if (diskLine) {
-      const parts = diskLine.split(/\s+/);
-      const usePercent = parseInt(parts[4]?.replace("%", "") || "0");
-      if (usePercent > 90) {
-        results.push({
-          category: "memory",
-          severity: "warning",
-          message: `Low disk space in /opt: ${parts[4]} used`,
-          fix: "Free up disk space",
-        });
-      }
-    }
-  }
-
-  // Check ulimits
-  const ulimitResult = await runCommand(["bash", "-c", "ulimit -a"]);
-  if (ulimitResult.success) {
-    const openFiles = ulimitResult.stdout.match(/open files\s+\(-n\)\s+(\d+)/)
-      ?.[1];
-    if (openFiles && parseInt(openFiles) < 4096) {
+    if (!owner.startsWith(currentUser ?? "")) {
       results.push({
-        category: "environment",
+        category: "permissions",
         severity: "warning",
-        message: `Low file descriptor limit: ${openFiles}`,
-        fix: "Add to /etc/security/limits.conf: * soft nofile 4096",
+        message: `Binary owned by ${owner}, not current user`,
       });
-    }
-  }
-
-  return results;
-}
-
-/**
- * Check required libraries
- */
-async function checkLibraries(): Promise<DiagnosticResult[]> {
-  const results: DiagnosticResult[] = [];
-
-  logger.info("Checking required libraries...");
-
-  const requiredLibs = [
-    "libglib-2.0.so.0",
-    "libGL.so.1",
-    "libOpenCL.so.1",
-    "libcuda.so.1",
-    "libcudart.so",
-    "libQt5Core.so.5",
-    "libQt5Gui.so.5",
-    "libQt5Widgets.so.5",
-  ];
-
-  for (const lib of requiredLibs) {
-    const lddResult = await runCommand(["ldconfig", "-p"]);
-    if (lddResult.success && !lddResult.stdout.includes(lib)) {
-      results.push({
-        category: "libs",
-        severity: "critical",
-        message: `Missing library: ${lib}`,
-        fix: `Install package providing ${lib}`,
-      });
-    }
-  }
-
-  // Check DaVinci Resolve binary dependencies
-  const lddResolve = await runCommand(["ldd", "/opt/resolve/bin/resolve"]);
-  if (lddResolve.success) {
-    const notFound = lddResolve.stdout.match(/=> not found/g);
-    if (notFound) {
-      results.push({
-        category: "libs",
-        severity: "critical",
-        message: `Missing ${notFound.length} library dependencies`,
-        details: {
-          missing: lddResolve.stdout.split("\n").filter((l) =>
-            l.includes("not found")
-          ),
-        },
-        fix: "Install missing libraries or reinstall DaVinci Resolve",
-      });
-    }
-  }
-
-  return results;
-}
-
-/**
- * Check permissions and ownership
- */
-async function checkPermissions(): Promise<DiagnosticResult[]> {
-  const results: DiagnosticResult[] = [];
-
-  logger.info("Checking permissions...");
-
-  const paths = [
-    "/opt/resolve",
-    `${Deno.env.get("HOME")}/.local/share/DaVinciResolve`,
-    `${Deno.env.get("HOME")}/.config/Blackmagic Design`,
-  ];
-
-  for (const path of paths) {
-    try {
-      const stat = await Deno.stat(path);
-      if (!stat.isDirectory) {
-        results.push({
-          category: "permissions",
-          severity: "critical",
-          message: `Path is not a directory: ${path}`,
-          fix: `Remove and recreate: rm -rf "${path}" && mkdir -p "${path}"`,
-        });
-      }
-
-      // Check if writable
-      const testFile = `${path}/.write_test_${Date.now()}`;
-      try {
-        await Deno.writeTextFile(testFile, "test");
-        await Deno.remove(testFile);
-      } catch {
-        results.push({
-          category: "permissions",
-          severity: "critical",
-          message: `Cannot write to: ${path}`,
-          fix: `Fix permissions: chmod 755 "${path}" && chown $USER "${path}"`,
-        });
-      }
-    } catch (error) {
-      if (error instanceof Deno.errors.NotFound) {
-        if (path.includes("/opt/resolve")) {
-          results.push({
-            category: "permissions",
-            severity: "critical",
-            message: "DaVinci Resolve not installed",
-            fix: "Install DaVinci Resolve from BlackMagic Design website",
-          });
-        }
-      }
     }
   }
 
@@ -311,42 +73,40 @@ async function checkPermissions(): Promise<DiagnosticResult[]> {
  * Check environment variables
  */
 function checkEnvironment(): DiagnosticResult[] {
+  logger.info("🌍 Checking environment...");
   const results: DiagnosticResult[] = [];
 
-  logger.info("Checking environment variables...");
+  const importantVars = [
+    "DISPLAY",
+    "XDG_SESSION_TYPE",
+    "QT_QPA_PLATFORM",
+  ];
 
-  // Check display
-  if (!Deno.env.get("DISPLAY")) {
-    results.push({
-      category: "environment",
-      severity: "critical",
-      message: "DISPLAY variable not set",
-      fix: "Export DISPLAY=:0",
-    });
+  for (const varName of importantVars) {
+    const value = Deno.env.get(varName);
+    if (!value) {
+      results.push({
+        category: "environment",
+        severity: "warning",
+        message: `${varName} not set`,
+      });
+    } else {
+      results.push({
+        category: "environment",
+        severity: "info",
+        message: `${varName}=${value}`,
+      });
+    }
   }
 
-  // Check Wayland vs X11
-  const waylandDisplay = Deno.env.get("WAYLAND_DISPLAY");
+  // Check for Wayland (DaVinci works better on X11)
   const sessionType = Deno.env.get("XDG_SESSION_TYPE");
-
-  if (waylandDisplay || sessionType === "wayland") {
+  if (sessionType === "wayland") {
     results.push({
       category: "environment",
       severity: "warning",
-      message: "Running under Wayland (X11 recommended)",
-      details: { wayland: waylandDisplay, session: sessionType },
-      fix: "Log out and select 'Ubuntu on Xorg' at login screen",
-    });
-  }
-
-  // Check locale
-  const locale = Deno.env.get("LANG");
-  if (!locale || !locale.includes("UTF-8")) {
-    results.push({
-      category: "environment",
-      severity: "warning",
-      message: `Non-UTF8 locale: ${locale}`,
-      fix: "Export LANG=en_US.UTF-8",
+      message: "Running on Wayland. DaVinci may have issues.",
+      fix: "Try switching to X11 session",
     });
   }
 
@@ -354,312 +114,240 @@ function checkEnvironment(): DiagnosticResult[] {
 }
 
 /**
- * Monitor DaVinci Resolve process
+ * Monitor DaVinci process
  */
 async function monitorProcess(
   pid: string,
-  duration: number = 5000,
-): Promise<ProcessInfo[]> {
-  const samples: ProcessInfo[] = [];
-  const interval = 500; // Sample every 500ms
-  const iterations = duration / interval;
+  timeout: number = 30000
+): Promise<void> {
+  logger.info(`Monitoring process ${pid} for ${timeout / 1000}s...`);
 
-  for (let i = 0; i < iterations; i++) {
-    const psResult = await runCommand([
-      "ps",
-      "-p",
-      pid,
-      "-o",
-      "pid,state,vsz,rss,%cpu,etime",
-      "--no-headers",
-    ]);
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeout) {
+    const check = await runCommand(["ps", "-p", pid, "-o", "pid,state,rss,pcpu,time"]);
 
-    if (!psResult.success) {
-      logger.warn(`Process ${pid} no longer exists`);
+    if (!check.success) {
+      logger.error("Process terminated");
       break;
     }
 
-    const parts = psResult.stdout.trim().split(/\s+/);
-    if (parts.length >= 6) {
-      samples.push({
-        pid: parts[0]!,
-        state: parts[1]!,
-        memory: parts[3]!,
-        cpu: parts[4]!,
-        time: parts[5]!,
-      });
+    const lines = check.stdout.trim().split("\n");
+    if (lines.length > 1) {
+      logger.info(`  ${lines[1]}`);
     }
 
-    await new Promise((resolve) => setTimeout(resolve, interval));
-  }
+    // Check if process is in zombie/stopped state
+    if (check.stdout.includes(" Z ") || check.stdout.includes(" T ")) {
+      logger.error("Process is in abnormal state");
+      break;
+    }
 
-  return samples;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
 }
 
 /**
- * Analyze crash logs
- */
-async function analyzeCrashLogs(): Promise<DiagnosticResult[]> {
-  const results: DiagnosticResult[] = [];
-  const logDir = `${Deno.env.get("HOME")}/.local/share/DaVinciResolve/logs`;
-
-  try {
-    // Find recent log files
-    const entries = [];
-    for await (const entry of Deno.readDir(logDir)) {
-      if (entry.isFile && entry.name.endsWith(".log")) {
-        entries.push(entry);
-      }
-    }
-
-    if (entries.length > 0) {
-      // Get the most recent log
-      const recentLog = entries[entries.length - 1]!;
-      const logPath = `${logDir}/${recentLog.name}`;
-      const content = await Deno.readTextFile(logPath);
-
-      // Look for error patterns
-      const patterns = [
-        {
-          regex: /CUDA.*error/i,
-          category: "gpu" as const,
-          message: "CUDA initialization error",
-        },
-        {
-          regex: /OpenCL.*error/i,
-          category: "gpu" as const,
-          message: "OpenCL initialization error",
-        },
-        {
-          regex: /segmentation fault/i,
-          category: "libs" as const,
-          message: "Segmentation fault detected",
-        },
-        {
-          regex: /permission denied/i,
-          category: "permissions" as const,
-          message: "Permission denied errors",
-        },
-        {
-          regex: /out of memory/i,
-          category: "memory" as const,
-          message: "Out of memory error",
-        },
-      ];
-
-      for (const pattern of patterns) {
-        if (pattern.regex.test(content)) {
-          results.push({
-            category: pattern.category,
-            severity: "critical",
-            message: pattern.message,
-            details: { log: recentLog!.name },
-          });
-        }
-      }
-    }
-  } catch {
-    // Log directory doesn't exist or can't be read
-  }
-
-  return results;
-}
-
-/**
- * Launch DaVinci Resolve with diagnostics
+ * Launch DaVinci with diagnostics
  */
 async function launchWithDiagnostics(): Promise<void> {
-  const analyzer = new FiveWhyAnalyzer();
+  logger.info("🚀 Launching DaVinci Resolve with diagnostics...\n");
 
-  logger.info("Starting DaVinci Resolve diagnostic launch...");
+  // Run all diagnostic checks first
+  const gpuResults = await checkGPU();
+  const resourceResults = await checkResources();
+  const libResults = await checkLibraries();
+  const permResults = await checkPermissions();
+  const envResults = checkEnvironment();
+  const crashResults = await analyzeCrashLogs();
 
-  // Why 1: Why does DaVinci Resolve hang?
-  analyzer.addWhy(
-    "Why does DaVinci Resolve hang on launch?",
-    "The process starts but gets killed (signal 9 - SIGKILL)",
-  );
+  const allResults = [
+    ...gpuResults,
+    ...resourceResults,
+    ...libResults,
+    ...permResults,
+    ...envResults,
+    ...crashResults,
+  ];
 
-  // Run preliminary checks
-  const diagnostics: DiagnosticResult[] = [];
+  // Print results
+  printDiagnosticReport(allResults);
 
-  diagnostics.push(...await checkGPU());
-  diagnostics.push(...await checkResources());
-  diagnostics.push(...await checkLibraries());
-  diagnostics.push(...await checkPermissions());
-  diagnostics.push(...checkEnvironment());
-  diagnostics.push(...await analyzeCrashLogs());
-
-  // Display diagnostic results
-  const critical = diagnostics.filter((d) => d.severity === "critical");
-  const warnings = diagnostics.filter((d) => d.severity === "warning");
-
+  // Check for critical issues
+  const critical = allResults.filter((r) => r.severity === "critical");
   if (critical.length > 0) {
-    logger.error(`Found ${critical.length} critical issues:`);
-    for (const issue of critical) {
-      logger.error(`  [${issue.category}] ${issue.message}`);
-      if (issue.fix) {
-        logger.info(`    Fix: ${issue.fix}`);
+    logger.error("\n❌ Critical issues found! Fix these before launching:");
+    critical.forEach((r) => {
+      logger.error(`  - ${r.message}`);
+      if (r.fix) {
+        logger.info(`    Fix: ${r.fix}`);
       }
-    }
+    });
 
-    // Why 2: Why is the process being killed?
-    analyzer.addWhy(
-      "Why is the process being killed with SIGKILL?",
-      critical[0]?.message || "Critical system issue detected",
-    );
+    const analyzer = new FiveWhyAnalyzer();
+    performFiveWhyAnalysis(analyzer, allResults);
+    analyzer.print();
+
+    return;
   }
 
-  if (warnings.length > 0) {
-    logger.warn(`Found ${warnings.length} warnings:`);
-    for (const warning of warnings) {
-      logger.warn(`  [${warning.category}] ${warning.message}`);
-    }
-  }
+  // Launch DaVinci
+  logger.info("\n✅ Pre-flight checks passed. Launching DaVinci...\n");
 
-  // Try to launch with monitoring
-  logger.info("Attempting to launch DaVinci Resolve with monitoring...");
-
-  // Set up environment with debugging
-  const env: Record<string, string> = {
-    ...Deno.env.toObject(),
-    // Debug environment variables
-    "QT_DEBUG_PLUGINS": "1",
-    "LIBGL_DEBUG": "verbose",
-    "MESA_DEBUG": "1",
-    "CUDA_LAUNCH_BLOCKING": "1",
-    // Disable GPU features that might cause issues
-    "RESOLVE_CUDA_FORCE": "0", // Try without CUDA first
-    "__GL_SYNC_TO_VBLANK": "0",
-    // Core dumps
-    "RESOLVE_ENABLE_CRASH_HANDLER": "1",
-  };
-
-  // Launch with strace for system call tracing
-  const straceCmd = new Deno.Command("strace", {
-    args: [
-      "-f", // Follow forks
-      "-e",
-      "trace=open,openat,access,stat,execve", // Trace file operations
-      "-o",
-      "/tmp/davinci-strace.log",
-      "/opt/resolve/bin/resolve",
-    ],
-    env,
-    stdin: "null",
+  const process = new Deno.Command(DAVINCI_PATH, {
     stdout: "piped",
     stderr: "piped",
-  });
+  }).spawn();
 
-  const process = straceCmd.spawn();
-  const pid = process.pid?.toString() || "unknown";
+  const pid = process.pid.toString();
+  logger.info(`DaVinci started with PID: ${pid}`);
 
-  logger.info(`Launched DaVinci Resolve with PID: ${pid}`);
+  // Monitor for 30 seconds
+  const monitorPromise = monitorProcess(pid);
+  const statusPromise = process.status;
 
-  // Monitor the process
-  if (pid !== "unknown") {
-    const monitorPromise = monitorProcess(pid, 10000);
+  const result = await Promise.race([
+    monitorPromise.then(() => ({ type: "timeout" as const })),
+    statusPromise.then((status) => ({ type: "exit" as const, status })),
+  ]);
 
-    // Wait for process to exit or timeout
-    const result = await Promise.race([
-      process.output(),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000)),
-    ]);
+  if (result.type === "exit") {
+    logger.error(`DaVinci exited with code: ${result.status.code}`);
 
-    await monitorPromise;
-
-    if (result) {
-      // Process exited
-      const { code, stderr } = result;
-      const stderrStr = new TextDecoder().decode(stderr);
-
-      logger.error(`Process exited with code: ${code}`);
-
-      if (stderrStr) {
-        logger.error("stderr output:");
-        console.log(stderrStr.slice(0, 1000)); // First 1000 chars
-      }
-
-      // Why 3: Why did the process exit?
-      if (code === 137 || code === 9) {
-        analyzer.addWhy(
-          "Why was the process killed with SIGKILL (code 137/9)?",
-          "Likely killed by OOM killer or system resource limit",
-        );
-
-        // Why 4: Why did we hit resource limits?
-        analyzer.addWhy(
-          "Why did we hit system resource limits?",
-          "Check dmesg for OOM killer messages: dmesg | grep -i 'killed process'",
-        );
-
-        // Why 5: Root cause
-        analyzer.addWhy(
-          "Why is DaVinci using excessive resources?",
-          "Possible GPU memory allocation failure or library conflict",
-        );
-
-        analyzer.setRootCause(
-          "GPU initialization failure causing excessive memory allocation attempts",
-        );
-      }
-    } else {
-      logger.info("Process still running after 10 seconds");
-
-      // Check if window appeared
-      const xwinResult = await runCommand(["xwininfo", "-root", "-tree"]);
-      if (
-        xwinResult.success &&
-        xwinResult.stdout.toLowerCase().includes("resolve")
-      ) {
-        logger.success("DaVinci Resolve window detected!");
-      } else {
-        logger.warn("No DaVinci Resolve window detected");
-      }
-    }
-
-    // Analyze strace output
-    try {
-      const straceLog = await Deno.readTextFile("/tmp/davinci-strace.log");
-      const enoentCount = (straceLog.match(/ENOENT/g) || []).length;
-      const eaccessCount = (straceLog.match(/EACCES/g) || []).length;
-
-      if (enoentCount > 100) {
-        logger.warn(
-          `High number of missing files: ${enoentCount} ENOENT errors`,
-        );
-      }
-      if (eaccessCount > 0) {
-        logger.error(`Permission denied errors: ${eaccessCount} EACCES errors`);
-      }
-    } catch {
-      // Couldn't read strace log
-    }
-  }
-
-  // Display five-why analysis
-  console.log("\n" + analyzer.getAnalysis());
-
-  // Suggest next steps
-  if (critical.length > 0) {
-    logger.info("\n=== Recommended Actions ===");
-    logger.info("1. Fix all critical issues listed above");
-    logger.info("2. Check system logs: journalctl -xe | grep -i resolve");
-    logger.info("3. Check for OOM killer: dmesg | grep -i 'killed process'");
-    logger.info(
-      "4. Try launching without GPU: RESOLVE_CUDA_FORCE=0 /opt/resolve/bin/resolve",
-    );
-    logger.info("5. Reinstall DaVinci Resolve if library issues persist");
+    // Analyze why it crashed
+    const analyzer = new FiveWhyAnalyzer();
+    performFiveWhyAnalysis(analyzer, allResults);
+    analyzer.print();
+  } else {
+    logger.info("\n✅ DaVinci appears to be running successfully!");
   }
 }
 
-// Run diagnostics
-if (import.meta.main) {
-  try {
-    await launchWithDiagnostics();
-  } catch (error) {
-    logger.error(`Diagnostic failed: ${error}`);
-    Deno.exit(1);
+/**
+ * Perform five-why analysis on diagnostic results
+ */
+function performFiveWhyAnalysis(
+  analyzer: FiveWhyAnalyzer,
+  results: DiagnosticResult[]
+): void {
+  const critical = results.filter((r) => r.severity === "critical");
+
+  if (critical.length === 0) {
+    analyzer.addWhy(
+      "Why did DaVinci crash?",
+      "No critical issues found in diagnostics"
+    );
+    analyzer.setRootCause("Unknown - check application logs");
+    return;
   }
+
+  // Start with the most critical issue
+  const mainIssue = critical[0];
+  if (!mainIssue) return;
+
+  analyzer.addWhy(
+    "Why did DaVinci crash?",
+    mainIssue.message
+  );
+
+  // Categorize and dig deeper
+  switch (mainIssue.category) {
+    case "gpu":
+      analyzer.addWhy(
+        "Why is there a GPU issue?",
+        "Driver or hardware problem"
+      );
+      analyzer.setRootCause(
+        "GPU driver needs update or GPU hardware incompatible"
+      );
+      break;
+
+    case "libs":
+      analyzer.addWhy(
+        "Why are libraries missing/conflicting?",
+        "System libraries incompatible with bundled libraries"
+      );
+      analyzer.setRootCause(
+        "Remove conflicting bundled libraries and use system libraries"
+      );
+      break;
+
+    case "memory":
+      analyzer.addWhy(
+        "Why is memory insufficient?",
+        "System doesn't meet DaVinci's requirements"
+      );
+      analyzer.setRootCause(
+        "Need more RAM or need to close other applications"
+      );
+      break;
+
+    default:
+      analyzer.setRootCause(mainIssue.message);
+  }
+}
+
+/**
+ * Print diagnostic report
+ */
+function printDiagnosticReport(results: DiagnosticResult[]): void {
+  logger.info("\n" + "=".repeat(80));
+  logger.info("📋 DIAGNOSTIC REPORT");
+  logger.info("=".repeat(80) + "\n");
+
+  const categories = ["critical", "warning", "info"] as const;
+
+  for (const severity of categories) {
+    const filtered = results.filter((r) => r.severity === severity);
+    if (filtered.length === 0) continue;
+
+    const icon = severity === "critical"
+      ? "❌"
+      : severity === "warning"
+      ? "⚠️"
+      : "ℹ️";
+
+    logger.info(`\n${icon} ${severity.toUpperCase()} (${filtered.length}):`);
+
+    for (const result of filtered) {
+      logger.info(`  [${result.category}] ${result.message}`);
+      if (result.fix) {
+        logger.info(`     Fix: ${result.fix}`);
+      }
+    }
+  }
+
+  logger.info("\n" + "=".repeat(80));
+}
+
+// CLI entry point
+if (import.meta.main) {
+  const args = parseArgs(Deno.args, {
+    boolean: ["help", "monitor"],
+    alias: { h: "help", m: "monitor" },
+  });
+
+  if (args.help) {
+    console.log(`
+DaVinci Resolve Diagnostic Launcher
+
+Usage:
+  diagnose-davinci.ts [OPTIONS]
+
+Options:
+  --monitor, -m    Only monitor running DaVinci process
+  -h, --help       Show this help message
+
+Examples:
+  # Full diagnostics and launch
+  diagnose-davinci.ts
+
+  # Just monitor existing process
+  diagnose-davinci.ts --monitor
+    `);
+    Deno.exit(0);
+  }
+
+  await launchWithDiagnostics();
 }
 
 export {

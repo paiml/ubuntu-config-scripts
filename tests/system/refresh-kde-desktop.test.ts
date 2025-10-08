@@ -4,7 +4,6 @@ import { assertEquals, assertExists } from "../../deps.ts";
 import {
   checkDesktopEnvironment,
   checkKwinStatus,
-  refreshKDE,
 } from "../../scripts/system/refresh-kde-desktop.ts";
 
 Deno.test("checkDesktopEnvironment returns expected structure", async () => {

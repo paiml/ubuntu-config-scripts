@@ -140,6 +140,8 @@ Deno.test("Sysctl parameter validation", () => {
 
         assertEquals(configs.length, 4);
         configs.forEach(([key, value]) => {
+          assert(key !== undefined);
+          assert(value !== undefined);
           assert(key.startsWith("vm."));
           assert(value.length > 0);
         });
@@ -159,6 +161,8 @@ Deno.test("Development tools configuration", () => {
 
   assertEquals(tools.length, 4);
   tools.forEach(([tool, description]) => {
+    assert(tool !== undefined);
+    assert(description !== undefined);
     assert(tool.length > 0);
     assert(description.length > 0);
   });
