@@ -104,14 +104,14 @@ class SystemInfoCollector {
        architecture, uptime_seconds, boot_time, timezone)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        info["hostname"],
-        info["kernel"],
-        info["osName"],
-        info["osVersion"],
-        info["architecture"],
-        info["uptimeSeconds"],
-        info["bootTime"],
-        info["timezone"],
+        info["hostname"] as string,
+        info["kernel"] as string,
+        info["osName"] as string,
+        info["osVersion"] as string,
+        info["architecture"] as string,
+        info["uptimeSeconds"] as number,
+        info["bootTime"] as string,
+        info["timezone"] as string,
       ]
     );
   }
@@ -122,12 +122,12 @@ class SystemInfoCollector {
        max_freq_mhz, usage_percent)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        info["model"],
-        info["cores"],
-        info["threads"],
-        info["currentFreqMhz"],
-        info["maxFreqMhz"],
-        info["usagePercent"],
+        info["model"] as string,
+        info["cores"] as number,
+        info["threads"] as number,
+        info["currentFreqMhz"] as number,
+        info["maxFreqMhz"] as number,
+        info["usagePercent"] as number,
       ]
     );
   }
@@ -138,12 +138,12 @@ class SystemInfoCollector {
        usage_percent, swap_total_mb, swap_used_mb)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        info["totalMb"],
-        info["availableMb"],
-        info["usedMb"],
-        info["usagePercent"],
-        info["swapTotalMb"],
-        info["swapUsedMb"],
+        info["totalMb"] as number,
+        info["availableMb"] as number,
+        info["usedMb"] as number,
+        info["usagePercent"] as number,
+        info["swapTotalMb"] as number,
+        info["swapUsedMb"] as number,
       ]
     );
   }
@@ -155,13 +155,13 @@ class SystemInfoCollector {
          size_gb, used_gb, available_gb, usage_percent)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          disk["device"],
-          disk["mountPoint"],
-          disk["filesystem"],
-          disk["sizeGb"],
-          disk["usedGb"],
-          disk["availableGb"],
-          disk["usagePercent"],
+          disk["device"] as string,
+          disk["mountPoint"] as string,
+          disk["filesystem"] as string,
+          disk["sizeGb"] as number,
+          disk["usedGb"] as number,
+          disk["availableGb"] as number,
+          disk["usagePercent"] as number,
         ]
       );
     }
@@ -174,13 +174,13 @@ class SystemInfoCollector {
          mac_address, state, speed_mbps, rx_bytes, tx_bytes)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          iface["name"],
-          iface["ipAddress"],
-          iface["macAddress"],
-          iface["state"],
-          iface["speedMbps"],
-          iface["rxBytes"],
-          iface["txBytes"],
+          iface["name"] as string,
+          iface["ipAddress"] as string,
+          iface["macAddress"] as string,
+          iface["state"] as string,
+          iface["speedMbps"] as number,
+          iface["rxBytes"] as number,
+          iface["txBytes"] as number,
         ]
       );
     }
@@ -193,13 +193,13 @@ class SystemInfoCollector {
          memory_total_mb, memory_used_mb, temperature_c, utilization_percent)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          gpu["vendor"],
-          gpu["model"],
-          gpu["driverVersion"],
-          gpu["memoryTotalMb"],
-          gpu["memoryUsedMb"],
-          gpu["temperatureC"],
-          gpu["utilizationPercent"],
+          gpu["vendor"] as string,
+          gpu["model"] as string,
+          gpu["driverVersion"] as string,
+          gpu["memoryTotalMb"] as number,
+          gpu["memoryUsedMb"] as number,
+          gpu["temperatureC"] as number,
+          gpu["utilizationPercent"] as number,
         ]
       );
     }
@@ -212,12 +212,12 @@ class SystemInfoCollector {
          load_state, active_state, sub_state)
          VALUES (?, ?, ?, ?, ?, ?)`,
         [
-          service["name"],
-          service["state"],
-          service["enabled"],
-          service["loadState"],
-          service["activeState"],
-          service["subState"],
+          service["name"] as string,
+          service["state"] as string,
+          service["enabled"] as number,
+          service["loadState"] as string,
+          service["activeState"] as string,
+          service["subState"] as string,
         ]
       );
     }
@@ -265,10 +265,12 @@ class SystemInfoCollector {
 
     if (sysInfo.length > 0) {
       const row = sysInfo[0];
-      logger.info(`Hostname: ${row[2]}`);
-      logger.info(`OS: ${row[4]} ${row[5]}`);
-      logger.info(`Kernel: ${row[3]}`);
-      logger.info(`Architecture: ${row[6]}`);
+      if (row) {
+        logger.info(`Hostname: ${row[2]}`);
+        logger.info(`OS: ${row[4]} ${row[5]}`);
+        logger.info(`Kernel: ${row[3]}`);
+        logger.info(`Architecture: ${row[6]}`);
+      }
     }
 
     // Get latest CPU info
@@ -278,9 +280,11 @@ class SystemInfoCollector {
 
     if (cpuInfo.length > 0) {
       const row = cpuInfo[0];
-      logger.info(`\nCPU: ${row[2]}`);
-      logger.info(`Cores/Threads: ${row[3]}/${row[4]}`);
-      logger.info(`Usage: ${row[7]}%`);
+      if (row) {
+        logger.info(`\nCPU: ${row[2]}`);
+        logger.info(`Cores/Threads: ${row[3]}/${row[4]}`);
+        logger.info(`Usage: ${row[7]}%`);
+      }
     }
 
     // Get latest memory info
@@ -290,8 +294,10 @@ class SystemInfoCollector {
 
     if (memInfo.length > 0) {
       const row = memInfo[0];
-      logger.info(`\nMemory: ${row[3]}MB / ${row[2]}MB (${row[5]}%)`);
-      logger.info(`Swap: ${row[7]}MB / ${row[6]}MB`);
+      if (row) {
+        logger.info(`\nMemory: ${row[3]}MB / ${row[2]}MB (${row[5]}%)`);
+        logger.info(`Swap: ${row[7]}MB / ${row[6]}MB`);
+      }
     }
 
     logger.info("\n" + "=".repeat(80));

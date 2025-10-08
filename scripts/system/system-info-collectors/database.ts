@@ -6,7 +6,7 @@ import type { DB as Database } from "https://deno.land/x/sqlite@v3.8/mod.ts";
 
 export function initDatabase(db: Database): void {
   // Create tables if they don't exist
-  db.exec(`
+  db.execute(`
     CREATE TABLE IF NOT EXISTS system_info (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -21,7 +21,7 @@ export function initDatabase(db: Database): void {
     )
   `);
 
-  db.exec(`
+  db.execute(`
     CREATE TABLE IF NOT EXISTS cpu_info (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -34,7 +34,7 @@ export function initDatabase(db: Database): void {
     )
   `);
 
-  db.exec(`
+  db.execute(`
     CREATE TABLE IF NOT EXISTS memory_info (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -47,7 +47,7 @@ export function initDatabase(db: Database): void {
     )
   `);
 
-  db.exec(`
+  db.execute(`
     CREATE TABLE IF NOT EXISTS disk_info (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -61,7 +61,7 @@ export function initDatabase(db: Database): void {
     )
   `);
 
-  db.exec(`
+  db.execute(`
     CREATE TABLE IF NOT EXISTS network_info (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -75,7 +75,7 @@ export function initDatabase(db: Database): void {
     )
   `);
 
-  db.exec(`
+  db.execute(`
     CREATE TABLE IF NOT EXISTS gpu_info (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -89,7 +89,7 @@ export function initDatabase(db: Database): void {
     )
   `);
 
-  db.exec(`
+  db.execute(`
     CREATE TABLE IF NOT EXISTS service_info (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,

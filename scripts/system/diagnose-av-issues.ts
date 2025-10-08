@@ -17,13 +17,25 @@ import {
 } from "./diagnostics/audio.ts";
 import { diagnoseVideoSubsystem } from "./diagnostics/video.ts";
 import { diagnoseGPU } from "./diagnostics/gpu.ts";
-import { collectSystemInfo } from "./diagnostics/system-info.ts";
+import { collectSystemInfo, SystemInfoSchema } from "./diagnostics/system-info.ts";
 import { runAllPlaybackTests } from "./diagnostics/playback-tests.ts";
 import {
   applyFixes,
   exportFixes,
   generateReport,
 } from "./diagnostics/reporting.ts";
+import { z } from "../../deps.ts";
+
+// Re-export schemas for testing
+export const DiagnosticResultSchema = z.object({
+  category: z.enum(["audio", "video", "system", "gpu", "network"]),
+  severity: z.enum(["critical", "warning", "info", "success"]),
+  message: z.string(),
+  fix: z.string().optional(),
+  command: z.string().optional(),
+});
+
+export { SystemInfoSchema };
 
 /**
  * Network diagnostics for streaming
@@ -214,8 +226,41 @@ class AVDiagnostics {
     }
   }
 
+  async exportFixes(): Promise<void> {
+    await exportFixes(this.results);
+  }
+
   getResults(): DiagnosticResult[] {
     return this.results;
+  }
+
+  // Helper methods for testing (accessed via type assertions in tests)
+  // @ts-ignore - Used in tests via type assertion
+  private addResult(result: DiagnosticResult): void {
+    this.results.push(result);
+  }
+
+  // @ts-ignore - Used in tests via type assertion
+  private getCategoryEmoji(category: string): string {
+    const emojiMap: Record<string, string> = {
+      audio: "🔊",
+      video: "🎬",
+      gpu: "🎮",
+      system: "💻",
+      network: "🌐",
+    };
+    return emojiMap[category] ?? "📌";
+  }
+
+  // @ts-ignore - Used in tests via type assertion
+  private getSeverityIcon(severity: string): string {
+    const iconMap: Record<string, string> = {
+      critical: "❌",
+      warning: "⚠️ ",
+      info: "ℹ️ ",
+      success: "✅",
+    };
+    return iconMap[severity] ?? "•";
   }
 }
 

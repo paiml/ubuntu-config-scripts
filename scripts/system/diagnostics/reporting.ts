@@ -98,7 +98,7 @@ export async function exportFixes(results: DiagnosticResult[]): Promise<void> {
     return;
   }
 
-  const scriptPath = "/tmp/av-diagnostics-fixes.sh";
+  const scriptPath = "/tmp/av-fixes.sh";
   const commands = [
     "#!/bin/bash",
     "# Audio/Video Diagnostic Fixes",
