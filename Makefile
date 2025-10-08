@@ -5,7 +5,7 @@
 
 # Tool detection
 DENO := $(shell command -v deno 2>/dev/null)
-PMAT := $(shell command -v pmat 2>/dev/null)
+PMAT := $(shell command -v pmat 2>/dev/null || command -v $$HOME/.cargo/bin/pmat 2>/dev/null)
 
 # Colors for output
 RED := \033[0;31m
@@ -36,7 +36,9 @@ AUTO_UPDATE_DENO := true
         _ensure-deno update-deno check-deno-updates disable-auto-update \
         deploy deploy-package deploy-clean \
         deps deps-outdated deps-update deps-update-dry deps-update-interactive \
-        deps-lock deps-verify deps-clean pmat-info
+        deps-lock deps-verify deps-clean pmat-info \
+        pmat-quality-gate pmat-complexity pmat-debt pmat-dead-code pmat-context \
+        pmat-health pmat-hooks-install pmat-hooks-status pmat-all
 
 # Primary targets
 help: ## Show this help message
@@ -404,3 +406,78 @@ deps-verify: ## Verify locked dependencies
 
 deps-clean: ## Clean dependency cache
 	@$(MAKE) dev-deps-clean
+
+# PMAT Quality Management
+pmat-quality-gate: ## Run PMAT quality gate checks
+	@echo "$(CYAN)🔍 Running PMAT quality gate checks...$(NC)"
+	@if [ -z "$(PMAT)" ]; then \
+		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
+		exit 1; \
+	fi
+	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
+	pmat quality-gate --fail-on-violation --format=summary
+
+pmat-complexity: ## Analyze code complexity with PMAT
+	@echo "$(CYAN)📊 Analyzing code complexity...$(NC)"
+	@if [ -z "$(PMAT)" ]; then \
+		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
+		exit 1; \
+	fi
+	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
+	pmat analyze complexity --path . --format=summary
+
+pmat-debt: ## Analyze technical debt with PMAT
+	@echo "$(CYAN)💳 Analyzing technical debt...$(NC)"
+	@if [ -z "$(PMAT)" ]; then \
+		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
+		exit 1; \
+	fi
+	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
+	pmat analyze satd --path . --format=summary
+
+pmat-dead-code: ## Detect dead code with PMAT
+	@echo "$(CYAN)☠️  Detecting dead code...$(NC)"
+	@if [ -z "$(PMAT)" ]; then \
+		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
+		exit 1; \
+	fi
+	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
+	pmat analyze dead-code --path . --format=summary
+
+pmat-context: ## Generate project context with PMAT
+	@echo "$(CYAN)📝 Generating project context...$(NC)"
+	@if [ -z "$(PMAT)" ]; then \
+		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
+		exit 1; \
+	fi
+	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
+	pmat context
+
+pmat-health: ## Run PMAT health check
+	@echo "$(CYAN)🏥 Running PMAT health check...$(NC)"
+	@if [ -z "$(PMAT)" ]; then \
+		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
+		exit 1; \
+	fi
+	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
+	pmat maintain health
+
+pmat-hooks-install: ## Install PMAT git hooks
+	@echo "$(CYAN)🪝 Installing PMAT git hooks...$(NC)"
+	@if [ -z "$(PMAT)" ]; then \
+		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
+		exit 1; \
+	fi
+	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
+	pmat hooks install
+
+pmat-hooks-status: ## Check PMAT hooks status
+	@echo "$(CYAN)🔍 Checking PMAT hooks status...$(NC)"
+	@if [ -z "$(PMAT)" ]; then \
+		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
+		exit 1; \
+	fi
+	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
+	pmat hooks status
+
+pmat-all: pmat-complexity pmat-debt pmat-dead-code pmat-quality-gate ## Run all PMAT analyses

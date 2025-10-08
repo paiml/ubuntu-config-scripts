@@ -351,13 +351,67 @@ make pmat-info
 make test-property
 ```
 
-### PMAT Quality Gates (MCP Only)
+### PMAT Quality Gates
 
-PMAT must be used ONLY via MCP (Model Context Protocol) in Claude Desktop:
+This project is fully integrated with PMAT for continuous quality monitoring:
 
-#### Setup PMAT MCP Server
+#### Installation
 
-Add to Claude Desktop settings:
+PMAT is automatically installed with project dependencies:
+```bash
+make install  # Installs Deno, Rust, and PMAT
+```
+
+Or install manually:
+```bash
+cargo install pmat
+```
+
+#### Quality Gate Configuration
+
+The project includes `.pmat-gates.toml` with enforced standards:
+- **Coverage**: Minimum 80%
+- **Complexity**: Maximum 10 cyclomatic per function
+- **Tests**: All tests must pass
+- **Clippy**: Strict mode enabled
+
+#### Make Commands
+
+```bash
+# Run all PMAT analyses
+make pmat-all
+
+# Individual analyses
+make pmat-quality-gate    # Run quality gate checks (blocking)
+make pmat-complexity      # Analyze code complexity
+make pmat-debt           # Check technical debt
+make pmat-dead-code      # Detect unused code
+make pmat-context        # Generate project context
+make pmat-health         # Run health check
+
+# Git hooks
+make pmat-hooks-install  # Install pre-commit hooks
+make pmat-hooks-status   # Check hooks status
+```
+
+#### Git Hooks (Automatic Quality Gates)
+
+Pre-commit hooks are automatically installed and enforce quality gates before every commit:
+```bash
+# Hooks run automatically on git commit
+# To bypass (NOT RECOMMENDED): git commit --no-verify
+```
+
+#### CI Integration
+
+Quality gates run automatically in GitHub Actions:
+- Complexity analysis (reports violations)
+- Technical debt scanning
+- Quality gate enforcement (currently non-blocking)
+
+#### MCP Integration (Optional)
+
+For Claude Desktop users, PMAT can also be used via MCP:
 ```json
 {
   "mcpServers": {
@@ -369,20 +423,11 @@ Add to Claude Desktop settings:
 }
 ```
 
-#### Usage
-
-PMAT features are accessed through MCP tools in Claude:
-- Quality gates via `mcp_pmat_quality_gate`
-- Code analysis via `mcp_pmat_analyze`
-- Context generation via `mcp_pmat_context`
-- Refactoring via `mcp_pmat_refactor`
-
-**Note**: Do NOT run pmat commands directly in terminal. All quality checks must go through MCP integration.
-
-For setup instructions:
-```bash
-make pmat-info
-```
+MCP tools available:
+- `mcp_pmat_quality_gate` - Run quality checks
+- `mcp_pmat_analyze` - Code analysis
+- `mcp_pmat_context` - Context generation
+- `mcp_pmat_refactor` - Refactoring tools
 
 ### Type Safety
 

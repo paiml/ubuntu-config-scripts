@@ -301,11 +301,48 @@ jobs:
           fi
           echo "✅ No unsafe patterns found"
 
+  pmat-quality-gate:
+    name: PMAT Quality Gate
+    runs-on: [self-hosted, Linux, X64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PMAT
+        run: |
+          # Ensure PMAT is available
+          if ! command -v pmat &> /dev/null; then
+            echo "Installing PMAT..."
+            export PATH="$HOME/.cargo/bin:$PATH"
+            if ! command -v cargo &> /dev/null; then
+              curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+              source $HOME/.cargo/env
+            fi
+            cargo install pmat || echo "PMAT already installed"
+          fi
+          export PATH="$HOME/.cargo/bin:$PATH"
+          pmat --version
+
+      - name: Run PMAT Quality Gates
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          pmat quality-gate --fail-on-violation --format=summary || echo "⚠️ PMAT quality gate issues found (non-blocking for now)"
+        continue-on-error: true  # Non-blocking initially
+
+      - name: PMAT Complexity Analysis
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          pmat analyze complexity --path . --format=summary
+
+      - name: PMAT Technical Debt Analysis
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          pmat analyze satd --path . --format=summary
+
 
   summary:
     name: CI Summary
     runs-on: [self-hosted, Linux, X64]
-    needs: [lint, test, validate-deps, security-scan]
+    needs: [lint, test, validate-deps, security-scan, pmat-quality-gate]
     if: always()
     steps:
       - name: Summary
@@ -315,7 +352,8 @@ jobs:
           echo "- Test: ${{ needs.test.result }}"
           echo "- Dependencies: ${{ needs.validate-deps.result }}"
           echo "- Security: ${{ needs.security-scan.result }}"
-          
+          echo "- PMAT Quality Gate: ${{ needs.pmat-quality-gate.result }}"
+
           if [ "${{ needs.lint.result }}" = "success" ] && \
              [ "${{ needs.test.result }}" = "success" ] && \
              [ "${{ needs.security-scan.result }}" = "success" ]; then
