@@ -112,17 +112,26 @@ Deno.test("vim version parsing property tests", async (t) => {
           const v1 = `${major1}.${minor1}`;
           const v2 = `${major2}.${minor2}`;
 
+          // Helper to compare versions numerically
+          const compareVersions = (v1str: string, v2str: string): number => {
+            const [maj1, min1] = v1str.split('.').map(Number);
+            const [maj2, min2] = v2str.split('.').map(Number);
+            if ((maj1 ?? 0) !== (maj2 ?? 0)) return (maj1 ?? 0) - (maj2 ?? 0);
+            return (min1 ?? 0) - (min2 ?? 0);
+          };
+
           // Reflexive: version equals itself
           assertEquals(v1 === v1, true);
+          assertEquals(compareVersions(v1, v1), 0);
 
           // If major versions differ, comparison is determined by major
           if (major1 !== major2) {
             const cmp = major1 > major2;
-            assertEquals(v1 > v2, cmp);
+            assertEquals(compareVersions(v1, v2) > 0, cmp);
           } else if (minor1 !== minor2) {
             // If major same, compare minor
             const cmp = minor1 > minor2;
-            assertEquals(v1 > v2, cmp);
+            assertEquals(compareVersions(v1, v2) > 0, cmp);
           }
         },
       ),
