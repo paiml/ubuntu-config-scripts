@@ -29,5 +29,9 @@ export { default as fc } from "https://esm.sh/fast-check@3.19.0";
 // Zod for runtime validation
 export { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 
+// Turso/LibSQL database client
+export { createClient } from "https://esm.sh/@libsql/client@0.5.6/web";
+export type { Client, Config, ResultSet } from "https://esm.sh/@libsql/client@0.5.6/web";
+
 // Add more dependencies as needed
 // export { something } from "https://deno.land/x/module@version/mod.ts";
