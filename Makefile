@@ -38,7 +38,8 @@ AUTO_UPDATE_DENO := true
         deps deps-outdated deps-update deps-update-dry deps-update-interactive \
         deps-lock deps-verify deps-clean pmat-info \
         pmat-quality-gate pmat-complexity pmat-debt pmat-dead-code pmat-context \
-        pmat-health pmat-hooks-install pmat-hooks-status pmat-all
+        pmat-health pmat-hooks-install pmat-hooks-status pmat-all \
+        seed-db seed-db-force search search-audio search-system search-dev
 
 # Primary targets
 help: ## Show this help message
@@ -481,3 +482,71 @@ pmat-hooks-status: ## Check PMAT hooks status
 	pmat hooks status
 
 pmat-all: pmat-complexity pmat-debt pmat-dead-code pmat-quality-gate ## Run all PMAT analyses
+
+# ═══════════════════════════════════════════════════════════════════
+# Semantic Search
+# ═══════════════════════════════════════════════════════════════════
+
+seed-db: _ensure-deno ## Seed database with script metadata and embeddings
+	@echo "$(CYAN)🌱 Seeding database...$(NC)"
+	@if [ ! -f .env ]; then \
+		echo "$(RED)❌ .env file not found. Copy .env.example and configure.$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-env --allow-net --allow-read scripts/seed.ts
+
+seed-db-force: _ensure-deno ## Force reseed (drop and recreate schema)
+	@echo "$(CYAN)🌱 Force reseeding database...$(NC)"
+	@if [ ! -f .env ]; then \
+		echo "$(RED)❌ .env file not found. Copy .env.example and configure.$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-env --allow-net --allow-read scripts/seed.ts --force
+
+search: _ensure-deno ## Search scripts with natural language (usage: make search QUERY="your query")
+	@if [ -z "$(QUERY)" ]; then \
+		echo "$(RED)❌ QUERY not provided. Usage: make search QUERY=\"configure audio\"$(NC)"; \
+		exit 1; \
+	fi
+	@if [ ! -f .env ]; then \
+		echo "$(RED)❌ .env file not found. Copy .env.example and configure.$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(CYAN)🔍 Searching for: \"$(QUERY)\"$(NC)"
+	@deno run --allow-env --allow-net --allow-read scripts/search.ts "$(QUERY)"
+
+search-audio: _ensure-deno ## Search audio scripts (usage: make search-audio QUERY="your query")
+	@if [ -z "$(QUERY)" ]; then \
+		echo "$(RED)❌ QUERY not provided. Usage: make search-audio QUERY=\"fix microphone\"$(NC)"; \
+		exit 1; \
+	fi
+	@if [ ! -f .env ]; then \
+		echo "$(RED)❌ .env file not found. Copy .env.example and configure.$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(CYAN)🔍 Searching audio scripts for: \"$(QUERY)\"$(NC)"
+	@deno run --allow-env --allow-net --allow-read scripts/search.ts "$(QUERY)" --category=audio
+
+search-system: _ensure-deno ## Search system scripts (usage: make search-system QUERY="your query")
+	@if [ -z "$(QUERY)" ]; then \
+		echo "$(RED)❌ QUERY not provided. Usage: make search-system QUERY=\"disk usage\"$(NC)"; \
+		exit 1; \
+	fi
+	@if [ ! -f .env ]; then \
+		echo "$(RED)❌ .env file not found. Copy .env.example and configure.$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(CYAN)🔍 Searching system scripts for: \"$(QUERY)\"$(NC)"
+	@deno run --allow-env --allow-net --allow-read scripts/search.ts "$(QUERY)" --category=system
+
+search-dev: _ensure-deno ## Search dev scripts (usage: make search-dev QUERY="your query")
+	@if [ -z "$(QUERY)" ]; then \
+		echo "$(RED)❌ QUERY not provided. Usage: make search-dev QUERY=\"deploy\"$(NC)"; \
+		exit 1; \
+	fi
+	@if [ ! -f .env ]; then \
+		echo "$(RED)❌ .env file not found. Copy .env.example and configure.$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(CYAN)🔍 Searching dev scripts for: \"$(QUERY)\"$(NC)"
+	@deno run --allow-env --allow-net --allow-read scripts/search.ts "$(QUERY)" --category=dev
