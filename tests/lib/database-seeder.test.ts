@@ -109,12 +109,10 @@ Deno.test("DatabaseSeeder - initializeSchema creates tables", async () => {
 
   // Mock the execute method
   let schemaExecuted = false;
-  const originalExecute = client.execute.bind(client);
   client.execute = async (sql: string) => {
     if (sql.includes("CREATE TABLE")) {
       schemaExecuted = true;
     }
-    return originalExecute(sql);
   };
 
   await seeder.initializeSchema();
@@ -201,12 +199,10 @@ Deno.test("DatabaseSeeder - seedScripts processes and inserts scripts", async ()
 
   // Mock client execute
   let insertCount = 0;
-  const originalExecute = client.execute.bind(client);
   client.execute = async (sql: string) => {
     if (sql.includes("INSERT") || sql.includes("REPLACE")) {
       insertCount++;
     }
-    return originalExecute(sql);
   };
 
   // Create test script
@@ -231,7 +227,6 @@ Deno.test("DatabaseSeeder - seedScripts processes and inserts scripts", async ()
   } finally {
     await Deno.remove(tempDir, { recursive: true });
     embedder.generateBatch = originalGenerate;
-    client.execute = originalExecute;
   }
 });
 
@@ -450,6 +445,9 @@ Deno.test("DatabaseSeeder - seedScripts reports progress", async () => {
       model: "text-embedding-3-small",
     }));
   };
+
+  // Mock client execute
+  client.execute = async () => {};
 
   // Create test scripts
   const tempDir = await Deno.makeTempDir();
