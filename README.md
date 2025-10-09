@@ -99,6 +99,7 @@ make ruchy-ci             # Full CI pipeline with quality gates
 - 🔄 **Auto-Update Deno**: Automatically keeps Deno up to date
 - 📦 **Binary Deployment**: Compile scripts to self-contained executables
 - 🔍 **Semantic Search**: Natural language search for scripts using vector embeddings
+- 🔌 **MCP Integration**: Query scripts via Model Context Protocol in Claude Desktop
 - 🔒 **Strict Type Safety**: Full TypeScript strict mode with runtime validation
 - 🎲 **Property Testing**: Contract-based testing with fast-check
 - 📚 **Cargo-style Dependencies**: Modern dependency management
@@ -374,6 +375,47 @@ Found 3 results:
 - **Similarity Algorithm**: Cosine similarity for semantic matching
 - **Test Coverage**: 80%+ with property-based testing
 - **Documentation**: See [ticket files](docs/tickets/) for implementation details
+
+### MCP Integration (Claude Desktop)
+
+Use semantic search directly from Claude Desktop via Model Context Protocol!
+
+**Quick Setup:**
+
+1. Seed the database: `make seed-db`
+2. Add to Claude Desktop config (`~/.config/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "ubuntu-scripts": {
+      "command": "deno",
+      "args": [
+        "run", "--allow-env", "--allow-net", "--allow-read",
+        "/full/path/to/scripts/mcp-server.ts"
+      ],
+      "env": {
+        "TURSO_URL": "your-turso-url",
+        "TURSO_AUTH_TOKEN": "your-token",
+        "OPENAI_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+3. Restart Claude Desktop
+
+**Usage:**
+
+Ask Claude natural language questions like:
+- "Search for scripts that fix audio issues"
+- "Show me all system configuration scripts"
+- "What does the configure-obs script do?"
+
+Claude will use the MCP tools (`search_scripts`, `list_scripts`, `get_script`) to query your local script database.
+
+**Full Documentation:** [docs/MCP_INTEGRATION.md](docs/MCP_INTEGRATION.md)
 
 ## Development
 

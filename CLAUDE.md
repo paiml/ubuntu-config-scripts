@@ -51,6 +51,61 @@ Once registered, use PMAT features through MCP tools:
 3. **For refactoring**: Use MCP refactor tools with real-time analysis
 4. **Quality enforcement**: Use MCP enforce for extreme quality standards
 
+## Ubuntu Scripts MCP Integration
+
+**NEW**: Ubuntu Config Scripts now provides its own MCP server for semantic script discovery!
+
+### Setting Up Ubuntu Scripts MCP
+
+```json
+// In Claude Desktop settings:
+{
+  "mcpServers": {
+    "pmat": {
+      "command": "pmat",
+      "args": ["serve", "--mode", "mcp"]
+    },
+    "ubuntu-scripts": {
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-env",
+        "--allow-net",
+        "--allow-read",
+        "/home/YOUR_USERNAME/src/ubuntu-config-scripts/scripts/mcp-server.ts"
+      ],
+      "env": {
+        "TURSO_URL": "libsql://your-database.turso.io",
+        "TURSO_AUTH_TOKEN": "your-auth-token",
+        "OPENAI_API_KEY": "sk-your-api-key"
+      }
+    }
+  }
+}
+```
+
+### Using Ubuntu Scripts via MCP
+
+Once registered, use these MCP tools for script discovery:
+- `search_scripts` - Natural language semantic search (e.g., "find audio configuration scripts")
+- `list_scripts` - Browse all scripts, optionally filtered by category
+- `get_script` - Get detailed information about a specific script
+
+**Example Usage**:
+```
+User: "How do I fix microphone issues?"
+Claude: [Uses search_scripts tool with query "fix microphone"]
+Claude: "I found 3 relevant scripts: enable-mic.ts, configure-audio.ts, diagnose-av-issues.ts..."
+```
+
+### Prerequisites for MCP Server
+
+1. **Seed the database**: Run `make seed-db` to index all scripts
+2. **Configure .env**: Add Turso and OpenAI credentials
+3. **Restart Claude Desktop**: After adding MCP server configuration
+
+See [docs/MCP_INTEGRATION.md](docs/MCP_INTEGRATION.md) for complete setup instructions.
+
 ## Project Overview
 
 Ubuntu Config Scripts is a collection of system configuration and management tools for Ubuntu, available in two implementations:
