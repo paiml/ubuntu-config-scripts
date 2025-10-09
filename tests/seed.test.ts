@@ -1,6 +1,5 @@
 import {
   assertEquals,
-  assertExists,
 } from "../deps.ts";
 import {
   parseArgs,
