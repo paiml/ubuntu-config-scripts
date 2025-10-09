@@ -98,6 +98,7 @@ make ruchy-ci             # Full CI pipeline with quality gates
 - 🛠️ **Development Tools**: Deploy scripts as standalone binaries
 - 🔄 **Auto-Update Deno**: Automatically keeps Deno up to date
 - 📦 **Binary Deployment**: Compile scripts to self-contained executables
+- 🔍 **Semantic Search**: Natural language search for scripts using vector embeddings
 - 🔒 **Strict Type Safety**: Full TypeScript strict mode with runtime validation
 - 🎲 **Property Testing**: Contract-based testing with fast-check
 - 📚 **Cargo-style Dependencies**: Modern dependency management
@@ -289,6 +290,90 @@ make system-info             # Collect and store system information
 make system-info-json        # Export system info as JSON
 make system-info-verbose     # Verbose collection with all details
 ```
+
+### Semantic Search
+
+Search for scripts using natural language queries powered by vector embeddings and OpenAI. The semantic search system analyzes script metadata, descriptions, and content to find relevant scripts based on meaning, not just keywords.
+
+**Prerequisites:**
+
+Create a `.env` file with your API credentials:
+
+```bash
+# Required
+TURSO_URL=libsql://your-database.turso.io
+TURSO_AUTH_TOKEN=your-auth-token-here
+OPENAI_API_KEY=sk-your-api-key-here
+
+# Optional (defaults shown)
+EMBEDDING_MODEL=text-embedding-3-small
+EMBEDDING_DIMENSIONS=1536
+```
+
+**Initial Setup:**
+
+```bash
+# Seed the database with script metadata and embeddings (one-time setup)
+make seed-db
+
+# Force reseed (drop and recreate schema)
+make seed-db-force
+```
+
+**Search Commands:**
+
+```bash
+# Natural language search across all scripts
+make search QUERY="configure audio settings"
+make search QUERY="fix microphone issues"
+make search QUERY="optimize system for video editing"
+
+# Search within specific categories
+make search-audio QUERY="enable microphone"
+make search-system QUERY="NVIDIA driver"
+make search-dev QUERY="deployment tools"
+
+# Advanced search with options
+deno run --allow-env --allow-net --allow-read scripts/search.ts \
+  "configure OBS" --category=system --limit=5 --min-similarity=0.7
+```
+
+**Example Output:**
+
+```
+Found 3 results:
+
+[0.89] configure-obs.ts
+  Category: system
+  Automated OBS Studio setup for screencasting and course recording
+  Usage: make system-obs
+
+[0.82] configure-obs-high-quality.ts
+  Category: system
+  Configure OBS for high-quality recording (1080p, hardware encoding)
+  Usage: make system-obs-high
+
+[0.76] fix-obs-capture.ts
+  Category: system
+  Fix OBS screen capture issues on Ubuntu (XSHM capture)
+  Usage: make system-obs-fix-capture
+```
+
+**How it Works:**
+
+1. **Indexing**: Scripts are analyzed for metadata (description, usage, dependencies, tags)
+2. **Embeddings**: Text is converted to 1536-dimensional vectors using OpenAI's embedding model
+3. **Storage**: Metadata and embeddings stored in Turso (cloud-native SQLite with vector support)
+4. **Search**: Natural language queries converted to embeddings, cosine similarity finds closest matches
+5. **Ranking**: Results sorted by semantic similarity score (0.0 to 1.0)
+
+**Technical Details:**
+
+- **Vector Database**: Turso/LibSQL with BLOB storage for embeddings
+- **Embedding Model**: text-embedding-3-small (1536 dimensions)
+- **Similarity Algorithm**: Cosine similarity for semantic matching
+- **Test Coverage**: 80%+ with property-based testing
+- **Documentation**: See [ticket files](docs/tickets/) for implementation details
 
 ## Development
 
