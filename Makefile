@@ -39,7 +39,8 @@ AUTO_UPDATE_DENO := true
         deps-lock deps-verify deps-clean pmat-info \
         pmat-quality-gate pmat-complexity pmat-debt pmat-dead-code pmat-context \
         pmat-health pmat-hooks-install pmat-hooks-status pmat-all \
-        seed-db seed-db-force search search-audio search-system search-dev
+        seed-db seed-db-force search search-audio search-system search-dev \
+        runner-install runner-start runner-stop runner-status runner-restart
 
 # Primary targets
 help: ## Show this help message
@@ -550,3 +551,43 @@ search-dev: _ensure-deno ## Search dev scripts (usage: make search-dev QUERY="yo
 	fi
 	@echo "$(CYAN)🔍 Searching dev scripts for: \"$(QUERY)\"$(NC)"
 	@deno run --allow-env --allow-net --allow-read scripts/search.ts "$(QUERY)" --category=dev
+
+# ═══════════════════════════════════════════════════════════════════
+# GitHub Actions Runner Management
+# ═══════════════════════════════════════════════════════════════════
+
+runner-install: ## Install and configure GitHub Actions runner as a service
+	@echo "$(CYAN)🏃 Installing GitHub Actions runner as a service...$(NC)"
+	@if [ ! -d ~/actions-runner ]; then \
+		echo "$(RED)❌ GitHub Actions runner not found at ~/actions-runner$(NC)"; \
+		echo "$(YELLOW)Please configure the runner first using GitHub's setup instructions$(NC)"; \
+		exit 1; \
+	fi
+	@cd ~/actions-runner && sudo ./svc.sh install
+	@cd ~/actions-runner && sudo ./svc.sh start
+	@echo "$(GREEN)✅ GitHub Actions runner installed and started as a service!$(NC)"
+	@echo "$(CYAN)💡 The runner will now start automatically on reboot$(NC)"
+
+runner-start: ## Start the GitHub Actions runner service
+	@echo "$(CYAN)▶️  Starting GitHub Actions runner...$(NC)"
+	@cd ~/actions-runner && sudo ./svc.sh start
+	@echo "$(GREEN)✅ Runner started!$(NC)"
+
+runner-stop: ## Stop the GitHub Actions runner service
+	@echo "$(CYAN)⏹️  Stopping GitHub Actions runner...$(NC)"
+	@cd ~/actions-runner && sudo ./svc.sh stop
+	@echo "$(GREEN)✅ Runner stopped!$(NC)"
+
+runner-status: ## Check GitHub Actions runner status
+	@echo "$(CYAN)📊 Checking GitHub Actions runner status...$(NC)"
+	@cd ~/actions-runner && sudo ./svc.sh status || true
+	@echo ""
+	@echo "$(CYAN)🔍 Runner process:$(NC)"
+	@pgrep -af "Runner.Listener" || echo "$(YELLOW)⚠️  Runner process not found$(NC)"
+
+runner-restart: ## Restart the GitHub Actions runner service
+	@echo "$(CYAN)🔄 Restarting GitHub Actions runner...$(NC)"
+	@cd ~/actions-runner && sudo ./svc.sh stop
+	@sleep 2
+	@cd ~/actions-runner && sudo ./svc.sh start
+	@echo "$(GREEN)✅ Runner restarted!$(NC)"

@@ -606,13 +606,30 @@ Deployed binaries are self-contained and don't require Deno runtime.
 
 ## CI/CD
 
-This project uses [Gunner](https://github.com/paiml/gunner) for cost-effective CI/CD on AWS spot instances:
+This project uses self-hosted GitHub Actions runners for continuous integration:
 
 - **Automatic builds** on every push and PR
 - **Linux binaries** for x64 and ARM64 architectures
 - **Security scanning** for secrets and unsafe patterns
 - **Dependency management** with Cargo-style commands
-- **Cost optimization** using spot instances (80% savings)
+- **Self-hosted runner** configured with auto-start on reboot
+
+### GitHub Actions Runner Management
+
+The project includes Makefile commands for managing the self-hosted runner:
+
+```bash
+# Install runner as a service (auto-starts on reboot)
+make runner-install
+
+# Manage the runner
+make runner-start    # Start the runner
+make runner-stop     # Stop the runner
+make runner-status   # Check runner status
+make runner-restart  # Restart the runner
+```
+
+**Full Documentation:** [docs/github-runner.md](docs/github-runner.md)
 
 ### Running CI Locally
 
