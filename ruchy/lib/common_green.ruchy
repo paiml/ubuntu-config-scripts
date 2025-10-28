@@ -140,8 +140,8 @@ fun require_env(key: &str) -> String {
 
 // Check if running as root (UID 0)
 fun is_root() -> bool {
-    // Simplified for Ruchy - assume Unix
-    unsafe { libc::getuid() == 0 }
+    // TODO: Implement with libc after testing other functions
+    false
 }
 
 // Require running as root or panic
@@ -152,18 +152,16 @@ fun require_root() {
 }
 
 // Execute function with temporary directory (cleanup after)
-// Note: Simplified for Ruchy - returns temp dir path
-fun with_temp_dir() -> String {
-    let temp_dir = String::from("/tmp/ruchy_temp_12345");
-    fs::create_dir_all(&temp_dir).expect("Failed to create temp dir");
-    temp_dir
-}
+// TODO: Implement after resolving syntax issues
+// fun with_temp_dir() -> String {
+//     let temp_dir = String::from("/tmp/ruchy_temp_12345");
+//     fs::create_dir_all(&temp_dir).expect("Failed to create temp dir");
+//     temp_dir
+// }
 
 // Interactive yes/no confirmation prompt
-fun confirm(message: &str, default_val: bool) -> bool {
-    println!("{} [y/n]: ", message);
-
-    // For now, return default
-    // Full implementation would read stdin
-    default_val
-}
+// TODO: Implement after resolving parameter issues
+// fun confirm(message: &str, default_val: bool) -> bool {
+//     println!("{} [y/n]: ", message);
+//     default_val
+// }
