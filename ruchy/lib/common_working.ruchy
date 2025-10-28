@@ -1,0 +1,144 @@
+// RUCHY-002: Common Utilities Implementation (GREEN Phase)
+// Clean implementation with v3.140.0
+
+use std::collections::HashMap;
+use std::process::Command;
+use std::fs;
+use std::env;
+use std::path::Path;
+
+// Command execution result
+struct CommandResult {
+    success: bool,
+    stdout: String,
+    stderr: String,
+    code: i32,
+}
+
+// Parse command-line arguments
+fun parse_args(args: Vec<String>) -> HashMap<String, String> {
+    let mut parsed = HashMap::new();
+    let mut i = 0;
+
+    while i < args.len() {
+        let arg = &args[i];
+
+        if arg.starts_with("--") {
+            let key_part = &arg[2..];
+
+            if let Some(eq_pos) = key_part.find('=') {
+                let key = &key_part[0..eq_pos];
+                let value = &key_part[eq_pos + 1..];
+                parsed.insert(key.to_string(), value.to_string());
+            } else {
+                if i + 1 < args.len() && !args[i + 1].starts_with('-') {
+                    i += 1;
+                    parsed.insert(key_part.to_string(), args[i].clone());
+                } else {
+                    parsed.insert(key_part.to_string(), String::from("true"));
+                }
+            }
+        } else if arg.starts_with('-') && arg.len() == 2 {
+            let key = &arg[1..];
+
+            if i + 1 < args.len() && !args[i + 1].starts_with('-') {
+                i += 1;
+                parsed.insert(key.to_string(), args[i].clone());
+            } else {
+                parsed.insert(key.to_string(), String::from("true"));
+            }
+        }
+
+        i += 1;
+    }
+
+    parsed
+}
+
+// Check if a command exists in PATH
+fun command_exists(command: &str) -> bool {
+    Command::new("which")
+        .arg(command)
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+// Require a command to exist or panic
+fun require_command(command: &str) {
+    if !command_exists(command) {
+        panic!("Required command '{}' not found in PATH", command);
+    }
+}
+
+// Run a command and capture output
+fun run_command(cmd: Vec<String>) -> CommandResult {
+    if cmd.is_empty() {
+        return CommandResult {
+            success: false,
+            stdout: String::new(),
+            stderr: String::from("Empty command"),
+            code: -1,
+        };
+    }
+
+    let result = Command::new(&cmd[0])
+        .args(&cmd[1..])
+        .output();
+
+    match result {
+        Ok(output) => {
+            CommandResult {
+                success: output.status.success(),
+                stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+                stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+                code: output.status.code().unwrap_or(-1),
+            }
+        }
+        Err(e) => {
+            CommandResult {
+                success: false,
+                stdout: String::new(),
+                stderr: format!("Failed to execute: {}", e),
+                code: -1,
+            }
+        }
+    }
+}
+
+// Check if file or directory exists
+fun file_exists(path: &str) -> bool {
+    Path::new(path).exists()
+}
+
+// Create directory recursively
+fun ensure_dir(path: &str) {
+    if let Err(e) = fs::create_dir_all(path) {
+        panic!("Failed to create directory '{}': {}", path, e);
+    }
+}
+
+// Get environment variable with default
+fun get_env_or_default(key: &str, default_value: &str) -> String {
+    env::var(key).unwrap_or_else(|_| default_value.to_string())
+}
+
+// Require environment variable or panic
+fun require_env(key: &str) -> String {
+    env::var(key).unwrap_or_else(|_| {
+        panic!("Required environment variable '{}' not set", key);
+    })
+}
+
+// Check if running as root (UID 0)
+fun is_root() -> bool {
+    // Stub implementation - would use libc::getuid() in full version
+    false
+}
+
+// Require running as root or panic
+fun require_root() {
+    if !is_root() {
+        panic!("This script must be run as root (use sudo)");
+    }
+}
