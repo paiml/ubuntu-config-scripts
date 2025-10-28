@@ -1,6 +1,6 @@
 # RUCHY-002: Convert lib/common.ts to Pure Ruchy
 
-## Status: RED Phase Complete ✅ (with compiler limitations noted)
+## Status: RED Phase Complete ✅ - Ready for GREEN
 
 ### Ticket Information
 - **ID**: RUCHY-002
@@ -47,11 +47,11 @@ Converting comprehensive common utilities library with 13 major functions:
 - **Syntax**: Valid (verified with `ruchy check`)
 - **Status**: Tests ready
 
-#### Implementation Stub ⚠️
+#### Implementation Stub ✅
 - **File**: `ruchy/lib/common_v2.ruchy`
-- **Status**: Partial - hits same Ruchy compiler bug as RUCHY-001
-- **Working**: 11/13 functions (struct, parse_args, commands, files, env, system utils)
-- **Blocked**: 2/13 functions (`with_temp_dir`, `confirm`) due to compiler bug
+- **Status**: Ready - false alarm on compiler bug
+- **Functions**: 13/13 stubbed (all with panic!)
+- **Note**: Original syntax errors were user error, not compiler issues
 
 ### TypeScript Source
 - **Original**: `scripts/lib/common.ts` (168 lines)
@@ -76,13 +76,12 @@ Converting comprehensive common utilities library with 13 major functions:
 20-22: System utilities (is root, require command, with temp dir stub)
 23-25: Capture tests (stdout, stderr, require command success)
 
-### Compiler Bug Impact
+### False Alarm Resolution
 
-Same "Function parameters must be simple identifiers" error as RUCHY-001.
-- Error message unclear and line numbers incorrect
-- Affects certain function signatures
-- Minimal reproduction created: `ruchy/lib/common_minimal.ruchy`
-- Working constructs identified: struct, HashMap, Vec params, simple returns
+Initial syntax errors were user error, not compiler bugs:
+- Incorrect function syntax caused misleading errors
+- Minimal reproduction in `common_minimal.ruchy` helped identify issue
+- All constructs work correctly: struct, HashMap, Vec params, returns
 
 ### Files Created
 
@@ -97,6 +96,6 @@ ruchy/
 
 ---
 
-**Status**: RED phase complete, GREEN phase BLOCKED on compiler bug
+**Status**: RED phase complete, ready for GREEN phase
 **Last Updated**: 2025-10-28
-**Next**: Wait for Ruchy bug fix, then implement 11 working functions
+**Next**: Implement all 13 functions with proper Ruchy syntax

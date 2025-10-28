@@ -452,66 +452,57 @@ If Ruchy version fails in production:
 4. **Establish CI/CD**: Automate 15-tool quality gate
 5. **Begin Phase 1**: Foundation libraries
 
-## Bug Reporting Protocol
+## Debugging and Problem-Solving Protocol
 
-**CRITICAL: If you discover a Ruchy bug, STOP THE LINE immediately!**
+When encountering issues during Ruchy conversion:
 
-Following the Toyota Production System philosophy, any team member finding a defect must halt work and address it:
+### Step 1: Verify Your Syntax
+- **Create minimal reproduction**: Strip down to simplest failing example
+- **Check examples**: Reference `../rosetta-ruchy/` and `../ruchy-book/`
+- **Test incrementally**: Build up complexity to isolate the issue
+- **Verify assumptions**: Don't assume compiler bugs - verify syntax first
 
-### When to Stop The Line
+### Step 2: Only File Bugs When Confirmed
+File a bug at `git@github.com:paiml/ruchy.git` ONLY after:
+- ✅ Creating minimal reproduction
+- ✅ Verifying syntax against examples
+- ✅ Testing with incremental complexity
+- ✅ Confirming it's not user error
+- ✅ Checking documentation for correct usage
 
-Stop work and file a bug if you encounter:
-- Ruchy compiler crashes or panics
-- Invalid syntax rejected incorrectly (or valid syntax accepted incorrectly)
-- `ruchy test` producing incorrect results
-- `ruchy check` false positives/negatives
-- Inconsistent behavior between Ruchy and Rust backends
-- Documentation contradictions
-- Toolchain failures (build, test, coverage, quality-gate)
+### Bug Report Template
+```markdown
+## Bug Description
+[Clear description of issue]
 
-### Bug Reporting Process
+## Minimal Reproduction
+```ruchy
+// Minimal code demonstrating issue
+// Verified against rosetta-ruchy examples
+```
 
-1. **STOP**: Halt all conversion work immediately
-2. **Document**: Capture minimal reproducible example
-3. **File Bug**: Open issue at `git@github.com:paiml/ruchy.git`
-4. **Template**:
-   ```markdown
-   ## Bug Description
-   [Clear description of issue]
+## Expected Behavior
+[What should happen based on docs/examples]
 
-   ## Minimal Reproduction
-   ```ruchy
-   // Minimal code demonstrating issue
-   ```
+## Actual Behavior
+[What actually happens]
 
-   ## Expected Behavior
-   [What should happen]
+## Verification Steps
+- [ ] Tested minimal example
+- [ ] Checked against rosetta-ruchy
+- [ ] Reviewed ruchy-book documentation
+- [ ] Not a syntax error
 
-   ## Actual Behavior
-   [What actually happens]
+## Environment
+- Ruchy version: [output of `ruchy --version`]
+- OS: [Ubuntu version]
+```
 
-   ## Environment
-   - Ruchy version: [output of `ruchy --version`]
-   - OS: [Ubuntu version]
-   - Cargo version: [output of `cargo --version`]
-
-   ## Additional Context
-   [Any relevant details, error messages, stack traces]
-   ```
-
-5. **Wait**: Do NOT work around the bug or continue with affected conversion
-6. **Track**: Add bug reference to ticket blocking you (e.g., "BLOCKED: ruchy#42")
-7. **Resume**: Only continue after bug is fixed or confirmed as "working as intended"
-
-### Philosophy
-
-The "Stop The Line" approach ensures:
-- **Zero defects propagate**: Bugs caught immediately, not accumulated
-- **Quality over speed**: Better to pause than ship broken code
-- **Team empowerment**: Any developer can halt for quality
-- **Continuous improvement**: Bugs become learning opportunities
-
-**Reference**: See `../ruchyruchy/` for examples of this process in practice
+### Philosophy: Verify First, Report Second
+- **Verify assumptions**: Most "bugs" are user errors
+- **Learn from examples**: Use rosetta-ruchy as reference
+- **Incremental debugging**: Build minimal reproductions
+- **Quality reports**: Only file well-verified bugs
 
 ## References
 
