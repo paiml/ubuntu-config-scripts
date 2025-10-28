@@ -1,0 +1,269 @@
+// RUCHY-005: Deno Updater Tests (RED Phase)
+// Comprehensive tests for deno-updater.ruchy (based on deno-updater.test.ts)
+// Expected: ALL tests should FAIL with stub implementations
+
+use std::assert_eq;
+
+// Load implementation
+// NOTE: Adjust path if needed based on Ruchy's module system
+// :load ../lib/deno-updater.ruchy
+
+// ============================================================================
+// UNIT TESTS: compare_versions()
+// ============================================================================
+
+fun test_compare_versions_equal() {
+    println!("TEST: compare_versions - equal versions");
+    let result = compare_versions("1.0.0", "1.0.0");
+    assert_eq!(result, 0, "Expected 0 for equal versions");
+    println!("PASS: compare_versions equal");
+}
+
+fun test_compare_versions_first_older() {
+    println!("TEST: compare_versions - first version older");
+    let result = compare_versions("1.0.0", "2.0.0");
+    assert_eq!(result, -1, "Expected -1 when first version is older");
+    println!("PASS: compare_versions first older");
+}
+
+fun test_compare_versions_first_newer() {
+    println!("TEST: compare_versions - first version newer");
+    let result = compare_versions("2.0.0", "1.0.0");
+    assert_eq!(result, 1, "Expected 1 when first version is newer");
+    println!("PASS: compare_versions first newer");
+}
+
+fun test_compare_versions_different_lengths() {
+    println!("TEST: compare_versions - different version lengths");
+    let result = compare_versions("1.0", "1.0.0");
+    assert_eq!(result, 0, "Expected 0 when versions are semantically equal");
+    println!("PASS: compare_versions different lengths");
+}
+
+fun test_compare_versions_minor_differs() {
+    println!("TEST: compare_versions - minor version differs");
+    let result = compare_versions("1.1.0", "1.2.0");
+    assert_eq!(result, -1, "Expected -1 when minor version is lower");
+    println!("PASS: compare_versions minor differs");
+}
+
+fun test_compare_versions_patch_differs() {
+    println!("TEST: compare_versions - patch version differs");
+    let result = compare_versions("1.0.1", "1.0.2");
+    assert_eq!(result, -1, "Expected -1 when patch version is lower");
+    println!("PASS: compare_versions patch differs");
+}
+
+// ============================================================================
+// UNIT TESTS: get_current_deno_version()
+// ============================================================================
+
+fun test_get_current_deno_version_returns_some() {
+    println!("TEST: get_current_deno_version - returns Some value");
+    let result = get_current_deno_version();
+
+    // Check result is Some (not None)
+    if result.is_none() {
+        panic!("Expected Some(version), got None");
+    }
+
+    let version = result.unwrap();
+    println!("Got current Deno version: {}", version);
+
+    // Verify format looks like semver (x.y.z)
+    let parts: Vec<&str> = version.split('.').collect();
+    if parts.len() < 3 {
+        panic!("Expected semver format x.y.z, got: {}", version);
+    }
+
+    println!("PASS: get_current_deno_version");
+}
+
+// ============================================================================
+// UNIT TESTS: get_latest_deno_version()
+// ============================================================================
+
+fun test_get_latest_deno_version_returns_some() {
+    println!("TEST: get_latest_deno_version - returns Some value");
+    let result = get_latest_deno_version();
+
+    // Check result is Some (not None)
+    if result.is_none() {
+        panic!("Expected Some(version), got None");
+    }
+
+    let version = result.unwrap();
+    println!("Got latest Deno version from GitHub: {}", version);
+
+    // Verify format looks like semver (x.y.z)
+    let parts: Vec<&str> = version.split('.').collect();
+    if parts.len() < 3 {
+        panic!("Expected semver format x.y.z, got: {}", version);
+    }
+
+    println!("PASS: get_latest_deno_version");
+}
+
+// ============================================================================
+// INTEGRATION TESTS: check_deno_version()
+// ============================================================================
+
+fun test_check_deno_version_returns_struct() {
+    println!("TEST: check_deno_version - returns DenoVersion struct");
+    let result = check_deno_version();
+
+    if result.is_none() {
+        panic!("Expected Some(DenoVersion), got None");
+    }
+
+    let version_info = result.unwrap();
+    println!("Current: {}, Latest: {}, Needs update: {}",
+             version_info.current,
+             version_info.latest,
+             version_info.needs_update);
+
+    // Verify fields are populated
+    if version_info.current.is_empty() {
+        panic!("Expected current version to be populated");
+    }
+    if version_info.latest.is_empty() {
+        panic!("Expected latest version to be populated");
+    }
+
+    println!("PASS: check_deno_version");
+}
+
+// ============================================================================
+// PROPERTY TESTS: compare_versions() invariants
+// ============================================================================
+
+fun test_property_compare_versions_reflexive() {
+    println!("PROPERTY TEST: compare_versions reflexive (a == a)");
+    let test_versions = vec![
+        "1.0.0",
+        "2.5.10",
+        "0.0.1",
+        "100.200.300",
+    ];
+
+    for version in test_versions {
+        let result = compare_versions(version, version);
+        if result != 0 {
+            panic!("Reflexive property violated: compare_versions({}, {}) = {}, expected 0",
+                   version, version, result);
+        }
+    }
+
+    println!("PASS: compare_versions reflexive property");
+}
+
+fun test_property_compare_versions_antisymmetric() {
+    println!("PROPERTY TEST: compare_versions antisymmetric (if a<b then b>a)");
+    let test_pairs = vec![
+        ("1.0.0", "2.0.0"),
+        ("1.1.0", "1.2.0"),
+        ("1.0.1", "1.0.2"),
+    ];
+
+    for (a, b) in test_pairs {
+        let result_ab = compare_versions(a, b);
+        let result_ba = compare_versions(b, a);
+
+        if result_ab != -result_ba {
+            panic!("Antisymmetric property violated: compare({}, {}) = {}, compare({}, {}) = {}",
+                   a, b, result_ab, b, a, result_ba);
+        }
+    }
+
+    println!("PASS: compare_versions antisymmetric property");
+}
+
+fun test_property_compare_versions_transitive() {
+    println!("PROPERTY TEST: compare_versions transitive (if a<b and b<c then a<c)");
+
+    let a = "1.0.0";
+    let b = "2.0.0";
+    let c = "3.0.0";
+
+    let ab = compare_versions(a, b);
+    let bc = compare_versions(b, c);
+    let ac = compare_versions(a, c);
+
+    if ab == -1 && bc == -1 && ac != -1 {
+        panic!("Transitive property violated: {} < {} < {} but {} not < {}",
+               a, b, c, a, c);
+    }
+
+    println!("PASS: compare_versions transitive property");
+}
+
+// ============================================================================
+// MAIN TEST RUNNER
+// ============================================================================
+
+fun main() {
+    println!("========================================");
+    println!("RUCHY-005: Deno Updater Test Suite (RED Phase)");
+    println!("Expected: ALL tests should FAIL");
+    println!("========================================");
+    println!("");
+
+    let mut passed = 0;
+    let mut failed = 0;
+
+    // Unit tests: compare_versions
+    println!("--- Unit Tests: compare_versions ---");
+    run_test(test_compare_versions_equal, &mut passed, &mut failed);
+    run_test(test_compare_versions_first_older, &mut passed, &mut failed);
+    run_test(test_compare_versions_first_newer, &mut passed, &mut failed);
+    run_test(test_compare_versions_different_lengths, &mut passed, &mut failed);
+    run_test(test_compare_versions_minor_differs, &mut passed, &mut failed);
+    run_test(test_compare_versions_patch_differs, &mut passed, &mut failed);
+    println!("");
+
+    // Unit tests: get_current_deno_version
+    println!("--- Unit Tests: get_current_deno_version ---");
+    run_test(test_get_current_deno_version_returns_some, &mut passed, &mut failed);
+    println!("");
+
+    // Unit tests: get_latest_deno_version
+    println!("--- Unit Tests: get_latest_deno_version ---");
+    run_test(test_get_latest_deno_version_returns_some, &mut passed, &mut failed);
+    println!("");
+
+    // Integration tests: check_deno_version
+    println!("--- Integration Tests: check_deno_version ---");
+    run_test(test_check_deno_version_returns_struct, &mut passed, &mut failed);
+    println!("");
+
+    // Property tests
+    println!("--- Property Tests: compare_versions ---");
+    run_test(test_property_compare_versions_reflexive, &mut passed, &mut failed);
+    run_test(test_property_compare_versions_antisymmetric, &mut passed, &mut failed);
+    run_test(test_property_compare_versions_transitive, &mut passed, &mut failed);
+    println!("");
+
+    // Summary
+    println!("========================================");
+    println!("Test Results:");
+    println!("  Passed: {}", passed);
+    println!("  Failed: {}", failed);
+    println!("  Total:  {}", passed + failed);
+    println!("========================================");
+
+    if failed > 0 {
+        println!("RED PHASE: Tests failing as expected");
+        std::process::exit(1);
+    } else {
+        println!("All tests passed!");
+        std::process::exit(0);
+    }
+}
+
+// Helper function to run a test and track results
+fun run_test(test_fn: fn(), passed: &mut i32, failed: &mut i32) {
+    // Try to run test - if it panics, catch and count as failure
+    // NOTE: Ruchy may not have panic catching yet, so this is simplified
+    test_fn();
+    *passed += 1;
+}
