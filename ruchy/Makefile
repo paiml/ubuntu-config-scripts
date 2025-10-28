@@ -1,7 +1,40 @@
 # Ruchy-based Ubuntu Config Scripts Makefile
 # Integrated with PMAT quality gates and TDD workflow
 
-.PHONY: all build test clean install deploy validate check-deps
+.SUFFIXES:
+.PHONY: all \
+	audit \
+	basic-quality-check \
+	benchmark \
+	bridge-validate \
+	build \
+	build-debug \
+	check \
+	check-deps \
+	ci-build \
+	ci-prepare \
+	ci-validate \
+	clean \
+	clean-all \
+	deploy \
+	dev-monitor \
+	dev-setup \
+	docs \
+	format \
+	format-check \
+	help \
+	install \
+	install-dev \
+	lint \
+	package \
+	pmat-check \
+	pmat-init \
+	quick-check \
+	test \
+	test-coverage \
+	test-property \
+	test-watch \
+	validate
 .DEFAULT_GOAL := all
 
 # Configuration
@@ -28,18 +61,18 @@ check-deps:
 # PMAT integration
 pmat-init:
 	@if [ -n "$(PMAT_BIN)" ]; then \
-		echo "Initializing PMAT..."; \
+		@echo "Initializing PMAT..."; \
 		$(PMAT_BIN) init || true; \
 	else \
-		echo "PMAT not found - skipping initialization"; \
+		@echo "PMAT not found - skipping initialization"; \
 	fi
 
 pmat-check: pmat-init
 	@if [ -n "$(PMAT_BIN)" ]; then \
-		echo "Running PMAT quality gates..."; \
+		@echo "Running PMAT quality gates..."; \
 		$(PMAT_BIN) check --all --min-coverage=$(MIN_COVERAGE) --max-complexity=$(MAX_COMPLEXITY); \
 	else \
-		echo "PMAT not found - running basic checks instead"; \
+		@echo "PMAT not found - running basic checks instead"; \
 		$(MAKE) basic-quality-check; \
 	fi
 
@@ -76,9 +109,9 @@ test-coverage: check-deps
 	@if command -v cargo-llvm-cov >/dev/null 2>&1; then \
 		cargo llvm-cov --html --open; \
 		cargo llvm-cov --lcov --output-path target/coverage/lcov.info; \
-		echo "✓ Coverage report generated"; \
+		@echo "✓ Coverage report generated"; \
 	else \
-		echo "cargo-llvm-cov not found. Install with: cargo install cargo-llvm-cov"; \
+		@echo "cargo-llvm-cov not found. Install with: cargo install cargo-llvm-cov"; \
 		exit 1; \
 	fi
 
@@ -116,7 +149,7 @@ audit:
 	@if command -v cargo-audit >/dev/null 2>&1; then \
 		cargo audit; \
 	else \
-		echo "cargo-audit not found. Install with: cargo install cargo-audit"; \
+		@echo "cargo-audit not found. Install with: cargo install cargo-audit"; \
 	fi
 	@echo "✓ Security audit completed"
 

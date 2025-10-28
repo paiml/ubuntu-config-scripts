@@ -3,6 +3,9 @@
 # System configuration and management scripts
 #
 
+# Disable built-in suffix rules
+.SUFFIXES:
+
 # Colors for output
 RED := \033[0;31m
 GREEN := \033[0;32m
@@ -15,12 +18,77 @@ NC := \033[0m # No Color
 DENO := $(shell command -v deno 2>/dev/null)
 
 # Phony targets
-.PHONY: system-help system-all system-update-deno system-update-deno-check system-update-deno-force
+.PHONY: system-all \
+	system-av-diagnose \
+	system-av-fix \
+	system-av-test-playback \
+	system-bootstrap \
+	system-bootstrap-ruchy \
+	system-bootstrap-zero \
+	system-cleanup \
+	system-cleanup-all \
+	system-cleanup-auto \
+	system-cleanup-dry \
+	system-cleanup-rust \
+	system-davinci \
+	system-davinci-20 \
+	system-davinci-20-autofix \
+	system-davinci-20-final-fix \
+	system-davinci-20-fixed \
+	system-davinci-20-launch \
+	system-davinci-20-pango-fix \
+	system-davinci-20-run \
+	system-davinci-check \
+	system-davinci-cuda-fix \
+	system-davinci-diagnose \
+	system-davinci-dry \
+	system-davinci-fix \
+	system-davinci-fix-startup \
+	system-davinci-install \
+	system-davinci-isolated \
+	system-davinci-isolated-cleanup \
+	system-davinci-isolated-setup \
+	system-davinci-launch \
+	system-davinci-upgrade \
+	system-davinci-window \
+	system-disk-clean \
+	system-disk-usage \
+	system-disk-usage-home \
+	system-disk-usage-large \
+	system-disk-usage-root \
+	system-help \
+	system-ibus-restart \
+	system-info \
+	system-info-cpu \
+	system-info-json \
+	system-info-verbose \
+	system-kde-refresh \
+	system-kde-refresh-check \
+	system-kde-refresh-force \
+	system-nvidia-upgrade \
+	system-obs \
+	system-obs-audio \
+	system-obs-high \
+	system-obs-install \
+	system-obs-launch \
+	system-pipewire-monitor \
+	system-rust-optimize \
+	system-setup-sudo \
+	system-sudo-test \
+	system-time \
+	system-time-canary \
+	system-time-status \
+	system-time-sync \
+	system-update-deno \
+	system-update-deno-check \
+	system-update-deno-force \
+	system-webcam-enable \
+	system-webcam-force \
+	system-webcam-microdia
 .PHONY: system-davinci system-davinci-dry system-davinci-check system-davinci-fix
 .PHONY: system-setup-sudo system-sudo-test system-nvidia-upgrade
 .PHONY: system-obs system-obs-install system-obs-high system-obs-audio system-obs-launch
-.PHONY: system-bootstrap system-bootstrap-zero system-bootstrap-ruchy system-fix-apt
-.PHONY: system-setup-runner
+.PHONY: system-bootstrap system-bootstrap-zero system-bootstrap-ruchy
 
 system-help: ## Show system script commands
 	@echo "╔══════════════════════════════════════════════════════════════╗"
@@ -51,8 +119,7 @@ system-all: system-update-deno-check ## Run all system diagnostics
 system-bootstrap: ## Bootstrap a new Ubuntu machine with all development tools
 	@echo "$(CYAN)🚀 Bootstrapping Ubuntu machine...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(YELLOW)Deno not found. Running zero-dependency bootstrap first...$(NC)"; \
-		bash bootstrap.sh; \
+		@echo "$(YELLOW)Deno not found. Running zero-dependency bootstrap first...$(NC)" && bash bootstrap.sh; \
 	else \
 		deno run --allow-all scripts/system/bootstrap-machine.ts; \
 	fi
@@ -71,27 +138,24 @@ system-bootstrap-ruchy: ## Minimal bootstrap: Rust → Ruchy → Everything else
 system-update-deno: ## Update Deno to latest version (auto-update)
 	@echo "$(CYAN)🔄 Checking and updating Deno...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Installing Deno...$(NC)"; \
-		curl -fsSL https://deno.land/x/install/install.sh | sh; \
-		echo "$(YELLOW)⚠️  Please add Deno to your PATH and run this command again$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Installing Deno...$(NC)" && \
+		curl -fsSL https://deno.land/x/install/install.sh | sh && \
+		@echo "$(YELLOW)⚠️  Please add Deno to your PATH and run this command again$(NC)" && \
 		exit 1; \
 	fi
 	@deno run --allow-net --allow-run --allow-env scripts/system/update-deno.ts
 
 system-update-deno-check: ## Check for Deno updates only
 	@echo "$(CYAN)🔍 Checking for Deno updates...$(NC)"
-	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
-		exit 1; \
-	fi
+	@[ -n "$(DENO)" ] || (echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)" >&2 && exit 1)
 	@deno run --allow-net --allow-run --allow-env scripts/system/update-deno.ts --check-only
 
 system-update-deno-force: ## Force update Deno to latest version
 	@echo "$(CYAN)💪 Force updating Deno...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Installing Deno...$(NC)"; \
-		curl -fsSL https://deno.land/x/install/install.sh | sh; \
-		echo "$(YELLOW)⚠️  Please add Deno to your PATH and run this command again$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Installing Deno...$(NC)" && \
+		curl -fsSL https://deno.land/x/install/install.sh | sh && \
+		@echo "$(YELLOW)⚠️  Please add Deno to your PATH and run this command again$(NC)" && \
 		exit 1; \
 	fi
 	@deno run --allow-net --allow-run --allow-env scripts/system/update-deno.ts --force
@@ -117,11 +181,11 @@ system-rust-optimize: ## Optimize system for Rust development (64GB swap, ZRAM, 
 			elif command -v deno >/dev/null 2>&1; then \
 				deno run --allow-all scripts/system/optimize-rust-dev.ts; \
 			else \
-				echo "$(RED)Error: Deno not found. Please install Deno first.$(NC)"; \
+				@echo "$(RED)Error: Deno not found. Please install Deno first.$(NC)"; \
 				exit 1; \
 			fi ;; \
 		* ) \
-			echo "$(RED)Cancelled$(NC)" ;; \
+			@echo "$(RED)Cancelled$(NC)" ;; \
 	esac
 
 # DaVinci Resolve configuration
@@ -129,10 +193,10 @@ system-davinci: ## Configure NVIDIA drivers and CUDA for DaVinci Resolve
 	@echo "$(CYAN)🎬 Configuring DaVinci Resolve CUDA environment...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
 		if [ -f /home/$(SUDO_USER)/.local/bin/deno ]; then \
-			echo "$(YELLOW)⚠️  Using Deno from user home directory$(NC)"; \
+			@echo "$(YELLOW)⚠️  Using Deno from user home directory$(NC)"; \
 			/home/$(SUDO_USER)/.local/bin/deno run --allow-all scripts/system/configure-davinci.ts; \
 		else \
-			echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+			@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 			exit 1; \
 		fi \
 	else \
@@ -146,7 +210,7 @@ system-davinci-dry: ## Dry run DaVinci configuration (no changes)
 			DENO_PATH=$$([ -f /home/$(SUDO_USER)/.local/bin/deno ] && echo /home/$(SUDO_USER)/.local/bin/deno || echo /home/$(USER)/.local/bin/deno); \
 			$$DENO_PATH run --allow-all scripts/system/configure-davinci.ts --dry-run; \
 		else \
-			echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+			@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 			exit 1; \
 		fi \
 	else \
@@ -160,7 +224,7 @@ system-davinci-check: ## Check NVIDIA/CUDA status for DaVinci
 			DENO_PATH=$$([ -f /home/$(SUDO_USER)/.local/bin/deno ] && echo /home/$(SUDO_USER)/.local/bin/deno || echo /home/$(USER)/.local/bin/deno); \
 			$$DENO_PATH run --allow-all scripts/system/configure-davinci.ts --dry-run --skip-driver; \
 		else \
-			echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+			@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 			exit 1; \
 		fi \
 	else \
@@ -266,18 +330,18 @@ system-setup-sudo: ## Setup passwordless sudo for system scripts (requires sudo)
 system-sudo-test: ## Test if sudo is configured correctly
 	@echo "$(CYAN)🧪 Testing sudo configuration...$(NC)"
 	@if sudo -n /home/noah/.local/bin/deno run --allow-all scripts/system/configure-davinci.ts --help 2>/dev/null; then \
-		echo "$(GREEN)✅ Sudo is configured correctly!$(NC)"; \
-		echo "$(GREEN)   You can run system scripts without password.$(NC)"; \
+		@echo "$(GREEN)✅ Sudo is configured correctly!$(NC)"; \
+		@echo "$(GREEN)   You can run system scripts without password.$(NC)"; \
 	else \
-		echo "$(YELLOW)⚠️  Sudo requires password for system scripts.$(NC)"; \
-		echo "$(YELLOW)   Run 'make system-setup-sudo' to configure passwordless access.$(NC)"; \
+		@echo "$(YELLOW)⚠️  Sudo requires password for system scripts.$(NC)"; \
+		@echo "$(YELLOW)   Run 'make system-setup-sudo' to configure passwordless access.$(NC)"; \
 	fi
 
 # OBS Studio configuration
 system-obs: ## Configure OBS Studio for screencasting (medium quality)
 	@echo "$(CYAN)📹 Configuring OBS Studio for screencasting...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/configure-obs.ts
@@ -285,7 +349,7 @@ system-obs: ## Configure OBS Studio for screencasting (medium quality)
 system-obs-install: ## Install and configure OBS Studio
 	@echo "$(CYAN)📹 Installing and configuring OBS Studio...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/configure-obs.ts --install
@@ -293,7 +357,7 @@ system-obs-install: ## Install and configure OBS Studio
 system-obs-high: ## Configure OBS with high quality preset
 	@echo "$(CYAN)📹 Configuring OBS Studio (high quality)...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/configure-obs.ts --preset high
@@ -301,7 +365,7 @@ system-obs-high: ## Configure OBS with high quality preset
 system-obs-audio: ## Configure OBS with audio device selection
 	@echo "$(CYAN)🎤 Configuring OBS Studio with audio devices...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/configure-obs.ts --audio-devices
@@ -315,7 +379,7 @@ system-obs-launch: ## Launch OBS with Screencast profile
 system-av-diagnose: ## Diagnose audio/video issues before OBS/DaVinci
 	@echo "$(CYAN)🔍 Running comprehensive audio/video diagnostics...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/diagnose-av-issues.ts
@@ -323,7 +387,7 @@ system-av-diagnose: ## Diagnose audio/video issues before OBS/DaVinci
 system-av-test-playback: ## Run audio/video diagnostics with playback tests
 	@echo "$(CYAN)🎵 Running audio/video diagnostics with playback tests...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@echo "$(YELLOW)⚠️  This will create and play test audio/video files$(NC)"
@@ -332,32 +396,42 @@ system-av-test-playback: ## Run audio/video diagnostics with playback tests
 system-av-fix: ## Apply fixes for detected audio/video issues
 	@echo "$(CYAN)🔧 Applying audio/video fixes...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/diagnose-av-issues.ts --export-fixes
 	@if [ -f /tmp/av-fixes.sh ]; then \
-		echo "$(YELLOW)📝 Running generated fix script...$(NC)"; \
+		@echo "$(YELLOW)📝 Running generated fix script...$(NC)"; \
 		bash /tmp/av-fixes.sh; \
-		echo "$(GREEN)✅ Fixes applied!$(NC)"; \
+		@echo "$(GREEN)✅ Fixes applied!$(NC)"; \
 	else \
-		echo "$(YELLOW)ℹ️  No fixes needed or generated$(NC)"; \
+		@echo "$(YELLOW)ℹ️  No fixes needed or generated$(NC)"; \
 	fi
 
 system-pipewire-monitor: ## Install PipeWire monitor service for auto-recovery
 	@echo "$(CYAN)🔊 Installing PipeWire monitor service...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/create-pipewire-monitor.ts
 	@echo "$(GREEN)✅ PipeWire monitor installed!$(NC)"
 
+system-ibus-restart: ## Install weekly iBus restart timer to prevent Firefox input lag
+	@echo "$(CYAN)⌨️  Installing iBus restart timer...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@$(DENO) run --allow-all scripts/system/restart-ibus.ts
+	@echo "$(GREEN)✅ iBus restart timer installed!$(NC)"
+	@echo "$(YELLOW)💡 iBus will restart weekly to prevent input lag issues$(NC)"
+
 # Disk Usage Analysis
 system-disk-usage: ## Analyze disk usage and find large files
 	@echo "$(CYAN)💾 Analyzing disk usage...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/analyze-disk-usage.ts
@@ -365,7 +439,7 @@ system-disk-usage: ## Analyze disk usage and find large files
 system-disk-usage-home: ## Analyze disk usage in home directory
 	@echo "$(CYAN)💾 Analyzing home directory disk usage...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/analyze-disk-usage.ts ~
@@ -373,7 +447,7 @@ system-disk-usage-home: ## Analyze disk usage in home directory
 system-disk-usage-root: ## Analyze system-wide disk usage (requires sudo)
 	@echo "$(CYAN)💾 Analyzing system-wide disk usage...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@sudo $(DENO) run --allow-all scripts/system/analyze-disk-usage.ts /
@@ -381,7 +455,7 @@ system-disk-usage-root: ## Analyze system-wide disk usage (requires sudo)
 system-disk-usage-large: ## Find very large files (>500MB)
 	@echo "$(CYAN)💾 Finding very large files (>500MB)...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/analyze-disk-usage.ts --threshold 500
@@ -389,7 +463,7 @@ system-disk-usage-large: ## Find very large files (>500MB)
 system-disk-clean: ## Analyze disk and suggest cleanup with rclean
 	@echo "$(CYAN)🧹 Analyzing disk for cleanup opportunities...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/analyze-disk-usage.ts --threshold 50 --limit 30
@@ -398,7 +472,7 @@ system-disk-clean: ## Analyze disk and suggest cleanup with rclean
 system-cleanup: ## Clean up disk space (interactive)
 	@echo "$(CYAN)🧹 Starting disk cleanup...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/cleanup-disk.ts
@@ -406,7 +480,7 @@ system-cleanup: ## Clean up disk space (interactive)
 system-cleanup-dry: ## Preview what would be cleaned (dry run)
 	@echo "$(CYAN)🔍 Previewing cleanup targets...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/cleanup-disk.ts --dry-run
@@ -414,7 +488,7 @@ system-cleanup-dry: ## Preview what would be cleaned (dry run)
 system-cleanup-rust: ## Clean Rust build directories only
 	@echo "$(CYAN)📦 Cleaning Rust build directories...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/cleanup-disk.ts --no-cache
@@ -423,7 +497,7 @@ system-cleanup-all: ## Clean everything including system (requires sudo)
 	@echo "$(CYAN)💪 Full system cleanup...$(NC)"
 	@echo "$(YELLOW)⚠️  This will clean APT, snap, and system caches$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/cleanup-disk.ts --system
@@ -432,7 +506,7 @@ system-cleanup-auto: ## Automatic cleanup (no prompts - BE CAREFUL!)
 	@echo "$(CYAN)🤖 Automatic cleanup (no prompts)...$(NC)"
 	@echo "$(RED)⚠️  WARNING: This will clean without confirmation!$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/cleanup-disk.ts --no-interactive
@@ -445,7 +519,7 @@ system-time: ## Configure time for Spain (Europe/Madrid)
 			DENO_PATH=$$([ -f /home/$(SUDO_USER)/.deno/bin/deno ] && echo /home/$(SUDO_USER)/.deno/bin/deno || echo /home/$(USER)/.deno/bin/deno); \
 			$$DENO_PATH run --allow-all scripts/system/configure-time.ts; \
 		else \
-			echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
+			@echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
 			exit 1; \
 		fi \
 	else \
@@ -459,7 +533,7 @@ system-time-canary: ## Configure time for Canary Islands
 			DENO_PATH=$$([ -f /home/$(SUDO_USER)/.deno/bin/deno ] && echo /home/$(SUDO_USER)/.deno/bin/deno || echo /home/$(USER)/.deno/bin/deno); \
 			$$DENO_PATH run --allow-all scripts/system/configure-time.ts --canary; \
 		else \
-			echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
+			@echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
 			exit 1; \
 		fi \
 	else \
@@ -473,7 +547,7 @@ system-time-sync: ## Force immediate time synchronization
 			DENO_PATH=$$([ -f /home/$(SUDO_USER)/.deno/bin/deno ] && echo /home/$(SUDO_USER)/.deno/bin/deno || echo /home/$(USER)/.deno/bin/deno); \
 			$$DENO_PATH run --allow-all scripts/system/configure-time.ts --sync; \
 		else \
-			echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
+			@echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
 			exit 1; \
 		fi \
 	else \
@@ -492,7 +566,7 @@ system-info: ## Collect comprehensive system information to SQLite
 			DENO_PATH=$$([ -f /home/$(SUDO_USER)/.deno/bin/deno ] && echo /home/$(SUDO_USER)/.deno/bin/deno || echo /home/$(USER)/.deno/bin/deno); \
 			$$DENO_PATH run --allow-all scripts/system/collect-system-info.ts; \
 		else \
-			echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
+			@echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
 			exit 1; \
 		fi \
 	else \
@@ -506,7 +580,7 @@ system-info-verbose: ## Collect system info with verbose output
 			DENO_PATH=$$([ -f /home/$(SUDO_USER)/.deno/bin/deno ] && echo /home/$(SUDO_USER)/.deno/bin/deno || echo /home/$(USER)/.deno/bin/deno); \
 			$$DENO_PATH run --allow-all scripts/system/collect-system-info.ts --verbose; \
 		else \
-			echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
+			@echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
 			exit 1; \
 		fi \
 	else \
@@ -520,7 +594,7 @@ system-info-json: ## Export system info as JSON
 			DENO_PATH=$$([ -f /home/$(SUDO_USER)/.deno/bin/deno ] && echo /home/$(SUDO_USER)/.deno/bin/deno || echo /home/$(USER)/.deno/bin/deno); \
 			$$DENO_PATH run --allow-all scripts/system/collect-system-info.ts --export-json; \
 		else \
-			echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
+			@echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
 			exit 1; \
 		fi \
 	else \
@@ -534,7 +608,7 @@ system-info-cpu: ## Collect only CPU information
 			DENO_PATH=$$([ -f /home/$(SUDO_USER)/.deno/bin/deno ] && echo /home/$(SUDO_USER)/.deno/bin/deno || echo /home/$(USER)/.deno/bin/deno); \
 			$$DENO_PATH run --allow-all scripts/system/collect-system-info.ts -c cpu; \
 		else \
-			echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
+			@echo "$(RED)❌ Deno not found. Please install Deno first with 'make install'$(NC)"; \
 			exit 1; \
 		fi \
 	else \
@@ -545,7 +619,7 @@ system-info-cpu: ## Collect only CPU information
 system-kde-refresh: ## Refresh KDE desktop to fix black windows without rebooting
 	@echo "$(CYAN)🔄 Refreshing KDE desktop...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/refresh-kde-desktop.ts
@@ -553,7 +627,7 @@ system-kde-refresh: ## Refresh KDE desktop to fix black windows without rebootin
 system-kde-refresh-check: ## Check if KDE desktop can be refreshed
 	@echo "$(CYAN)🔍 Checking KDE desktop status...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/refresh-kde-desktop.ts --check-only
@@ -561,46 +635,54 @@ system-kde-refresh-check: ## Check if KDE desktop can be refreshed
 system-kde-refresh-force: ## Force refresh KDE desktop even if not running KDE
 	@echo "$(CYAN)💪 Force refreshing KDE desktop...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@$(DENO) run --allow-all scripts/system/refresh-kde-desktop.ts --force
 
-# APT Repository Repair
-system-fix-apt: ## Repair broken APT repositories and package lists
-	@echo "$(CYAN)🔧 Repairing APT repositories...$(NC)"
-	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+# Webcam Enable
+system-webcam-enable: ## Enable webcam and install required drivers
+	@echo "$(CYAN)📷 Enabling webcam...$(NC)"
+	@echo "$(YELLOW)⚠️  This requires sudo privileges$(NC)"
+	@if [ -x "/home/$$SUDO_USER/.deno/bin/deno" ]; then \
+		sudo /home/$$SUDO_USER/.deno/bin/deno run --allow-all scripts/system/enable-webcam.ts; \
+	elif [ -x "/home/$$USER/.deno/bin/deno" ]; then \
+		sudo /home/$$USER/.deno/bin/deno run --allow-all scripts/system/enable-webcam.ts; \
+	elif [ -x "/home/$$SUDO_USER/.local/bin/deno" ]; then \
+		sudo /home/$$SUDO_USER/.local/bin/deno run --allow-all scripts/system/enable-webcam.ts; \
+	elif [ -x "/home/noah/.local/bin/deno" ]; then \
+		sudo /home/noah/.local/bin/deno run --allow-all scripts/system/enable-webcam.ts; \
+	elif [ -x "/home/noah/.deno/bin/deno" ]; then \
+		sudo /home/noah/.deno/bin/deno run --allow-all scripts/system/enable-webcam.ts; \
+	elif command -v deno >/dev/null 2>&1; then \
+		sudo deno run --allow-all scripts/system/enable-webcam.ts; \
+	else \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
-	@$(DENO) run --allow-run --allow-read --allow-write scripts/system/fix-apt.ts
 
-# GitHub Self-Hosted Runner Setup
-system-configure-runner: ## Configure system for GitHub Actions self-hosted runner
-	@echo "$(CYAN)🔧 Configuring system for self-hosted runner...$(NC)"
-	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+system-webcam-microdia: ## Enable Microdia FC750R webcam specifically
+	@echo "$(CYAN)📷 Enabling Microdia webcam...$(NC)"
+	@echo "$(YELLOW)⚠️  This requires sudo privileges$(NC)"
+	@if [ -x "/home/noah/.deno/bin/deno" ]; then \
+		sudo /home/noah/.deno/bin/deno run --allow-all scripts/system/enable-microdia-webcam.ts; \
+	elif [ -x "/home/noah/.local/bin/deno" ]; then \
+		sudo /home/noah/.local/bin/deno run --allow-all scripts/system/enable-microdia-webcam.ts; \
+	elif command -v deno >/dev/null 2>&1; then \
+		sudo $$(which deno) run --allow-all scripts/system/enable-microdia-webcam.ts; \
+	else \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
-	@$(DENO) run --allow-all scripts/system/configure-self-hosted-runner.ts
 
-system-setup-runner: ## Setup GitHub Actions self-hosted runner (Linux-VM-Noah-MacPro-Intel)
-	@echo "$(CYAN)🏃 Setting up GitHub Actions runner...$(NC)"
-	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+system-webcam-force: ## Force enable webcam with aggressive methods
+	@echo "$(CYAN)💪 Force enabling webcam...$(NC)"
+	@echo "$(YELLOW)⚠️  This will reset USB and try multiple approaches$(NC)"
+	@if [ -x "/home/noah/.deno/bin/deno" ]; then \
+		sudo /home/noah/.deno/bin/deno run --allow-all scripts/system/force-enable-webcam.ts; \
+	elif command -v deno >/dev/null 2>&1; then \
+		sudo $$(which deno) run --allow-all scripts/system/force-enable-webcam.ts; \
+	else \
+		@echo "$(RED)❌ Deno not found.$(NC)"; \
 		exit 1; \
 	fi
-	@if [ -z "$(GITHUB_REPO_URL)" ]; then \
-		echo "$(RED)❌ GITHUB_REPO_URL environment variable not set$(NC)"; \
-		echo "$(YELLOW)Set it with: export GITHUB_REPO_URL=https://github.com/OWNER/REPO$(NC)"; \
-		exit 1; \
-	fi
-	@if [ -z "$(GITHUB_RUNNER_TOKEN)" ]; then \
-		echo "$(RED)❌ GITHUB_RUNNER_TOKEN environment variable not set$(NC)"; \
-		echo "$(YELLOW)Get token from: $(GITHUB_REPO_URL)/settings/actions/runners/new$(NC)"; \
-		exit 1; \
-	fi
-	@$(DENO) run --allow-all scripts/system/setup-github-runner.ts \
-		--name Linux-VM-Noah-MacPro-Intel \
-		--url $(GITHUB_REPO_URL) \
-		--token $(GITHUB_RUNNER_TOKEN)

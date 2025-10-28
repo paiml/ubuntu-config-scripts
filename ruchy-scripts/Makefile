@@ -1,7 +1,27 @@
 # Ruchy Ubuntu Config Scripts Makefile
 # Migration from TypeScript/Deno to native Ruchy implementation
 
-.PHONY: help check lint test run clean validate install
+.SUFFIXES:
+.PHONY: benchmark \
+	check \
+	ci-validate \
+	clean \
+	dev-check \
+	dev-test \
+	help \
+	install \
+	lint \
+	migrate-next \
+	run \
+	run-tests \
+	status \
+	test \
+	test-audio \
+	test-common \
+	test-logger \
+	test-schema \
+	test-system \
+	validate
 
 # Default target
 help:
@@ -108,10 +128,10 @@ clean:
 install:
 	@echo "📦 Checking Ruchy installation..."
 	@if ! command -v ruchy >/dev/null 2>&1; then \
-		echo "❌ Ruchy not found. Install with: cargo install ruchy"; \
+		@echo "❌ Ruchy not found. Install with: cargo install ruchy"; \
 		exit 1; \
 	else \
-		echo "✅ Ruchy is installed: $$(ruchy --version)"; \
+		@echo "✅ Ruchy is installed: $$(ruchy --version)"; \
 	fi
 
 # Migration progress tracking

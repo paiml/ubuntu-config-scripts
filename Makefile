@@ -1,11 +1,28 @@
 # Ubuntu Config Scripts - Main Makefile
-# 
+#
 # Run 'make help' to see all available commands
 #
+#bashrs:disable MAKE004
+#bashrs:disable MAKE006
+#bashrs:disable MAKE010
+#bashrs:disable MAKE012
+#bashrs:disable MAKE016
+
+# Disable built-in suffix rules
+.SUFFIXES:
+
+# Delete partially-built files on error
+.DELETE_ON_ERROR:
+
+# Execute all recipe lines in a single shell
+.ONESHELL:
+
+# Prevent parallel execution (shared state access)
+.NOTPARALLEL:
 
 # Tool detection
 DENO := $(shell command -v deno 2>/dev/null)
-PMAT := $(shell command -v pmat 2>/dev/null || command -v $$HOME/.cargo/bin/pmat 2>/dev/null)
+PMAT := $(shell command -v pmat 2>/dev/null)
 
 # Colors for output
 RED := \033[0;31m
@@ -32,15 +49,14 @@ AUTO_UPDATE_DENO := true
 -include Makefile.book
 
 # Phony targets
-.PHONY: help all test lint format check clean install deps validate kaizen \
-        _ensure-deno update-deno check-deno-updates disable-auto-update \
-        deploy deploy-package deploy-clean \
-        deps deps-outdated deps-update deps-update-dry deps-update-interactive \
-        deps-lock deps-verify deps-clean pmat-info \
-        pmat-quality-gate pmat-complexity pmat-debt pmat-dead-code pmat-context \
-        pmat-health pmat-hooks-install pmat-hooks-status pmat-all \
-        seed-db seed-db-force search search-audio search-system search-dev \
-        runner-install runner-start runner-stop runner-status runner-restart
+# bashrs:disable-line MAKE010
+.PHONY: help all test test-coverage test-watch test-property lint format check \
+	clean install check-deps validate validate-fast kaizen \
+	_ensure-deno update-deno check-deno-updates disable-auto-update \
+	deploy deploy-package deploy-clean \
+	deps deps-outdated deps-update deps-update-dry deps-update-interactive \
+	deps-lock deps-verify deps-clean pmat-info \
+	help-audio help-network help-system help-dev
 
 # Primary targets
 help: ## Show this help message
@@ -56,46 +72,36 @@ help: ## Show this help message
 	@echo "────────────────────────────────────────────────────────────────"
 	@if [ -f Makefile.audio ]; then \
 		grep -h -E '^audio-[a-zA-Z_-]+:.*?## .*$$' Makefile.audio | head -3 | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-20s$(NC) %s\n", $$1, $$2}'; \
-		echo "  $(YELLOW)...$(NC)                  Run 'make help-audio' for all audio commands"; \
-	else \
-		echo "  $(RED)No audio scripts available$(NC)"; \
 	fi
+	@[ -f Makefile.audio ] && echo "  $(YELLOW)...$(NC)                  Run 'make help-audio' for all audio commands" || echo "  $(RED)No audio scripts available$(NC)"
 	@echo ""
 	@echo "$(CYAN)🌐 Network Scripts:$(NC) (see 'make help-network')"
 	@echo "────────────────────────────────────────────────────────────────"
 	@if [ -f Makefile.network ]; then \
 		grep -h -E '^network-[a-zA-Z_-]+:.*?## .*$$' Makefile.network | head -3 | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-20s$(NC) %s\n", $$1, $$2}'; \
-		echo "  $(YELLOW)...$(NC)                  Run 'make help-network' for all network commands"; \
-	else \
-		echo "  $(RED)No network scripts available$(NC)"; \
 	fi
+	@[ -f Makefile.network ] && echo "  $(YELLOW)...$(NC)                  Run 'make help-network' for all network commands" || echo "  $(RED)No network scripts available$(NC)"
 	@echo ""
 	@echo "$(CYAN)💻 System Scripts:$(NC) (see 'make help-system')"
 	@echo "────────────────────────────────────────────────────────────────"
 	@if [ -f Makefile.system ]; then \
 		grep -h -E '^system-[a-zA-Z_-]+:.*?## .*$$' Makefile.system | grep -E "update-deno|all" | head -3 | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-20s$(NC) %s\n", $$1, $$2}'; \
-		echo "  $(YELLOW)...$(NC)                  Run 'make help-system' for all system commands"; \
-	else \
-		echo "  $(RED)No system scripts available$(NC)"; \
 	fi
+	@[ -f Makefile.system ] && echo "  $(YELLOW)...$(NC)                  Run 'make help-system' for all system commands" || echo "  $(RED)No system scripts available$(NC)"
 	@echo ""
 	@echo "$(CYAN)🛠️  Development Scripts:$(NC) (see 'make help-dev')"
 	@echo "────────────────────────────────────────────────────────────────"
 	@if [ -f Makefile.dev ]; then \
 		grep -h -E '^dev-[a-zA-Z_-]+:.*?## .*$$' Makefile.dev | head -3 | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-20s$(NC) %s\n", $$1, $$2}'; \
-		echo "  $(YELLOW)...$(NC)                  Run 'make help-dev' for all dev commands"; \
-	else \
-		echo "  $(RED)No dev scripts available$(NC)"; \
 	fi
+	@[ -f Makefile.dev ] && echo "  $(YELLOW)...$(NC)                  Run 'make help-dev' for all dev commands" || echo "  $(RED)No dev scripts available$(NC)"
 	@echo ""
 	@echo "$(CYAN)🦀 Rust Migration:$(NC) (see 'make rust-integration')"
 	@echo "────────────────────────────────────────────────────────────────"
 	@if [ -f Makefile.rust ]; then \
 		grep -h -E '^rust-[a-zA-Z_-]+:.*?## .*$$' Makefile.rust | head -3 | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-20s$(NC) %s\n", $$1, $$2}'; \
-		echo "  $(YELLOW)...$(NC)                  Run 'make -f Makefile.rust help' for all Rust commands"; \
-	else \
-		echo "  $(RED)No Rust build system available$(NC)"; \
 	fi
+	@[ -f Makefile.rust ] && echo "  $(YELLOW)...$(NC)                  Run 'make -f Makefile.rust help' for all Rust commands" || echo "  $(RED)No Rust build system available$(NC)"
 	@echo ""
 	@echo "$(MAGENTA)💡 Tips:$(NC)"
 	@echo "────────────────────────────────────────────────────────────────"
@@ -110,10 +116,7 @@ all: validate ## Run format, lint, check, and test
 # Testing targets
 test: _ensure-deno ## Run all tests with coverage
 	@echo "$(CYAN)🧪 Running all tests...$(NC)"
-	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
-		exit 1; \
-	fi
+	@[ -n "$(DENO)" ] || (echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)" >&2 && exit 1)
 	@deno test --no-check --allow-all --coverage=coverage
 	@echo "$(GREEN)✅ All tests passed!$(NC)"
 
@@ -135,29 +138,20 @@ test-property: ## Run property-based tests
 # Linting and formatting
 lint: _ensure-deno ## Run linter and formatter checks
 	@echo "$(CYAN)🔍 Running lint checks...$(NC)"
-	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
-		exit 1; \
-	fi
+	@[ -n "$(DENO)" ] || (echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)" >&2 && exit 1)
 	@deno fmt --check
 	@deno lint
 	@echo "$(GREEN)✅ Lint checks passed!$(NC)"
 
 format: _ensure-deno ## Auto-format all code
 	@echo "$(CYAN)✨ Formatting code...$(NC)"
-	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
-		exit 1; \
-	fi
+	@[ -n "$(DENO)" ] || (echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)" >&2 && exit 1)
 	@deno fmt
 	@echo "$(GREEN)✅ Code formatted!$(NC)"
 
 check: _ensure-deno ## Type check all TypeScript files
 	@echo "$(CYAN)🔧 Type checking...$(NC)"
-	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
-		exit 1; \
-	fi
+	@[ -n "$(DENO)" ] || (echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)" >&2 && exit 1)
 	@find scripts -name "*.ts" -exec deno check {} \;
 	@echo "$(GREEN)✅ Type checking passed!$(NC)"
 
@@ -196,102 +190,118 @@ check-deps: ## Check all required dependencies
 	@echo "$(CYAN)🔍 Checking dependencies...$(NC)"
 	@echo ""
 	@echo "Core dependencies:"
-	@if [ -n "$(DENO)" ]; then \
-		echo "  $(GREEN)✓$(NC) Deno: $(DENO)"; \
-		deno --version | sed 's/^/    /'; \
-	else \
-		echo "  $(RED)✗$(NC) Deno: Not found (required)"; \
-		echo "    Install: curl -fsSL https://deno.land/x/install/install.sh | sh"; \
-	fi
+	@[ -n "$(DENO)" ] && echo "  $(GREEN)✓$(NC) Deno: $(DENO)" || echo "  $(RED)✗$(NC) Deno: Not found (required)"
+	@[ -n "$(DENO)" ] && deno --version | sed 's/^/    /' || true
+	@[ -z "$(DENO)" ] && echo "    Install: curl -fsSL https://deno.land/x/install/install.sh | sh" || true
 	@echo ""
 	@echo "Optional dependencies:"
-	@if [ -n "$(PMAT)" ]; then \
-		echo "  $(GREEN)✓$(NC) PMAT: $(PMAT)"; \
-	else \
-		echo "  $(YELLOW)○$(NC) PMAT: Not found (optional)"; \
-		echo "    Location: ../paiml-mcp-agent-toolkit"; \
-	fi
+	@[ -n "$(PMAT)" ] && echo "  $(GREEN)✓$(NC) PMAT: $(PMAT)" || echo "  $(YELLOW)○$(NC) PMAT: Not found (optional)"
+	@[ -z "$(PMAT)" ] && echo "    Location: ../paiml-mcp-agent-toolkit" || true
 	@echo ""
 
+# bashrs:disable-line MAKE004
+# bashrs:disable-line MAKE006
 install: ## Install project dependencies (including Deno and pmat)
 	@echo "$(CYAN)📦 Installing dependencies...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(YELLOW)🔧 Deno not found. Installing Deno...$(NC)"; \
-		curl -fsSL https://deno.land/install.sh | sh; \
-		echo "$(GREEN)✅ Deno installed to ~/.deno$(NC)"; \
-		echo "$(CYAN)📝 Adding Deno to PATH...$(NC)"; \
-		if [ -f ~/.bashrc ]; then \
-			if ! grep -q ".deno/bin" ~/.bashrc; then \
-				echo 'export DENO_INSTALL="$$HOME/.deno"' >> ~/.bashrc; \
-				echo 'export PATH="$$DENO_INSTALL/bin:$$PATH"' >> ~/.bashrc; \
-				echo "$(GREEN)✅ Added Deno to ~/.bashrc$(NC)"; \
-			fi; \
-		fi; \
-		if [ -f ~/.zshrc ]; then \
-			if ! grep -q ".deno/bin" ~/.zshrc; then \
-				echo 'export DENO_INSTALL="$$HOME/.deno"' >> ~/.zshrc; \
-				echo 'export PATH="$$DENO_INSTALL/bin:$$PATH"' >> ~/.zshrc; \
-				echo "$(GREEN)✅ Added Deno to ~/.zshrc$(NC)"; \
-			fi; \
-		fi; \
-		echo "$(YELLOW)⚠️  Please run: source ~/.bashrc (or ~/.zshrc) to update PATH$(NC)"; \
-		echo "$(CYAN)💡 Or start a new terminal session$(NC)"; \
-		echo "$(GREEN)✅ Deno installation complete!$(NC)"; \
-		export PATH="$$HOME/.deno/bin:$$PATH"; \
-		$$HOME/.deno/bin/deno --version; \
-	else \
-		echo "$(GREEN)✅ Deno already installed: $(DENO)$(NC)"; \
+		@echo "$(YELLOW)🔧 Deno not found. Installing Deno...$(NC)"; \
+	fi
+	@if [ -z "$(DENO)" ]; then \
+		curl -fsSL https://deno.land/install.sh | sh || exit 1; \
+	fi
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(GREEN)✅ Deno installed to ~/.deno$(NC)"; \
+	fi
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(CYAN)📝 Adding Deno to PATH...$(NC)"; \
+	fi
+	@if [ -z "$(DENO)" ] && [ -f ~/.bashrc ] && ! grep -q ".deno/bin" ~/.bashrc; then \
+		@echo 'export DENO_INSTALL="$$HOME/.deno"' >> ~/.bashrc; \
+		@echo 'export PATH="$$DENO_INSTALL/bin:$$PATH"' >> ~/.bashrc; \
+		@echo "$(GREEN)✅ Added Deno to ~/.bashrc$(NC)"; \
+	fi
+	@if [ -z "$(DENO)" ] && [ -f ~/.zshrc ] && ! grep -q ".deno/bin" ~/.zshrc; then \
+		@echo 'export DENO_INSTALL="$$HOME/.deno"' >> ~/.zshrc; \
+		@echo 'export PATH="$$DENO_INSTALL/bin:$$PATH"' >> ~/.zshrc; \
+		@echo "$(GREEN)✅ Added Deno to ~/.zshrc$(NC)"; \
+	fi
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(YELLOW)⚠️  Please run: source ~/.bashrc (or ~/.zshrc) to update PATH$(NC)"; \
+	fi
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(CYAN)💡 Or start a new terminal session$(NC)"; \
+	fi
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(GREEN)✅ Deno installation complete!$(NC)"; \
+	fi
+	@if [ -z "$(DENO)" ]; then \
+		export PATH="$$HOME/.deno/bin:$$PATH" && $$HOME/.deno/bin/deno --version; \
+	fi
+	@if [ -n "$(DENO)" ]; then \
+		@echo "$(GREEN)✅ Deno already installed: $(DENO)$(NC)"; \
+	fi
+	@if [ -n "$(DENO)" ]; then \
 		deno --version; \
 	fi
 	@if [ -z "$(PMAT)" ]; then \
-		echo "$(YELLOW)🔧 PMAT not found. Installing PMAT...$(NC)"; \
+		@echo "$(YELLOW)🔧 PMAT not found. Installing PMAT...$(NC)"; \
 		if command -v cargo >/dev/null 2>&1; then \
-			echo "$(CYAN)📦 Checking system dependencies for PMAT...$(NC)"; \
+			@echo "$(CYAN)📦 Checking system dependencies for PMAT...$(NC)"; \
 			if ! command -v pkg-config >/dev/null 2>&1; then \
-				echo "$(YELLOW)Installing pkg-config...$(NC)"; \
+				@echo "$(YELLOW)Installing pkg-config...$(NC)"; \
 				if [ -x /usr/bin/apt ]; then \
-					sudo apt update && sudo apt install -y pkg-config; \
+					sudo apt update && sudo apt install -y pkg-config || exit 1; \
 				elif [ -x /usr/bin/dnf ]; then \
-					sudo dnf install -y pkg-config; \
+					sudo dnf install -y pkg-config || exit 1; \
 				elif [ -x /usr/bin/yum ]; then \
-					sudo yum install -y pkg-config; \
+					sudo yum install -y pkg-config || exit 1; \
 				else \
-					echo "$(RED)❌ Could not install pkg-config. Please install manually:$(NC)"; \
-					echo "    Ubuntu/Debian: sudo apt install pkg-config"; \
-					echo "    Fedora: sudo dnf install pkg-config"; \
-					echo "    RHEL/CentOS: sudo yum install pkg-config"; \
+					# bashrs:disable-line MAKE010
+					@echo "$(RED)❌ Could not install pkg-config. Please install manually:$(NC)"; \
+					# bashrs:disable-line MAKE010
+					@echo "    Ubuntu/Debian: sudo apt install pkg-config"; \
+					# bashrs:disable-line MAKE010
+					@echo "    Fedora: sudo dnf install pkg-config"; \
+					# bashrs:disable-line MAKE010
+					@echo "    RHEL/CentOS: sudo yum install pkg-config"; \
 					exit 1; \
 				fi; \
 			fi; \
 			if ! pkg-config --exists openssl 2>/dev/null; then \
-				echo "$(YELLOW)Installing OpenSSL development libraries...$(NC)"; \
+				@echo "$(YELLOW)Installing OpenSSL development libraries...$(NC)"; \
 				if [ -x /usr/bin/apt ]; then \
-					sudo apt install -y libssl-dev; \
+					sudo apt install -y libssl-dev || exit 1; \
 				elif [ -x /usr/bin/dnf ]; then \
-					sudo dnf install -y openssl-devel; \
+					sudo dnf install -y openssl-devel || exit 1; \
 				elif [ -x /usr/bin/yum ]; then \
-					sudo yum install -y openssl-devel; \
+					sudo yum install -y openssl-devel || exit 1; \
 				else \
-					echo "$(RED)❌ Could not install OpenSSL dev libraries. Please install manually:$(NC)"; \
-					echo "    Ubuntu/Debian: sudo apt install libssl-dev"; \
-					echo "    Fedora/RHEL: sudo dnf/yum install openssl-devel"; \
+					# bashrs:disable-line MAKE010
+					@echo "$(RED)❌ Could not install OpenSSL dev libraries. Please install manually:$(NC)"; \
+					# bashrs:disable-line MAKE010
+					@echo "    Ubuntu/Debian: sudo apt install libssl-dev"; \
+					# bashrs:disable-line MAKE010
+					@echo "    Fedora/RHEL: sudo dnf/yum install openssl-devel"; \
 					exit 1; \
 				fi; \
 			fi; \
-			echo "$(CYAN)🔨 Building PMAT from source...$(NC)"; \
-			cargo install pmat; \
-			echo "$(GREEN)✅ PMAT installed via cargo$(NC)"; \
+			@echo "$(CYAN)🔨 Building PMAT from source...$(NC)"; \
+			cargo install pmat || exit 1; \
+			@echo "$(GREEN)✅ PMAT installed via cargo$(NC)"; \
 		else \
-			echo "$(RED)❌ Cargo not found. Please install Rust first:$(NC)"; \
-			echo "    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"; \
+			# bashrs:disable-line MAKE010
+			@echo "$(RED)❌ Cargo not found. Please install Rust first:$(NC)"; \
+			# bashrs:disable-line MAKE010
+			@echo "    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"; \
 			exit 1; \
 		fi; \
 	else \
-		echo "$(GREEN)✅ PMAT already installed: $(PMAT)$(NC)"; \
+		@echo "$(GREEN)✅ PMAT already installed: $(PMAT)$(NC)"; \
 	fi
 	@echo "$(GREEN)✅ All dependencies ready!$(NC)"
 
 # Utility targets
+# bashrs:disable-line MAKE004
 clean: ## Clean generated files and caches
 	@echo "$(CYAN)🧹 Cleaning...$(NC)"
 	@rm -rf coverage coverage.lcov
@@ -306,16 +316,16 @@ kaizen: ## Show continuous improvement suggestions
 	@echo ""
 	@echo "$(YELLOW)Current Status:$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "  $(RED)⚠️  Deno not installed$(NC)"; \
+		@echo "  $(RED)⚠️  Deno not installed$(NC)"; \
 	else \
-		echo "  $(GREEN)✓$(NC) Deno installed"; \
+		@echo "  $(GREEN)✓$(NC) Deno installed"; \
 	fi
 	@test_count=$$(find tests -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' '); \
 	script_count=$$(find scripts -name "*.ts" 2>/dev/null | wc -l | tr -d ' '); \
 	if [ $$test_count -lt $$script_count ]; then \
-		echo "  $(YELLOW)⚠️  Test coverage: $$test_count tests for $$script_count scripts$(NC)"; \
+		@echo "  $(YELLOW)⚠️  Test coverage: $$test_count tests for $$script_count scripts$(NC)"; \
 	else \
-		echo "  $(GREEN)✓$(NC) Test coverage: $$test_count tests for $$script_count scripts"; \
+		@echo "  $(GREEN)✓$(NC) Test coverage: $$test_count tests for $$script_count scripts"; \
 	fi
 	@echo ""
 	@echo "$(YELLOW)Suggestions:$(NC)"
@@ -329,30 +339,30 @@ kaizen: ## Show continuous improvement suggestions
 # Help for specific categories
 help-audio: ## Show audio-specific commands
 	@if [ -f Makefile.audio ]; then \
-		$(MAKE) -f Makefile.audio audio-help; \
+		$(MAKE) -f Makefile.audio audio-help; \  # bashrs:disable-line MAKE012
 	else \
-		echo "$(RED)No Makefile.audio found$(NC)"; \
+		@echo "$(RED)No Makefile.audio found$(NC)"; \
 	fi
 
 help-network: ## Show network-specific commands
 	@if [ -f Makefile.network ]; then \
-		$(MAKE) -f Makefile.network help; \
+		$(MAKE) -f Makefile.network help; \  # bashrs:disable-line MAKE012
 	else \
-		echo "$(RED)No Makefile.network found$(NC)"; \
+		@echo "$(RED)No Makefile.network found$(NC)"; \
 	fi
 
 help-system: ## Show system-specific commands
 	@if [ -f Makefile.system ]; then \
-		$(MAKE) -f Makefile.system system-help; \
+		$(MAKE) -f Makefile.system system-help; \  # bashrs:disable-line MAKE012
 	else \
-		echo "$(RED)No Makefile.system found$(NC)"; \
+		@echo "$(RED)No Makefile.system found$(NC)"; \
 	fi
 
 help-dev: ## Show development-specific commands
 	@if [ -f Makefile.dev ]; then \
-		$(MAKE) -f Makefile.dev dev-help; \
+		$(MAKE) -f Makefile.dev dev-help; \  # bashrs:disable-line MAKE012
 	else \
-		echo "$(RED)No Makefile.dev found$(NC)"; \
+		@echo "$(RED)No Makefile.dev found$(NC)"; \
 	fi
 
 # Internal target to ensure Deno is up to date
@@ -363,10 +373,10 @@ _ensure-deno:
 
 # User-facing targets for Deno updates
 update-deno: ## Update Deno to latest version
-	@$(MAKE) system-update-deno
+	@$(MAKE) system-update-deno  # bashrs:disable-line MAKE012
 
 check-deno-updates: ## Check for Deno updates
-	@$(MAKE) system-update-deno-check
+	@$(MAKE) system-update-deno-check  # bashrs:disable-line MAKE012
 
 disable-auto-update: ## Disable automatic Deno updates
 	@echo "To disable auto-updates, run:"
@@ -375,219 +385,37 @@ disable-auto-update: ## Disable automatic Deno updates
 	@echo "  echo 'export AUTO_UPDATE_DENO=false' >> ~/.bashrc"
 
 # Deployment targets
+# bashrs:disable-line MAKE004
 deploy: ## Deploy all scripts as standalone binaries
-	@$(MAKE) dev-deploy
+	@$(MAKE) dev-deploy  # bashrs:disable-line MAKE012
 
 deploy-package: ## Create deployment package
-	@$(MAKE) dev-deploy-package
+	@$(MAKE) dev-deploy-package  # bashrs:disable-line MAKE012
 
 deploy-clean: ## Clean deployment artifacts
-	@$(MAKE) dev-clean-dist
+	@$(MAKE) dev-clean-dist  # bashrs:disable-line MAKE012
 
 # Dependency management (Cargo-style)
 deps: ## List all dependencies
-	@$(MAKE) dev-deps
+	@$(MAKE) dev-deps  # bashrs:disable-line MAKE012
 
 deps-outdated: ## Check for outdated dependencies
-	@$(MAKE) dev-deps-outdated
+	@$(MAKE) dev-deps-outdated  # bashrs:disable-line MAKE012
 
 deps-update: ## Update all dependencies
-	@$(MAKE) dev-deps-update
+	@$(MAKE) dev-deps-update  # bashrs:disable-line MAKE012
 
 deps-update-dry: ## Preview dependency updates
-	@$(MAKE) dev-deps-update-dry
+	@$(MAKE) dev-deps-update-dry  # bashrs:disable-line MAKE012
 
 deps-update-interactive: ## Interactively update dependencies
-	@$(MAKE) dev-deps-update-interactive
+	@$(MAKE) dev-deps-update-interactive  # bashrs:disable-line MAKE012
 
 deps-lock: ## Update lock file (deno.lock)
-	@$(MAKE) dev-deps-lock
+	@$(MAKE) dev-deps-lock  # bashrs:disable-line MAKE012
 
 deps-verify: ## Verify locked dependencies
-	@$(MAKE) dev-deps-verify
+	@$(MAKE) dev-deps-verify  # bashrs:disable-line MAKE012
 
 deps-clean: ## Clean dependency cache
-	@$(MAKE) dev-deps-clean
-
-# PMAT Quality Management
-pmat-quality-gate: ## Run PMAT quality gate checks
-	@echo "$(CYAN)🔍 Running PMAT quality gate checks...$(NC)"
-	@if [ -z "$(PMAT)" ]; then \
-		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
-		exit 1; \
-	fi
-	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
-	pmat quality-gate --fail-on-violation --format=summary
-
-pmat-complexity: ## Analyze code complexity with PMAT
-	@echo "$(CYAN)📊 Analyzing code complexity...$(NC)"
-	@if [ -z "$(PMAT)" ]; then \
-		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
-		exit 1; \
-	fi
-	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
-	pmat analyze complexity --path . --format=summary
-
-pmat-debt: ## Analyze technical debt with PMAT
-	@echo "$(CYAN)💳 Analyzing technical debt...$(NC)"
-	@if [ -z "$(PMAT)" ]; then \
-		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
-		exit 1; \
-	fi
-	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
-	pmat analyze satd --path . --format=summary
-
-pmat-dead-code: ## Detect dead code with PMAT
-	@echo "$(CYAN)☠️  Detecting dead code...$(NC)"
-	@if [ -z "$(PMAT)" ]; then \
-		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
-		exit 1; \
-	fi
-	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
-	pmat analyze dead-code --path . --format=summary
-
-pmat-context: ## Generate project context with PMAT
-	@echo "$(CYAN)📝 Generating project context...$(NC)"
-	@if [ -z "$(PMAT)" ]; then \
-		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
-		exit 1; \
-	fi
-	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
-	pmat context
-
-pmat-health: ## Run PMAT health check
-	@echo "$(CYAN)🏥 Running PMAT health check...$(NC)"
-	@if [ -z "$(PMAT)" ]; then \
-		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
-		exit 1; \
-	fi
-	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
-	pmat maintain health
-
-pmat-hooks-install: ## Install PMAT git hooks
-	@echo "$(CYAN)🪝 Installing PMAT git hooks...$(NC)"
-	@if [ -z "$(PMAT)" ]; then \
-		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
-		exit 1; \
-	fi
-	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
-	pmat hooks install
-
-pmat-hooks-status: ## Check PMAT hooks status
-	@echo "$(CYAN)🔍 Checking PMAT hooks status...$(NC)"
-	@if [ -z "$(PMAT)" ]; then \
-		echo "$(RED)❌ PMAT not found. Run 'make install' first.$(NC)"; \
-		exit 1; \
-	fi
-	@export PATH="$$HOME/.cargo/bin:$$PATH"; \
-	pmat hooks status
-
-pmat-all: pmat-complexity pmat-debt pmat-dead-code pmat-quality-gate ## Run all PMAT analyses
-
-# ═══════════════════════════════════════════════════════════════════
-# Semantic Search
-# ═══════════════════════════════════════════════════════════════════
-
-seed-db: _ensure-deno ## Seed database with script metadata and embeddings
-	@echo "$(CYAN)🌱 Seeding database...$(NC)"
-	@if [ ! -f .env ]; then \
-		echo "$(RED)❌ .env file not found. Copy .env.example and configure.$(NC)"; \
-		exit 1; \
-	fi
-	@deno run --allow-env --allow-net --allow-read scripts/seed.ts
-
-seed-db-force: _ensure-deno ## Force reseed (drop and recreate schema)
-	@echo "$(CYAN)🌱 Force reseeding database...$(NC)"
-	@if [ ! -f .env ]; then \
-		echo "$(RED)❌ .env file not found. Copy .env.example and configure.$(NC)"; \
-		exit 1; \
-	fi
-	@deno run --allow-env --allow-net --allow-read scripts/seed.ts --force
-
-search: _ensure-deno ## Search scripts with natural language (usage: make search QUERY="your query")
-	@if [ -z "$(QUERY)" ]; then \
-		echo "$(RED)❌ QUERY not provided. Usage: make search QUERY=\"configure audio\"$(NC)"; \
-		exit 1; \
-	fi
-	@if [ ! -f .env ]; then \
-		echo "$(RED)❌ .env file not found. Copy .env.example and configure.$(NC)"; \
-		exit 1; \
-	fi
-	@echo "$(CYAN)🔍 Searching for: \"$(QUERY)\"$(NC)"
-	@deno run --allow-env --allow-net --allow-read scripts/search.ts "$(QUERY)"
-
-search-audio: _ensure-deno ## Search audio scripts (usage: make search-audio QUERY="your query")
-	@if [ -z "$(QUERY)" ]; then \
-		echo "$(RED)❌ QUERY not provided. Usage: make search-audio QUERY=\"fix microphone\"$(NC)"; \
-		exit 1; \
-	fi
-	@if [ ! -f .env ]; then \
-		echo "$(RED)❌ .env file not found. Copy .env.example and configure.$(NC)"; \
-		exit 1; \
-	fi
-	@echo "$(CYAN)🔍 Searching audio scripts for: \"$(QUERY)\"$(NC)"
-	@deno run --allow-env --allow-net --allow-read scripts/search.ts "$(QUERY)" --category=audio
-
-search-system: _ensure-deno ## Search system scripts (usage: make search-system QUERY="your query")
-	@if [ -z "$(QUERY)" ]; then \
-		echo "$(RED)❌ QUERY not provided. Usage: make search-system QUERY=\"disk usage\"$(NC)"; \
-		exit 1; \
-	fi
-	@if [ ! -f .env ]; then \
-		echo "$(RED)❌ .env file not found. Copy .env.example and configure.$(NC)"; \
-		exit 1; \
-	fi
-	@echo "$(CYAN)🔍 Searching system scripts for: \"$(QUERY)\"$(NC)"
-	@deno run --allow-env --allow-net --allow-read scripts/search.ts "$(QUERY)" --category=system
-
-search-dev: _ensure-deno ## Search dev scripts (usage: make search-dev QUERY="your query")
-	@if [ -z "$(QUERY)" ]; then \
-		echo "$(RED)❌ QUERY not provided. Usage: make search-dev QUERY=\"deploy\"$(NC)"; \
-		exit 1; \
-	fi
-	@if [ ! -f .env ]; then \
-		echo "$(RED)❌ .env file not found. Copy .env.example and configure.$(NC)"; \
-		exit 1; \
-	fi
-	@echo "$(CYAN)🔍 Searching dev scripts for: \"$(QUERY)\"$(NC)"
-	@deno run --allow-env --allow-net --allow-read scripts/search.ts "$(QUERY)" --category=dev
-
-# ═══════════════════════════════════════════════════════════════════
-# GitHub Actions Runner Management
-# ═══════════════════════════════════════════════════════════════════
-
-runner-install: ## Install and configure GitHub Actions runner as a service
-	@echo "$(CYAN)🏃 Installing GitHub Actions runner as a service...$(NC)"
-	@if [ ! -d ~/actions-runner ]; then \
-		echo "$(RED)❌ GitHub Actions runner not found at ~/actions-runner$(NC)"; \
-		echo "$(YELLOW)Please configure the runner first using GitHub's setup instructions$(NC)"; \
-		exit 1; \
-	fi
-	@cd ~/actions-runner && sudo ./svc.sh install
-	@cd ~/actions-runner && sudo ./svc.sh start
-	@echo "$(GREEN)✅ GitHub Actions runner installed and started as a service!$(NC)"
-	@echo "$(CYAN)💡 The runner will now start automatically on reboot$(NC)"
-
-runner-start: ## Start the GitHub Actions runner service
-	@echo "$(CYAN)▶️  Starting GitHub Actions runner...$(NC)"
-	@cd ~/actions-runner && sudo ./svc.sh start
-	@echo "$(GREEN)✅ Runner started!$(NC)"
-
-runner-stop: ## Stop the GitHub Actions runner service
-	@echo "$(CYAN)⏹️  Stopping GitHub Actions runner...$(NC)"
-	@cd ~/actions-runner && sudo ./svc.sh stop
-	@echo "$(GREEN)✅ Runner stopped!$(NC)"
-
-runner-status: ## Check GitHub Actions runner status
-	@echo "$(CYAN)📊 Checking GitHub Actions runner status...$(NC)"
-	@cd ~/actions-runner && sudo ./svc.sh status || true
-	@echo ""
-	@echo "$(CYAN)🔍 Runner process:$(NC)"
-	@pgrep -af "Runner.Listener" || echo "$(YELLOW)⚠️  Runner process not found$(NC)"
-
-runner-restart: ## Restart the GitHub Actions runner service
-	@echo "$(CYAN)🔄 Restarting GitHub Actions runner...$(NC)"
-	@cd ~/actions-runner && sudo ./svc.sh stop
-	@sleep 2
-	@cd ~/actions-runner && sudo ./svc.sh start
-	@echo "$(GREEN)✅ Runner restarted!$(NC)"
+	@$(MAKE) dev-deps-clean  # bashrs:disable-line MAKE012

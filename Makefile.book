@@ -1,12 +1,19 @@
 # Ubuntu Config Scripts Book Build System
 
 # Colors
+.SUFFIXES:
 CYAN := \033[0;36m
 GREEN := \033[0;32m
 YELLOW := \033[0;33m
 NC := \033[0m
 
-.PHONY: book-help book-build book-serve book-clean book-check book-install
+.PHONY: book-build \
+	book-check \
+	book-clean \
+	book-help \
+	book-install \
+	book-scaffold \
+	book-serve
 
 book-help: ## Show book commands
 	@echo "╔══════════════════════════════════════════════════════════════╗"
@@ -24,10 +31,10 @@ book-help: ## Show book commands
 book-install: ## Install mdbook if not present
 	@echo "$(CYAN)📦 Installing mdbook...$(NC)"
 	@if ! command -v mdbook >/dev/null 2>&1; then \
-		echo "Installing mdbook via cargo..."; \
+		@echo "Installing mdbook via cargo..."; \
 		cargo install mdbook; \
 	else \
-		echo "$(GREEN)✅ mdbook already installed$(NC)"; \
+		@echo "$(GREEN)✅ mdbook already installed$(NC)"; \
 	fi
 
 book-build: book-install ## Build the book
@@ -56,10 +63,10 @@ book-scaffold: ## Create placeholder chapters from SUMMARY.md
 	@find book/src -name "*.md" -not -name "SUMMARY.md" | while read file; do \
 		if [ ! -s "$$file" ]; then \
 			title=$$(basename "$$file" .md | sed 's/-/ /g' | sed 's/ch[0-9][0-9] [0-9][0-9] //'); \
-			echo "# $$title" > "$$file"; \
-			echo "" >> "$$file"; \
-			echo "*This chapter is under development.*" >> "$$file"; \
-			echo "Created placeholder: $$file"; \
+			@echo "# $$title" > "$$file"; \
+			@echo "" >> "$$file"; \
+			@echo "*This chapter is under development.*" >> "$$file"; \
+			@echo "Created placeholder: $$file"; \
 		fi; \
 	done
 	@echo "$(GREEN)✅ Scaffolding complete$(NC)"

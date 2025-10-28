@@ -4,6 +4,7 @@
 #
 
 # Colors for output
+.SUFFIXES:
 RED := \033[0;31m
 GREEN := \033[0;32m
 YELLOW := \033[0;33m
@@ -18,7 +19,36 @@ DENO := $(shell command -v deno 2>/dev/null)
 DIST_DIR := dist
 
 # Phony targets
-.PHONY: dev-help dev-all dev-deploy dev-deploy-audio dev-deploy-system dev-deploy-package dev-deploy-list dev-clean-dist
+.PHONY: bridge-build \
+	bridge-clean \
+	bridge-status \
+	bridge-test \
+	bridge-transform \
+	bridge-transform-all \
+	bridge-validate \
+	bridge-validate-all \
+	dev-all \
+	dev-clean-dist \
+	dev-deploy \
+	dev-deploy-audio \
+	dev-deploy-list \
+	dev-deploy-package \
+	dev-deploy-system \
+	dev-deps \
+	dev-deps-clean \
+	dev-deps-list \
+	dev-deps-lock \
+	dev-deps-outdated \
+	dev-deps-update \
+	dev-deps-update-dry \
+	dev-deps-update-interactive \
+	dev-deps-verify \
+	dev-help \
+	dev-install-vim \
+	dev-pmat-deps \
+	ruchy-monitor \
+	ruchy-monitor-check \
+	ruchy-monitor-report
 .PHONY: dev-deps dev-deps-list dev-deps-outdated dev-deps-update dev-deps-lock dev-deps-verify dev-deps-clean
 .PHONY: dev-pmat-deps dev-install-vim
 .PHONY: bridge-transform bridge-transform-all bridge-validate bridge-validate-all bridge-build bridge-test bridge-clean bridge-status
@@ -81,7 +111,7 @@ dev-all: dev-deploy ## Deploy all scripts for current platform
 dev-deploy: ## Deploy all scripts as binaries
 	@echo "$(CYAN)📦 Deploying all scripts...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@mkdir -p $(DIST_DIR)
@@ -101,7 +131,7 @@ dev-deploy: ## Deploy all scripts as binaries
 dev-deploy-audio: ## Deploy only audio scripts
 	@echo "$(CYAN)🎵 Deploying audio scripts...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@mkdir -p $(DIST_DIR)
@@ -110,7 +140,7 @@ dev-deploy-audio: ## Deploy only audio scripts
 dev-deploy-system: ## Deploy only system scripts
 	@echo "$(CYAN)💻 Deploying system scripts...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@mkdir -p $(DIST_DIR)
@@ -119,7 +149,7 @@ dev-deploy-system: ## Deploy only system scripts
 dev-deploy-package: ## Create deployment package (tar.gz)
 	@echo "$(CYAN)📦 Creating deployment package...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@mkdir -p $(DIST_DIR)
@@ -139,7 +169,7 @@ dev-deploy-package: ## Create deployment package (tar.gz)
 dev-deploy-list: ## List available scripts
 	@echo "$(CYAN)📋 Available scripts:$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@deno run --allow-read --allow-write --allow-run --allow-env scripts/dev/deploy.ts --list
@@ -155,7 +185,7 @@ dev-deps: dev-deps-list ## Alias for dev-deps-list
 dev-deps-list: ## List all dependencies
 	@echo "$(CYAN)📚 Listing dependencies...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@deno run --allow-read scripts/dev/deps.ts list
@@ -163,7 +193,7 @@ dev-deps-list: ## List all dependencies
 dev-deps-outdated: ## Check for outdated dependencies
 	@echo "$(CYAN)🔍 Checking for outdated dependencies...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@deno run --allow-read --allow-net scripts/dev/deps.ts outdated
@@ -171,7 +201,7 @@ dev-deps-outdated: ## Check for outdated dependencies
 dev-deps-update: ## Update dependencies to latest versions
 	@echo "$(CYAN)🔄 Updating dependencies...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@deno run --allow-read --allow-write --allow-net --allow-run scripts/dev/deps.ts update
@@ -179,7 +209,7 @@ dev-deps-update: ## Update dependencies to latest versions
 dev-deps-update-dry: ## Preview dependency updates without applying
 	@echo "$(CYAN)👀 Previewing dependency updates...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@deno run --allow-read --allow-net scripts/dev/deps.ts update --dry-run
@@ -187,7 +217,7 @@ dev-deps-update-dry: ## Preview dependency updates without applying
 dev-deps-update-interactive: ## Interactively update dependencies
 	@echo "$(CYAN)🎯 Interactive dependency update...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@deno run --allow-read --allow-write --allow-net --allow-run --allow-env scripts/dev/deps.ts update --interactive
@@ -195,7 +225,7 @@ dev-deps-update-interactive: ## Interactively update dependencies
 dev-deps-lock: ## Update dependency lock file (deno.lock)
 	@echo "$(CYAN)🔒 Updating lock file...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@deno cache --lock=deno.lock --lock-write deps.ts scripts/**/*.ts
@@ -203,7 +233,7 @@ dev-deps-lock: ## Update dependency lock file (deno.lock)
 dev-deps-verify: ## Verify locked dependencies
 	@echo "$(CYAN)✅ Verifying dependencies...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@deno cache --lock=deno.lock deps.ts scripts/**/*.ts
@@ -211,7 +241,7 @@ dev-deps-verify: ## Verify locked dependencies
 dev-deps-clean: ## Clean dependency cache
 	@echo "$(CYAN)🧹 Cleaning dependency cache...$(NC)"
 	@if [ -z "$(DENO)" ]; then \
-		echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
 		exit 1; \
 	fi
 	@deno cache --reload deps.ts scripts/**/*.ts
@@ -220,7 +250,7 @@ dev-deps-clean: ## Clean dependency cache
 # TypeScript-Ruchy Bridge targets (RUC-002-003)
 bridge-transform: _ensure-deno ## Transform TypeScript file to Ruchy
 	@if [ -z "$(FILE)" ]; then \
-		echo "$(RED)❌ Usage: make bridge-transform FILE=<typescript-file>$(NC)"; \
+		@echo "$(RED)❌ Usage: make bridge-transform FILE=<typescript-file>$(NC)"; \
 		exit 1; \
 	fi
 	@echo "$(CYAN)🔄 Transforming $(FILE) to Ruchy...$(NC)"
@@ -230,7 +260,7 @@ bridge-transform: _ensure-deno ## Transform TypeScript file to Ruchy
 bridge-transform-all: _ensure-deno ## Transform all TypeScript files to Ruchy
 	@echo "$(CYAN)🔄 Transforming all TypeScript files to Ruchy...$(NC)"
 	@find scripts -name "*.ts" -not -path "*/tests/*" | while read file; do \
-		echo "$(BLUE)  Transforming $$file...$(NC)"; \
+		@echo "$(BLUE)  Transforming $$file...$(NC)"; \
 		deno run --allow-all scripts/dev/bridge-transformer.ts \
 			--input "$$file" --validate || true; \
 	done
@@ -238,7 +268,7 @@ bridge-transform-all: _ensure-deno ## Transform all TypeScript files to Ruchy
 
 bridge-validate: _ensure-deno ## Validate TypeScript-Ruchy feature parity
 	@if [ -z "$(TS)" ] || [ -z "$(RUCHY)" ]; then \
-		echo "$(RED)❌ Usage: make bridge-validate TS=<typescript-file> RUCHY=<ruchy-file>$(NC)"; \
+		@echo "$(RED)❌ Usage: make bridge-validate TS=<typescript-file> RUCHY=<ruchy-file>$(NC)"; \
 		exit 1; \
 	fi
 	@echo "$(CYAN)🧪 Validating feature parity...$(NC)"
@@ -251,7 +281,7 @@ bridge-validate-all: _ensure-deno ## Validate all TypeScript-Ruchy pairs
 	@find scripts -name "*.ts" | while read tsfile; do \
 		ruchyfile=$${tsfile%.ts}.ruchy; \
 		if [ -f "$$ruchyfile" ]; then \
-			echo "$(BLUE)  Validating $$tsfile <-> $$ruchyfile$(NC)"; \
+			@echo "$(BLUE)  Validating $$tsfile <-> $$ruchyfile$(NC)"; \
 			deno run --allow-all scripts/dev/bridge-validator.ts \
 				--typescript "$$tsfile" --ruchy "$$ruchyfile" || true; \
 		fi; \
@@ -292,9 +322,9 @@ bridge-status: ## Show bridge migration status
 	echo "Migration:        $$percentage% complete"
 	@echo ""
 	@if [ -f validation-report.md ]; then \
-		echo "$(GREEN)✅ Latest validation report: validation-report.md$(NC)"; \
+		@echo "$(GREEN)✅ Latest validation report: validation-report.md$(NC)"; \
 	else \
-		echo "$(YELLOW)⚠️ No validation report found - run 'make bridge-validate-all'$(NC)"; \
+		@echo "$(YELLOW)⚠️ No validation report found - run 'make bridge-validate-all'$(NC)"; \
 	fi
 
 # Ruchy Version Monitoring (RUC-002-005)
@@ -314,5 +344,5 @@ ruchy-monitor-report: _ensure-deno ## Generate detailed monitoring report
 		scripts/dev/ruchy-version-monitor.ts \
 		--output ruchy-compatibility-report.md
 	@if [ -f ruchy-compatibility-report.md ]; then \
-		echo "$(GREEN)✅ Report saved: ruchy-compatibility-report.md$(NC)"; \
+		@echo "$(GREEN)✅ Report saved: ruchy-compatibility-report.md$(NC)"; \
 	fi

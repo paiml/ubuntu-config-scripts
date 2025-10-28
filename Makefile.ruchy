@@ -7,6 +7,7 @@
 #
 
 # Colors for output
+.SUFFIXES:
 RED := \033[0;31m
 GREEN := \033[0;32m
 YELLOW := \033[0;33m
@@ -34,7 +35,27 @@ RUCHY_DEV := $(wildcard $(DEV_DIR)/*.ruchy)
 ALL_RUCHY := $(RUCHY_LIBS) $(RUCHY_SYSTEM) $(RUCHY_AUDIO) $(RUCHY_DEV)
 
 # Default target
-.PHONY: help
+.PHONY: help \
+	ruchy-build \
+	ruchy-build-audio \
+	ruchy-build-system \
+	ruchy-check \
+	ruchy-ci \
+	ruchy-clean \
+	ruchy-example-audio \
+	ruchy-example-cleanup \
+	ruchy-install \
+	ruchy-integration \
+	ruchy-package \
+	ruchy-pmat-analysis \
+	ruchy-showcase \
+	ruchy-showcase-test \
+	ruchy-test \
+	ruchy-test-audio \
+	ruchy-test-suite \
+	ruchy-test-system \
+	ruchy-validate \
+	ruchy-watch
 help: ## Show Ruchy build commands
 	@echo "╔══════════════════════════════════════════════════════════════╗"
 	@echo "║                 🦀 Ruchy Build System                        ║"
@@ -57,11 +78,11 @@ help: ## Show Ruchy build commands
 .PHONY: ruchy-check
 ruchy-check: ## Check if Ruchy is installed
 	@if [ -z "$(RUCHY)" ]; then \
-		echo "$(RED)❌ Ruchy not found. Please install Ruchy first.$(NC)"; \
-		echo "$(YELLOW)💡 Install with: cargo install ruchy$(NC)"; \
+		@echo "$(RED)❌ Ruchy not found. Please install Ruchy first.$(NC)"; \
+		@echo "$(YELLOW)💡 Install with: cargo install ruchy$(NC)"; \
 		exit 1; \
 	else \
-		echo "$(GREEN)✅ Ruchy found at: $(RUCHY)$(NC)"; \
+		@echo "$(GREEN)✅ Ruchy found at: $(RUCHY)$(NC)"; \
 		$(RUCHY) --version; \
 	fi
 
@@ -78,9 +99,9 @@ ruchy-build: ruchy-check ## Build all Ruchy scripts to binaries
 	@mkdir -p $(BUILD_DIR)
 	@for script in $(ALL_RUCHY); do \
 		name=$$(basename $$script .ruchy); \
-		echo "$(BLUE)  Building $$name...$(NC)"; \
+		@echo "$(BLUE)  Building $$name...$(NC)"; \
 		$(RUCHY) compile $$script -o $(BUILD_DIR)/$$name 2>/dev/null || \
-		echo "$(YELLOW)  ⚠️  Skipping $$name (library or syntax issue)$(NC)"; \
+		@echo "$(YELLOW)  ⚠️  Skipping $$name (library or syntax issue)$(NC)"; \
 	done
 	@echo "$(GREEN)✅ Build complete! Binaries in $(BUILD_DIR)$(NC)"
 
@@ -91,9 +112,9 @@ ruchy-build-system: ruchy-check ## Build system scripts only
 	@mkdir -p $(BUILD_DIR)/system
 	@for script in $(RUCHY_SYSTEM); do \
 		name=$$(basename $$script .ruchy); \
-		echo "$(BLUE)  Building $$name...$(NC)"; \
+		@echo "$(BLUE)  Building $$name...$(NC)"; \
 		$(RUCHY) compile $$script -o $(BUILD_DIR)/system/$$name 2>/dev/null || \
-		echo "$(YELLOW)  ⚠️  Skipping $$name$(NC)"; \
+		@echo "$(YELLOW)  ⚠️  Skipping $$name$(NC)"; \
 	done
 
 # Build audio scripts only
@@ -103,9 +124,9 @@ ruchy-build-audio: ruchy-check ## Build audio scripts only
 	@mkdir -p $(BUILD_DIR)/audio
 	@for script in $(RUCHY_AUDIO); do \
 		name=$$(basename $$script .ruchy); \
-		echo "$(BLUE)  Building $$name...$(NC)"; \
+		@echo "$(BLUE)  Building $$name...$(NC)"; \
 		$(RUCHY) compile $$script -o $(BUILD_DIR)/audio/$$name 2>/dev/null || \
-		echo "$(YELLOW)  ⚠️  Skipping $$name$(NC)"; \
+		@echo "$(YELLOW)  ⚠️  Skipping $$name$(NC)"; \
 	done
 
 # Run tests
@@ -144,15 +165,15 @@ ruchy-clean: ## Clean Ruchy build artifacts
 ruchy-install: ## Install Ruchy compiler
 	@if [ -z "$(RUCHY)" ]; then \
 		if [ -n "$(CARGO)" ]; then \
-			echo "$(CYAN)📦 Installing Ruchy via Cargo...$(NC)"; \
+			@echo "$(CYAN)📦 Installing Ruchy via Cargo...$(NC)"; \
 			cargo install ruchy; \
 		else \
-			echo "$(RED)❌ Cargo not found. Please install Rust first.$(NC)"; \
-			echo "$(YELLOW)💡 Visit: https://rustup.rs$(NC)"; \
+			@echo "$(RED)❌ Cargo not found. Please install Rust first.$(NC)"; \
+			@echo "$(YELLOW)💡 Visit: https://rustup.rs$(NC)"; \
 			exit 1; \
 		fi \
 	else \
-		echo "$(GREEN)✅ Ruchy already installed$(NC)"; \
+		@echo "$(GREEN)✅ Ruchy already installed$(NC)"; \
 	fi
 
 # Package Ruchy binaries
@@ -190,9 +211,9 @@ ruchy-watch: ## Watch for changes and rebuild
 ruchy-pmat-analysis: ## Run PMAT TDG analysis on Ruchy files
 	@echo "$(CYAN)📊 Running PMAT TDG Analysis...$(NC)"
 	@for file in $$(find $(RUCHY_DIR) -name "*.ruchy" ! -path "*/tests/*"); do \
-		echo "$(BLUE)Analyzing $$file...$(NC)"; \
+		@echo "$(BLUE)Analyzing $$file...$(NC)"; \
 		pmat analyze $$file || true; \
-		echo ""; \
+		@echo ""; \
 	done
 
 .PHONY: ruchy-showcase

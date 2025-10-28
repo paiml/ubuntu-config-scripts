@@ -4,6 +4,7 @@
 #
 
 # Colors for output
+.SUFFIXES:
 RED := \033[0;31m
 GREEN := \033[0;32m
 YELLOW := \033[0;33m
@@ -22,14 +23,45 @@ DEBUG_DIR := $(TARGET_DIR)/debug
 
 # Binary names
 SYSTEM_BINS := cleanup_disk configure_obs configure_time create_pipewire_monitor \
-               diagnose_av_issues refresh_kde_desktop sudo_wrapper update_ruchy \
-               upgrade_nvidia_driver
+	diagnose_av_issues refresh_kde_desktop sudo_wrapper update_ruchy \
+	upgrade_nvidia_driver
 AUDIO_BINS := configure_speakers enable_mic fix_audio
 DEV_BINS := deploy manage_deps
 ALL_BINS := $(SYSTEM_BINS) $(AUDIO_BINS) $(DEV_BINS)
 
 # Default target
-.PHONY: help
+.PHONY: help \
+	rust-bench \
+	rust-build \
+	rust-build-all \
+	rust-build-release \
+	rust-check \
+	rust-clean \
+	rust-coverage \
+	rust-coverage-check \
+	rust-coverage-xml \
+	rust-deploy \
+	rust-doc \
+	rust-example-audio \
+	rust-example-cleanup \
+	rust-format \
+	rust-format-check \
+	rust-install-tools \
+	rust-integration \
+	rust-lint \
+	rust-lint-strict \
+	rust-package \
+	rust-quality-gate \
+	rust-security \
+	rust-test \
+	rust-test-integration \
+	rust-test-property \
+	rust-test-unit \
+	rust-test-verbose \
+	rust-validate \
+	rust-validate-ci \
+	rust-watch \
+	rust-watch-test
 help: ## Show Rust build commands
 	@echo "╔══════════════════════════════════════════════════════════════╗"
 	@echo "║                 🦀 Rust Build System                         ║"
@@ -52,11 +84,11 @@ help: ## Show Rust build commands
 .PHONY: rust-check
 rust-check: ## Check if Rust/Cargo is installed
 	@if [ -z "$(CARGO)" ]; then \
-		echo "$(RED)❌ Cargo not found. Please install Rust first.$(NC)"; \
-		echo "$(YELLOW)💡 Visit: https://rustup.rs$(NC)"; \
+		@echo "$(RED)❌ Cargo not found. Please install Rust first.$(NC)"; \
+		@echo "$(YELLOW)💡 Visit: https://rustup.rs$(NC)"; \
 		exit 1; \
 	else \
-		echo "$(GREEN)✅ Cargo found at: $(CARGO)$(NC)"; \
+		@echo "$(GREEN)✅ Cargo found at: $(CARGO)$(NC)"; \
 		$(CARGO) --version; \
 		rustc --version; \
 	fi
@@ -122,9 +154,9 @@ rust-security: rust-check ## Run security audit
 	@echo "$(CYAN)🔒 Running security audit...$(NC)"
 	@if command -v cargo-audit >/dev/null 2>&1; then \
 		$(CARGO) audit; \
-		echo "$(GREEN)✅ Security audit complete!$(NC)"; \
+		@echo "$(GREEN)✅ Security audit complete!$(NC)"; \
 	else \
-		echo "$(YELLOW)⚠️ cargo-audit not installed. Install with: cargo install cargo-audit$(NC)"; \
+		@echo "$(YELLOW)⚠️ cargo-audit not installed. Install with: cargo install cargo-audit$(NC)"; \
 	fi
 
 .PHONY: rust-format
@@ -145,10 +177,10 @@ rust-coverage: rust-check ## Generate test coverage report
 	@echo "$(CYAN)📊 Generating coverage report...$(NC)"
 	@if command -v cargo-tarpaulin >/dev/null 2>&1; then \
 		$(CARGO) tarpaulin --out Html --output-dir target/tarpaulin; \
-		echo "$(GREEN)✅ Coverage report generated: target/tarpaulin/tarpaulin-report.html$(NC)"; \
+		@echo "$(GREEN)✅ Coverage report generated: target/tarpaulin/tarpaulin-report.html$(NC)"; \
 	else \
-		echo "$(YELLOW)⚠️ cargo-tarpaulin not installed. Install with: cargo install cargo-tarpaulin$(NC)"; \
-		echo "$(YELLOW)   Falling back to basic test run...$(NC)"; \
+		@echo "$(YELLOW)⚠️ cargo-tarpaulin not installed. Install with: cargo install cargo-tarpaulin$(NC)"; \
+		@echo "$(YELLOW)   Falling back to basic test run...$(NC)"; \
 		$(CARGO) test; \
 	fi
 
@@ -157,9 +189,9 @@ rust-coverage-xml: rust-check ## Generate coverage in XML format
 	@echo "$(CYAN)📊 Generating XML coverage report...$(NC)"
 	@if command -v cargo-tarpaulin >/dev/null 2>&1; then \
 		$(CARGO) tarpaulin --out Xml; \
-		echo "$(GREEN)✅ XML coverage report generated: cobertura.xml$(NC)"; \
+		@echo "$(GREEN)✅ XML coverage report generated: cobertura.xml$(NC)"; \
 	else \
-		echo "$(YELLOW)⚠️ cargo-tarpaulin not installed$(NC)"; \
+		@echo "$(YELLOW)⚠️ cargo-tarpaulin not installed$(NC)"; \
 	fi
 
 # Quality gates
@@ -177,19 +209,19 @@ rust-coverage-check: rust-check ## Check coverage meets threshold (80%)
 	@if command -v cargo-tarpaulin >/dev/null 2>&1; then \
 		coverage=$$($(CARGO) tarpaulin --print=stdout | grep -E 'coverage.*%' | grep -oE '[0-9]+\.[0-9]+' | tail -1); \
 		if [ -n "$$coverage" ]; then \
-			echo "Current coverage: $$coverage%"; \
+			@echo "Current coverage: $$coverage%"; \
 			if [ "$$(echo "$$coverage >= 80" | bc -l)" -eq 1 ]; then \
-				echo "$(GREEN)✅ Coverage threshold met ($$coverage% >= 80%)$(NC)"; \
+				@echo "$(GREEN)✅ Coverage threshold met ($$coverage% >= 80%)$(NC)"; \
 			else \
-				echo "$(RED)❌ Coverage below threshold: $$coverage% < 80%$(NC)"; \
+				@echo "$(RED)❌ Coverage below threshold: $$coverage% < 80%$(NC)"; \
 				exit 1; \
 			fi; \
 		else \
-			echo "$(YELLOW)⚠️ Could not parse coverage output$(NC)"; \
+			@echo "$(YELLOW)⚠️ Could not parse coverage output$(NC)"; \
 		fi; \
 	else \
-		echo "$(YELLOW)⚠️ cargo-tarpaulin not installed - skipping coverage check$(NC)"; \
-		echo "$(YELLOW)   Install with: cargo install cargo-tarpaulin$(NC)"; \
+		@echo "$(YELLOW)⚠️ cargo-tarpaulin not installed - skipping coverage check$(NC)"; \
+		@echo "$(YELLOW)   Install with: cargo install cargo-tarpaulin$(NC)"; \
 	fi
 
 .PHONY: rust-validate-ci
@@ -212,19 +244,19 @@ rust-deploy: rust-build-release ## Deploy binaries to dist directory
 	@for bin in $(SYSTEM_BINS); do \
 		if [ -f "$(RELEASE_DIR)/$$bin" ]; then \
 			cp "$(RELEASE_DIR)/$$bin" "$(BUILD_DIR)/system/"; \
-			echo "$(GREEN)  ✅ $$bin → $(BUILD_DIR)/system/$(NC)"; \
+			@echo "$(GREEN)  ✅ $$bin → $(BUILD_DIR)/system/$(NC)"; \
 		fi \
 	done
 	@for bin in $(AUDIO_BINS); do \
 		if [ -f "$(RELEASE_DIR)/$$bin" ]; then \
 			cp "$(RELEASE_DIR)/$$bin" "$(BUILD_DIR)/audio/"; \
-			echo "$(GREEN)  ✅ $$bin → $(BUILD_DIR)/audio/$(NC)"; \
+			@echo "$(GREEN)  ✅ $$bin → $(BUILD_DIR)/audio/$(NC)"; \
 		fi \
 	done
 	@for bin in $(DEV_BINS); do \
 		if [ -f "$(RELEASE_DIR)/$$bin" ]; then \
 			cp "$(RELEASE_DIR)/$$bin" "$(BUILD_DIR)/dev/"; \
-			echo "$(GREEN)  ✅ $$bin → $(BUILD_DIR)/dev/$(NC)"; \
+			@echo "$(GREEN)  ✅ $$bin → $(BUILD_DIR)/dev/$(NC)"; \
 		fi \
 	done
 	@echo "$(GREEN)✅ Deployment complete!$(NC)"
@@ -244,7 +276,7 @@ rust-watch: ## Watch for changes and rebuild
 	@if command -v cargo-watch >/dev/null 2>&1; then \
 		cargo watch -x build; \
 	else \
-		echo "$(YELLOW)⚠️ cargo-watch not installed. Install with: cargo install cargo-watch$(NC)"; \
+		@echo "$(YELLOW)⚠️ cargo-watch not installed. Install with: cargo install cargo-watch$(NC)"; \
 		exit 1; \
 	fi
 
@@ -254,7 +286,7 @@ rust-watch-test: ## Watch for changes and run tests
 	@if command -v cargo-watch >/dev/null 2>&1; then \
 		cargo watch -x test; \
 	else \
-		echo "$(YELLOW)⚠️ cargo-watch not installed. Install with: cargo install cargo-watch$(NC)"; \
+		@echo "$(YELLOW)⚠️ cargo-watch not installed. Install with: cargo install cargo-watch$(NC)"; \
 		exit 1; \
 	fi
 
@@ -306,9 +338,9 @@ rust-integration: ## Show integration status with existing TypeScript build
 	@echo ""
 	@echo "$(YELLOW)Quality Metrics:$(NC)"
 	@if [ -f "cobertura.xml" ]; then \
-		echo "  Coverage: Available (run rust-coverage for details)"; \
+		@echo "  Coverage: Available (run rust-coverage for details)"; \
 	else \
-		echo "  Coverage: Not generated (run rust-coverage)"; \
+		@echo "  Coverage: Not generated (run rust-coverage)"; \
 	fi
 	@echo ""
 	@echo "$(YELLOW)Next steps:$(NC)"
