@@ -1,0 +1,41 @@
+// Minimal config test to isolate syntax error
+
+use std::collections::HashMap;
+
+struct ConfigManager {
+    config: HashMap<String, String>,
+    config_path: String,
+    has_path: bool,
+}
+
+impl ConfigManager {
+    fun new() -> ConfigManager {
+        panic!("Not implemented");
+    }
+
+    fun new_with_path(path: &str) -> ConfigManager {
+        panic!("Not implemented");
+    }
+
+    fun load(&mut self) {
+        panic!("Not implemented");
+    }
+
+    fun save(&self) {
+        panic!("Not implemented");
+    }
+
+    fun has(&self, key: &str) -> bool {
+        panic!("Not implemented");
+    }
+
+    fun test_return_string(&self, key: &str, default: &str) -> String {
+        panic!("Not implemented");
+    }
+}
+
+fun main() {
+    println!("Minimal config test");
+    let manager = ConfigManager::new();
+    println!("Done");
+}

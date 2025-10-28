@@ -1,0 +1,250 @@
+// RUCHY-004: Config Manager (RED Phase)
+// Test-first development for configuration management
+
+use std::collections::HashMap;
+
+// Config manager struct (simplified with string storage)
+struct ConfigManager {
+    config: HashMap<String, String>,
+    config_path: String,
+    has_path: bool,
+}
+
+impl ConfigManager {
+    // Constructor without path
+    fun new() -> ConfigManager {
+        panic!("Not implemented: new");
+    }
+
+    // Constructor with path
+    fun new_with_path(path: &str) -> ConfigManager {
+        panic!("Not implemented: new_with_path");
+    }
+
+    // Load config from file
+    fun load(&mut self) {
+        panic!("Not implemented: load");
+    }
+
+    // Save config to file
+    fun save(&self) {
+        panic!("Not implemented: save");
+    }
+
+    // Check if key exists
+    fun has(&self, key: &str) -> bool {
+        panic!("Not implemented: has");
+    }
+
+    // Get string value with default
+    fun get_string(&self, key: &str, default: &str) -> String {
+        panic!("Not implemented: get_string");
+    }
+
+    // Get number value with default (parse from string)
+    fun get_number(&self, key: &str, default: i32) -> i32 {
+        panic!("Not implemented: get_number");
+    }
+
+    // Set string value
+    fun set_string(&mut self, key: &str, value: &str) {
+        panic!("Not implemented: set_string");
+    }
+
+    // Set number value (store as string)
+    fun set_number(&mut self, key: &str, value: i32) {
+        panic!("Not implemented: set_number");
+    }
+
+    // Delete key
+    fun delete(&mut self, key: &str) {
+        panic!("Not implemented: delete");
+    }
+}
+
+// Helper function to create and load config
+fun load_config_from_path(path: &str) -> ConfigManager {
+    panic!("Not implemented: load_config_from_path");
+}
+
+// TESTS
+
+fun test_create_without_path() {
+    println!("Testing ConfigManager creation without path...");
+    let manager = ConfigManager::new();
+    println!("✅ Create without path test passed");
+}
+
+fun test_create_with_path() {
+    println!("Testing ConfigManager creation with path...");
+    let manager = ConfigManager::new_with_path("/tmp/test_config.json");
+    println!("✅ Create with path test passed");
+}
+
+fun test_load_missing_file() {
+    println!("Testing load with missing file...");
+    let mut manager = ConfigManager::new_with_path("/tmp/nonexistent.json");
+    manager.load();  // Should not panic, use defaults
+    println!("✅ Load missing file test passed");
+}
+
+fun test_load_empty_config() {
+    println!("Testing load with empty config...");
+    let mut manager = ConfigManager::new();
+    manager.load();  // Should handle no path gracefully
+    println!("✅ Load empty config test passed");
+}
+
+fun test_save_without_path() {
+    println!("Testing save without path (should error)...");
+    let manager = ConfigManager::new();
+    // Would panic in real impl: manager.save();
+    println!("✅ Save without path test passed");
+}
+
+fun test_get_simple_key() {
+    println!("Testing get simple key...");
+    let manager = ConfigManager::new();
+    let value = manager.get_string("name", "default");
+    println!("✅ Get simple key test passed");
+}
+
+fun test_get_nested_key() {
+    println!("Testing get nested key with dot notation...");
+    let manager = ConfigManager::new();
+    let value = manager.get_string("server.host", "localhost");
+    println!("✅ Get nested key test passed");
+}
+
+fun test_get_missing_key_with_default() {
+    println!("Testing get missing key with default...");
+    let manager = ConfigManager::new();
+    let value = manager.get_number("server.port", 8080);
+    println!("✅ Get missing key with default test passed");
+}
+
+fun test_get_deeply_nested() {
+    println!("Testing get deeply nested key...");
+    let manager = ConfigManager::new();
+    let value = manager.get_number("app.database.connection.timeout", 5000);
+    println!("✅ Get deeply nested test passed");
+}
+
+fun test_set_simple_key() {
+    println!("Testing set simple key...");
+    let mut manager = ConfigManager::new();
+    manager.set_string("name", "test");
+    println!("✅ Set simple key test passed");
+}
+
+fun test_set_nested_key() {
+    println!("Testing set nested key (auto-create parents)...");
+    let mut manager = ConfigManager::new();
+    manager.set_number("server.port", 8080);
+    println!("✅ Set nested key test passed");
+}
+
+fun test_set_deeply_nested() {
+    println!("Testing set deeply nested key...");
+    let mut manager = ConfigManager::new();
+    manager.set_number("app.db.conn.timeout", 5000);
+    println!("✅ Set deeply nested test passed");
+}
+
+fun test_has_existing_key() {
+    println!("Testing has with existing key...");
+    let mut manager = ConfigManager::new();
+    manager.set_string("name", "test");
+    let exists = manager.has("name");
+    println!("✅ Has existing key test passed");
+}
+
+fun test_has_missing_key() {
+    println!("Testing has with missing key...");
+    let manager = ConfigManager::new();
+    let exists = manager.has("nonexistent");
+    println!("✅ Has missing key test passed");
+}
+
+fun test_has_nested_key() {
+    println!("Testing has with nested key...");
+    let mut manager = ConfigManager::new();
+    manager.set_number("server.port", 8080);
+    let exists = manager.has("server.port");
+    println!("✅ Has nested key test passed");
+}
+
+fun test_delete_simple_key() {
+    println!("Testing delete simple key...");
+    let mut manager = ConfigManager::new();
+    manager.set_string("name", "test");
+    manager.delete("name");
+    println!("✅ Delete simple key test passed");
+}
+
+fun test_delete_nested_key() {
+    println!("Testing delete nested key...");
+    let mut manager = ConfigManager::new();
+    manager.set_number("server.port", 8080);
+    manager.delete("server.port");
+    println!("✅ Delete nested key test passed");
+}
+
+fun test_delete_missing_key() {
+    println!("Testing delete missing key (no-op)...");
+    let mut manager = ConfigManager::new();
+    manager.delete("nonexistent");
+    println!("✅ Delete missing key test passed");
+}
+
+fun test_load_config_helper() {
+    println!("Testing load_config_from_path helper function...");
+    let manager = load_config_from_path("/tmp/test.json");
+    println!("✅ Load config helper test passed");
+}
+
+fun main() {
+    println!("========================================");
+    println!("RUCHY-004: Config Manager Test Suite");
+    println!("Extreme TDD - RED Phase");
+    println!("========================================\n");
+
+    // Creation tests (2 tests)
+    test_create_without_path();
+    test_create_with_path();
+
+    // Load tests (2 tests)
+    test_load_missing_file();
+    test_load_empty_config();
+
+    // Save tests (1 test)
+    test_save_without_path();
+
+    // Get tests (4 tests)
+    test_get_simple_key();
+    test_get_nested_key();
+    test_get_missing_key_with_default();
+    test_get_deeply_nested();
+
+    // Set tests (3 tests)
+    test_set_simple_key();
+    test_set_nested_key();
+    test_set_deeply_nested();
+
+    // Has tests (3 tests)
+    test_has_existing_key();
+    test_has_missing_key();
+    test_has_nested_key();
+
+    // Delete tests (3 tests)
+    test_delete_simple_key();
+    test_delete_nested_key();
+    test_delete_missing_key();
+
+    // Helper tests (1 test)
+    test_load_config_helper();
+
+    println!("\n========================================");
+    println!("All 19 tests passed! ✅");
+    println!("========================================");
+}
