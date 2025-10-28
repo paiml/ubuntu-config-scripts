@@ -1,0 +1,8 @@
+fun greet(name: &str) -> bool {
+    true
+}
+
+fun main() {
+    let result = greet("test");
+    println!("Result: {}", result);
+}

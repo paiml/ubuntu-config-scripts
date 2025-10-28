@@ -1,0 +1,8 @@
+fun check_command(command: &str) -> bool {
+    true
+}
+
+fun main() {
+    let result = check_command("ls");
+    println!("Result: {}", result);
+}

@@ -1,0 +1,117 @@
+// RUCHY-006: Dependency Checker Standalone (RED + GREEN Phase)
+// Self-contained implementation + tests
+
+use std::process::Command;
+
+// Check if a command exists in PATH
+fun check_command(command: &str) -> bool {
+    Command::new("which")
+        .arg(command)
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+// Validate multiple dependencies
+fun validate_dependencies(deps: Vec<String>) -> bool {
+    let mut all_present = true;
+
+    for dep in deps {
+        let exists = check_command(&dep);
+        if !exists {
+            println!("Missing dependency: {}", dep);
+            all_present = false;
+        } else {
+            println!("Found dependency: {}", dep);
+        }
+    }
+
+    all_present
+}
+
+// TESTS
+
+fun test_check_command_exists() {
+    println!("Testing check_command with existing command (ls)...");
+    let exists = check_command("ls");
+    if !exists {
+        panic!("Expected ls to exist");
+    }
+    println!("✅ check_command exists test passed");
+}
+
+fun test_check_command_missing() {
+    println!("Testing check_command with missing command...");
+    let exists = check_command("nonexistent_command_xyz123");
+    if exists {
+        panic!("Expected nonexistent command to not exist");
+    }
+    println!("✅ check_command missing test passed");
+}
+
+fun test_validate_all_present() {
+    println!("Testing validate_dependencies with all present...");
+    let deps = vec![String::from("ls"), String::from("echo")];
+    let result = validate_dependencies(deps);
+    if !result {
+        panic!("Expected all dependencies to be present");
+    }
+    println!("✅ validate all present test passed");
+}
+
+fun test_validate_one_missing() {
+    println!("Testing validate_dependencies with one missing...");
+    let deps = vec![
+        String::from("ls"),
+        String::from("nonexistent_xyz"),
+    ];
+    let result = validate_dependencies(deps);
+    if result {
+        panic!("Expected validation to fail with missing dependency");
+    }
+    println!("✅ validate one missing test passed");
+}
+
+fun test_validate_multiple_missing() {
+    println!("Testing validate_dependencies with multiple missing...");
+    let deps = vec![
+        String::from("nonexistent_a"),
+        String::from("nonexistent_b"),
+    ];
+    let result = validate_dependencies(deps);
+    if result {
+        panic!("Expected validation to fail with multiple missing");
+    }
+    println!("✅ validate multiple missing test passed");
+}
+
+fun test_validate_empty_list() {
+    println!("Testing validate_dependencies with empty list...");
+    let deps: Vec<String> = vec![];
+    let result = validate_dependencies(deps);
+    if !result {
+        panic!("Expected empty list to pass validation");
+    }
+    println!("✅ validate empty list test passed");
+}
+
+fun main() {
+    println!("========================================");
+    println!("RUCHY-006: Dependency Checker Test Suite");
+    println!("Extreme TDD - GREEN Phase");
+    println!("========================================\n");
+
+    // check_command tests (2 tests)
+    test_check_command_exists();
+    test_check_command_missing();
+
+    // validate_dependencies tests (4 tests)
+    test_validate_all_present();
+    test_validate_one_missing();
+    test_validate_multiple_missing();
+    test_validate_empty_list();
+
+    println!("\n========================================");
+    println!("All 6 tests passed! ✅");
+    println!("========================================");
+}
