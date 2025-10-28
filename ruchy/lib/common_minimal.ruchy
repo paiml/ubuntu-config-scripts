@@ -1,0 +1,41 @@
+// RUCHY-002: Minimal test to isolate compiler bug
+
+use std::collections::HashMap;
+
+// Test struct
+struct TestResult {
+    success: bool,
+    message: String,
+}
+
+// Test 1: Simple function with no parameters
+fun test_no_params() {
+    println!("Hello");
+}
+
+// Test 2: Function with one string parameter
+fun test_one_param(message: &str) {
+    println!("{}", message);
+}
+
+// Test 3: Function returning bool
+fun test_return_bool() -> bool {
+    true
+}
+
+// Test 4: Function returning struct
+fun test_return_struct() -> TestResult {
+    panic!("Not implemented")
+}
+
+// Test 5: Function returning HashMap
+fun test_return_hashmap(args: Vec<String>) -> HashMap<String, String> {
+    panic!("Not implemented")
+}
+
+fun main() {
+    test_no_params();
+    test_one_param("test");
+    let result = test_return_bool();
+    println!("Result: {}", result);
+}
