@@ -29,7 +29,19 @@ impl ConfigManager {
         panic!("Not implemented");
     }
 
-    fun test_return_string(&self, key: &str, default: &str) -> String {
+    fun test_return_string_a(&self, key: &str) -> String {
+        panic!("Not implemented");
+    }
+
+    fun test_return_string_b(&self, key: &str) -> String {
+        panic!("Not implemented");
+    }
+
+    fun test_with_number_param(&self, key: &str, value: i32) -> String {
+        panic!("Not implemented");
+    }
+
+    fun test_with_string_param(&self, key: &str, value: String) -> String {
         panic!("Not implemented");
     }
 }

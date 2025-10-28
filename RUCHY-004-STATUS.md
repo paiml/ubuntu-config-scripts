@@ -109,7 +109,9 @@ ruchy/
 
 ---
 
-**Status**: BLOCKED by ruchy#68
+**Status**: BLOCKED by ruchy#68 (tested v3.141.0 - still broken)
 **Last Updated**: 2025-10-28
 **GitHub Issue**: https://github.com/paiml/ruchy/issues/68
+**Tested Versions**: v3.140.0 ❌, v3.141.0 ❌
+**Note**: Bug is more complex than two &str params - appears file-size/complexity related
 **Next**: Wait for compiler fix, then resume RED phase

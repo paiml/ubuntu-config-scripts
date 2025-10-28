@@ -36,8 +36,8 @@ impl ConfigManager {
         panic!("Not implemented: has");
     }
 
-    // Get string value with default
-    fun get_string(&self, key: &str, default: &str) -> String {
+    // Get string value with default (use owned String to avoid two &str bug)
+    fun get_string(&self, key: &str, default: String) -> String {
         panic!("Not implemented: get_string");
     }
 
@@ -46,8 +46,8 @@ impl ConfigManager {
         panic!("Not implemented: get_number");
     }
 
-    // Set string value
-    fun set_string(&mut self, key: &str, value: &str) {
+    // Set string value (use owned String to avoid two &str bug)
+    fun set_string(&mut self, key: &str, value: String) {
         panic!("Not implemented: set_string");
     }
 
@@ -105,14 +105,14 @@ fun test_save_without_path() {
 fun test_get_simple_key() {
     println!("Testing get simple key...");
     let manager = ConfigManager::new();
-    let value = manager.get_string("name", "default");
+    let value = manager.get_string("name", String::from("default"));
     println!("✅ Get simple key test passed");
 }
 
 fun test_get_nested_key() {
     println!("Testing get nested key with dot notation...");
     let manager = ConfigManager::new();
-    let value = manager.get_string("server.host", "localhost");
+    let value = manager.get_string("server.host", String::from("localhost"));
     println!("✅ Get nested key test passed");
 }
 
@@ -133,7 +133,7 @@ fun test_get_deeply_nested() {
 fun test_set_simple_key() {
     println!("Testing set simple key...");
     let mut manager = ConfigManager::new();
-    manager.set_string("name", "test");
+    manager.set_string("name", String::from("test"));
     println!("✅ Set simple key test passed");
 }
 
@@ -154,7 +154,7 @@ fun test_set_deeply_nested() {
 fun test_has_existing_key() {
     println!("Testing has with existing key...");
     let mut manager = ConfigManager::new();
-    manager.set_string("name", "test");
+    manager.set_string("name", String::from("test"));
     let exists = manager.has("name");
     println!("✅ Has existing key test passed");
 }
@@ -177,7 +177,7 @@ fun test_has_nested_key() {
 fun test_delete_simple_key() {
     println!("Testing delete simple key...");
     let mut manager = ConfigManager::new();
-    manager.set_string("name", "test");
+    manager.set_string("name", String::from("test"));
     manager.delete("name");
     println!("✅ Delete simple key test passed");
 }
