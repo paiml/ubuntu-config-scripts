@@ -1,0 +1,766 @@
+# Ubuntu Config Scripts - Ruchy Conversion Roadmap
+# Extreme TDD with 15-Tool Quality Gates
+
+meta:
+  project: Ubuntu Config Scripts - Ruchy Conversion
+  approach: Extreme Test-Driven Development
+  total_scripts: 96
+  estimated_duration: 12_weeks
+  quality_gates:
+    max_complexity: 10
+    max_cognitive: 7
+    min_coverage: 0.95
+    min_mutation_score: 0.90
+    satd_tolerance: 0
+    property_test_iterations: 1000
+    startup_time_max_ms: 100
+  execution:
+    ticket_workflow: RED-GREEN-REFACTOR-PMAT
+    commit_strategy: atomic_per_ticket
+    build_verification: mandatory_clean_with_15_tools
+  tools:
+    static_analysis:
+      - cargo check
+      - cargo clippy
+      - rustfmt
+      - cargo-audit
+      - cargo-deny
+    testing:
+      - cargo test
+      - cargo-tarpaulin
+      - cargo-mutants
+      - proptest
+      - quickcheck
+    performance_quality:
+      - criterion
+      - cargo-bloat
+      - cargo-udeps
+      - miri
+      - pmat
+
+phases:
+  # PHASE 1: Foundation Libraries (Weeks 1-2)
+  - id: phase-1
+    name: "Foundation Libraries"
+    goal: "Establish Ruchy library equivalents of core TypeScript libraries"
+    duration: 2_weeks
+    scripts_count: 10
+    tickets:
+      - id: RUCHY-001
+        title: "Convert lib/logger.ts to Ruchy"
+        phase: "phase-1"
+        priority: critical
+        complexity: medium
+        estimated_hours: 16
+        requirements:
+          - "Port Logger class with same API"
+          - "Support color output with ANSI codes"
+          - "Add log levels: debug, info, warn, error, success"
+          - "Property test: log level filtering"
+          - "Benchmark: <1ms per log call"
+        tests:
+          - "test_logger_basic_output"
+          - "test_logger_level_filtering"
+          - "test_logger_color_codes"
+          - "proptest_logger_message_sanitization"
+          - "bench_logger_performance"
+        acceptance:
+          - "100% test coverage"
+          - "Mutation score >90%"
+          - "All 15 tools pass"
+          - "API matches TypeScript version"
+        typescript_source: "scripts/lib/logger.ts"
+        ruchy_target: "ruchy/lib/logger.ruchy"
+        test_file: "ruchy/tests/lib/logger_test.ruchy"
+
+      - id: RUCHY-002
+        title: "Convert lib/common.ts to Ruchy"
+        phase: "phase-1"
+        priority: critical
+        complexity: high
+        estimated_hours: 24
+        requirements:
+          - "Port runCommand with stdout/stderr capture"
+          - "Port commandExists, requireCommand"
+          - "Port parseArgs for CLI parsing"
+          - "Port fileExists, ensureDir"
+          - "Port getEnvOrDefault, requireEnv"
+          - "Port withTempDir, isRoot, requireRoot"
+          - "Property test: parseArgs inverse"
+        tests:
+          - "test_run_command_success"
+          - "test_run_command_failure"
+          - "test_command_exists"
+          - "test_parse_args_various_formats"
+          - "proptest_parse_args_roundtrip"
+          - "test_file_operations"
+          - "test_env_variables"
+          - "bench_command_execution"
+        acceptance:
+          - "100% test coverage"
+          - "All command execution modes work"
+          - "Error handling comprehensive"
+        typescript_source: "scripts/lib/common.ts"
+        ruchy_target: "ruchy/lib/common.ruchy"
+
+      - id: RUCHY-003
+        title: "Convert lib/schema.ts to Ruchy (Serde)"
+        phase: "phase-1"
+        priority: high
+        complexity: high
+        estimated_hours: 20
+        requirements:
+          - "Replace Zod with serde + validator"
+          - "Port all validation schemas"
+          - "Support JSON serialization/deserialization"
+          - "Property test: schema validation consistency"
+        tests:
+          - "test_schema_validation_success"
+          - "test_schema_validation_errors"
+          - "test_schema_json_roundtrip"
+          - "proptest_schema_validation_properties"
+        acceptance:
+          - "All schemas ported"
+          - "Validation errors match TypeScript"
+        typescript_source: "scripts/lib/schema.ts"
+        ruchy_target: "ruchy/lib/schema.ruchy"
+
+      - id: RUCHY-004
+        title: "Convert lib/config.ts to Ruchy"
+        phase: "phase-1"
+        priority: high
+        complexity: medium
+        estimated_hours: 16
+        requirements:
+          - "Port configuration loading"
+          - "Support .env file parsing"
+          - "Use config crate for config management"
+          - "Property test: config precedence"
+        tests:
+          - "test_config_load_defaults"
+          - "test_config_load_env_override"
+          - "test_config_validation"
+          - "proptest_config_merge_properties"
+        typescript_source: "scripts/lib/config.ts"
+        ruchy_target: "ruchy/lib/config.ruchy"
+
+      - id: RUCHY-005
+        title: "Convert lib/deno-updater.ts to Ruchy"
+        phase: "phase-1"
+        priority: medium
+        complexity: medium
+        estimated_hours: 12
+        requirements:
+          - "Port version checking logic"
+          - "HTTP client with reqwest"
+          - "SemVer comparison"
+        tests:
+          - "test_version_check"
+          - "test_version_comparison"
+          - "proptest_semver_ordering"
+        typescript_source: "scripts/lib/deno-updater.ts"
+        ruchy_target: "ruchy/lib/updater.ruchy"
+
+      - id: RUCHY-006
+        title: "Convert lib/strict-config.ts to Ruchy"
+        phase: "phase-1"
+        priority: low
+        complexity: low
+        estimated_hours: 8
+        requirements:
+          - "Port TypeScript strict config checks"
+          - "Integrate with Rust type system"
+        typescript_source: "scripts/lib/strict-config.ts"
+        ruchy_target: "ruchy/lib/strict_config.ruchy"
+
+      - id: RUCHY-007
+        title: "Convert lib/deps.ts to Ruchy"
+        phase: "phase-1"
+        priority: medium
+        complexity: medium
+        estimated_hours: 12
+        requirements:
+          - "Port dependency management utilities"
+          - "Integrate with cargo for Rust dependencies"
+        typescript_source: "scripts/lib/deps.ts"
+        ruchy_target: "ruchy/lib/deps.ruchy"
+
+      - id: RUCHY-008
+        title: "Convert lib/turso-client.ts to Ruchy"
+        phase: "phase-1"
+        priority: high
+        complexity: high
+        estimated_hours: 24
+        requirements:
+          - "Async/await with Tokio"
+          - "libSQL client integration"
+          - "Connection pooling"
+          - "Property test: query idempotency"
+        tests:
+          - "test_turso_connection"
+          - "test_turso_query"
+          - "test_turso_error_handling"
+          - "proptest_query_consistency"
+        typescript_source: "scripts/lib/turso-client.ts"
+        ruchy_target: "ruchy/lib/turso_client.ruchy"
+
+      - id: RUCHY-009
+        title: "Convert lib/script-repository.ts to Ruchy"
+        phase: "phase-1"
+        priority: high
+        complexity: medium
+        estimated_hours: 16
+        requirements:
+          - "Port script metadata management"
+          - "Integrate with Turso client"
+        typescript_source: "scripts/lib/script-repository.ts"
+        ruchy_target: "ruchy/lib/script_repository.ruchy"
+
+      - id: RUCHY-010
+        title: "Convert lib/deploy.ts to Ruchy"
+        phase: "phase-1"
+        priority: medium
+        complexity: medium
+        estimated_hours: 12
+        requirements:
+          - "Port deployment utilities"
+          - "Binary packaging and distribution"
+        typescript_source: "scripts/lib/deploy.ts"
+        ruchy_target: "ruchy/lib/deploy.ruchy"
+
+  # PHASE 2: Audio Scripts (Weeks 3-4)
+  - id: phase-2
+    name: "Audio Scripts"
+    goal: "Convert all audio configuration and diagnostic scripts"
+    duration: 2_weeks
+    scripts_count: 10
+    tickets:
+      - id: RUCHY-011
+        title: "Convert audio/configure-speakers.ts to Ruchy"
+        phase: "phase-2"
+        priority: high
+        complexity: high
+        estimated_hours: 20
+        requirements:
+          - "PipeWire API integration"
+          - "ALSA/PulseAudio fallback"
+          - "Device detection and configuration"
+          - "Property test: device enumeration"
+          - "Benchmark: device scan <50ms"
+        tests:
+          - "test_speaker_detection"
+          - "test_speaker_configuration"
+          - "test_audio_routing"
+          - "proptest_device_state_consistency"
+          - "bench_device_scan_performance"
+        acceptance:
+          - "Works with PipeWire"
+          - "Graceful fallback to PulseAudio"
+          - "All devices detected correctly"
+        typescript_source: "scripts/audio/configure-speakers.ts"
+        ruchy_target: "ruchy/audio/configure_speakers.ruchy"
+
+      - id: RUCHY-012
+        title: "Convert audio/enable-mic.ts to Ruchy"
+        phase: "phase-2"
+        priority: high
+        complexity: medium
+        estimated_hours: 16
+        requirements:
+          - "Microphone detection"
+          - "Input device configuration"
+          - "Volume and gain control"
+        typescript_source: "scripts/audio/enable-mic.ts"
+        ruchy_target: "ruchy/audio/enable_mic.ruchy"
+
+      - id: RUCHY-013
+        title: "Convert audio/fix-audio.ts to Ruchy"
+        phase: "phase-2"
+        priority: high
+        complexity: high
+        estimated_hours: 24
+        requirements:
+          - "Comprehensive audio diagnostics"
+          - "Automatic fix application"
+          - "Service restart logic"
+        typescript_source: "scripts/audio/fix-audio.ts"
+        ruchy_target: "ruchy/audio/fix_audio.ruchy"
+
+      # Additional 7 audio scripts (RUCHY-014 through RUCHY-020)
+      - id: RUCHY-014
+        title: "Convert remaining audio scripts (batch 1)"
+        phase: "phase-2"
+        priority: medium
+        complexity: medium
+        estimated_hours: 40
+        requirements:
+          - "Port test-speakers.ts"
+          - "Port test-mic.ts"
+          - "Port remaining audio utilities"
+        notes: "Batch conversion of simpler audio scripts"
+
+  # PHASE 3: System Scripts - Critical Path (Weeks 5-8)
+  - id: phase-3
+    name: "System Scripts - Critical Path"
+    goal: "Convert high-priority system scripts in tiered approach"
+    duration: 4_weeks
+    scripts_count: 50
+    tiers:
+      # Tier 1: Critical (Week 5)
+      - tier: 1
+        name: "Critical System Scripts"
+        duration: 1_week
+        tickets:
+          - id: RUCHY-021
+            title: "Convert system/restart-ibus.ts to Ruchy ⭐"
+            phase: "phase-3"
+            priority: critical
+            complexity: medium
+            estimated_hours: 16
+            requirements:
+              - "Port systemd timer creation"
+              - "Port iBus restart logic"
+              - "Maintain weekly schedule"
+              - "Property test: timer configuration"
+            tests:
+              - "test_timer_creation"
+              - "test_ibus_restart"
+              - "test_systemd_integration"
+              - "proptest_timer_schedule_validity"
+            acceptance:
+              - "Timer works correctly"
+              - "No regression from TypeScript version"
+            typescript_source: "scripts/system/restart-ibus.ts"
+            ruchy_target: "ruchy/system/restart_ibus.ruchy"
+
+          - id: RUCHY-022
+            title: "Convert system/create-pipewire-monitor.ts to Ruchy"
+            phase: "phase-3"
+            priority: critical
+            complexity: high
+            estimated_hours: 20
+            requirements:
+              - "Port PipeWire monitoring"
+              - "Auto-restart on errors"
+              - "Systemd service creation"
+            typescript_source: "scripts/system/create-pipewire-monitor.ts"
+            ruchy_target: "ruchy/system/create_pipewire_monitor.ruchy"
+
+          - id: RUCHY-023
+            title: "Convert system/diagnose-av-issues.ts to Ruchy"
+            phase: "phase-3"
+            priority: critical
+            complexity: high
+            estimated_hours: 24
+            requirements:
+              - "Comprehensive AV diagnostics"
+              - "FFmpeg integration"
+              - "Hardware detection"
+            typescript_source: "scripts/system/diagnose-av-issues.ts"
+            ruchy_target: "ruchy/system/diagnose_av.ruchy"
+
+          - id: RUCHY-024
+            title: "Convert system/configure-obs.ts to Ruchy"
+            phase: "phase-3"
+            priority: critical
+            complexity: high
+            estimated_hours: 24
+            requirements:
+              - "OBS configuration"
+              - "Scene management"
+              - "Audio/video source setup"
+            typescript_source: "scripts/system/configure-obs.ts"
+            ruchy_target: "ruchy/system/configure_obs.ruchy"
+
+          - id: RUCHY-025
+            title: "Convert system/upgrade-nvidia-driver.ts to Ruchy"
+            phase: "phase-3"
+            priority: critical
+            complexity: high
+            estimated_hours: 20
+            requirements:
+              - "NVIDIA driver detection"
+              - "Safe upgrade process"
+              - "Rollback capability"
+            typescript_source: "scripts/system/upgrade-nvidia-driver.ts"
+            ruchy_target: "ruchy/system/upgrade_nvidia.ruchy"
+
+      # Tier 2: Important (Week 6)
+      - tier: 2
+        name: "Important System Scripts"
+        duration: 1_week
+        tickets:
+          - id: RUCHY-026
+            title: "Convert system/configure-davinci.ts to Ruchy"
+            phase: "phase-3"
+            priority: high
+            estimated_hours: 24
+            typescript_source: "scripts/system/configure-davinci.ts"
+            ruchy_target: "ruchy/system/configure_davinci.ruchy"
+
+          - id: RUCHY-027
+            title: "Convert system/cleanup-disk.ts to Ruchy"
+            phase: "phase-3"
+            priority: high
+            estimated_hours: 20
+            typescript_source: "scripts/system/cleanup-disk.ts"
+            ruchy_target: "ruchy/system/cleanup_disk.ruchy"
+
+          - id: RUCHY-028
+            title: "Convert system/analyze-disk-usage.ts to Ruchy"
+            phase: "phase-3"
+            priority: high
+            estimated_hours: 16
+            typescript_source: "scripts/system/analyze-disk-usage.ts"
+            ruchy_target: "ruchy/system/analyze_disk.ruchy"
+
+          - id: RUCHY-029
+            title: "Convert system/optimize-rust-dev.ts to Ruchy"
+            phase: "phase-3"
+            priority: high
+            estimated_hours: 16
+            typescript_source: "scripts/system/optimize-rust-dev.ts"
+            ruchy_target: "ruchy/system/optimize_rust_dev.ruchy"
+
+          - id: RUCHY-030
+            title: "Convert system/configure-time.ts to Ruchy"
+            phase: "phase-3"
+            priority: medium
+            estimated_hours: 12
+            typescript_source: "scripts/system/configure-time.ts"
+            ruchy_target: "ruchy/system/configure_time.ruchy"
+
+      # Tier 3: Remaining system scripts (Weeks 7-8)
+      - tier: 3
+        name: "Remaining System Scripts"
+        duration: 2_weeks
+        scripts_count: 40
+        tickets:
+          - id: RUCHY-031
+            title: "Convert remaining system scripts (batch 1)"
+            phase: "phase-3"
+            priority: medium
+            estimated_hours: 80
+            notes: "Batch conversion of 10 scripts"
+
+          - id: RUCHY-032
+            title: "Convert remaining system scripts (batch 2)"
+            phase: "phase-3"
+            priority: medium
+            estimated_hours: 80
+            notes: "Batch conversion of 10 scripts"
+
+          - id: RUCHY-033
+            title: "Convert remaining system scripts (batch 3)"
+            phase: "phase-3"
+            priority: medium
+            estimated_hours: 80
+            notes: "Batch conversion of 10 scripts"
+
+          - id: RUCHY-034
+            title: "Convert remaining system scripts (batch 4)"
+            phase: "phase-3"
+            priority: low
+            estimated_hours: 80
+            notes: "Batch conversion of 10 scripts"
+
+  # PHASE 4: Dev Scripts (Weeks 9-10)
+  - id: phase-4
+    name: "Dev Scripts"
+    goal: "Convert development and tooling scripts"
+    duration: 2_weeks
+    scripts_count: 15
+    tickets:
+      - id: RUCHY-041
+        title: "Convert dev/fix-makefile-warnings.ts to Ruchy ⭐"
+        phase: "phase-4"
+        priority: high
+        complexity: high
+        estimated_hours: 24
+        requirements:
+          - "Port Makefile parsing"
+          - "Port bashrs warning fixes"
+          - "Property test: Makefile syntax preservation"
+        tests:
+          - "test_makefile_parsing"
+          - "test_warning_detection"
+          - "test_fix_application"
+          - "proptest_makefile_roundtrip"
+        typescript_source: "scripts/dev/fix-makefile-warnings.ts"
+        ruchy_target: "ruchy/dev/fix_makefile_warnings.ruchy"
+
+      - id: RUCHY-042
+        title: "Convert dev/deploy.ts to Ruchy"
+        phase: "phase-4"
+        priority: high
+        estimated_hours: 20
+        typescript_source: "scripts/dev/deploy.ts"
+        ruchy_target: "ruchy/dev/deploy.ruchy"
+
+      - id: RUCHY-043
+        title: "Convert dev/deps.ts to Ruchy"
+        phase: "phase-4"
+        priority: high
+        estimated_hours: 16
+        typescript_source: "scripts/dev/deps.ts"
+        ruchy_target: "ruchy/dev/deps.ruchy"
+
+      - id: RUCHY-044
+        title: "Convert dev/install-pmat-deps.ts to Ruchy"
+        phase: "phase-4"
+        priority: medium
+        estimated_hours: 16
+        typescript_source: "scripts/dev/install-pmat-deps.ts"
+        ruchy_target: "ruchy/dev/install_pmat_deps.ruchy"
+
+      - id: RUCHY-045
+        title: "Convert dev/bridge-validator.ts to Ruchy"
+        phase: "phase-4"
+        priority: medium
+        estimated_hours: 20
+        typescript_source: "scripts/dev/bridge-validator.ts"
+        ruchy_target: "ruchy/dev/bridge_validator.ruchy"
+
+      - id: RUCHY-046
+        title: "Convert dev/bridge-transformer.ts to Ruchy"
+        phase: "phase-4"
+        priority: medium
+        estimated_hours: 20
+        typescript_source: "scripts/dev/bridge-transformer.ts"
+        ruchy_target: "ruchy/dev/bridge_transformer.ruchy"
+
+      - id: RUCHY-047
+        title: "Convert dev/ruchy-version-monitor.ts to Ruchy"
+        phase: "phase-4"
+        priority: low
+        estimated_hours: 12
+        typescript_source: "scripts/dev/ruchy-version-monitor.ts"
+        ruchy_target: "ruchy/dev/ruchy_monitor.ruchy"
+
+      - id: RUCHY-048
+        title: "Convert remaining dev scripts"
+        phase: "phase-4"
+        priority: medium
+        estimated_hours: 64
+        notes: "Batch conversion of 8 remaining dev scripts"
+
+  # PHASE 5: MCP/Search Infrastructure (Weeks 11-12)
+  - id: phase-5
+    name: "MCP/Search Infrastructure"
+    goal: "Convert MCP server and semantic search system"
+    duration: 2_weeks
+    scripts_count: 11
+    tickets:
+      - id: RUCHY-051
+        title: "Convert seed.ts to Ruchy"
+        phase: "phase-5"
+        priority: high
+        complexity: high
+        estimated_hours: 24
+        requirements:
+          - "Async/await with Tokio"
+          - "Turso integration"
+          - "OpenAI API calls"
+          - "Property test: embedding consistency"
+        tests:
+          - "test_database_seeding"
+          - "test_embedding_generation"
+          - "test_metadata_extraction"
+          - "proptest_embedding_determinism"
+        typescript_source: "scripts/seed.ts"
+        ruchy_target: "ruchy/seed.ruchy"
+
+      - id: RUCHY-052
+        title: "Convert search.ts to Ruchy"
+        phase: "phase-5"
+        priority: high
+        complexity: high
+        estimated_hours: 24
+        requirements:
+          - "Vector similarity search"
+          - "Semantic search CLI"
+          - "Property test: search relevance"
+        typescript_source: "scripts/search.ts"
+        ruchy_target: "ruchy/search.ruchy"
+
+      - id: RUCHY-053
+        title: "Convert mcp-server.ts to Ruchy"
+        phase: "phase-5"
+        priority: critical
+        complexity: very_high
+        estimated_hours: 40
+        requirements:
+          - "MCP stdio protocol"
+          - "Tool registration"
+          - "Async message handling"
+          - "Property test: protocol compliance"
+        tests:
+          - "test_mcp_protocol_handshake"
+          - "test_mcp_tool_registration"
+          - "test_mcp_message_handling"
+          - "proptest_mcp_protocol_invariants"
+        acceptance:
+          - "MCP protocol compliance"
+          - "Works with Claude Desktop"
+          - "All tools functional"
+        typescript_source: "scripts/mcp-server.ts"
+        ruchy_target: "ruchy/mcp_server.ruchy"
+
+      - id: RUCHY-054
+        title: "Convert remaining MCP/search scripts"
+        phase: "phase-5"
+        priority: medium
+        estimated_hours: 64
+        notes: "Batch conversion of 8 remaining MCP/search scripts"
+
+# Sprint Schedule
+sprints:
+  - id: sprint-1
+    name: "Foundation - Core Libraries"
+    duration: 2_weeks
+    phase: phase-1
+    tickets: [RUCHY-001, RUCHY-002, RUCHY-003, RUCHY-004, RUCHY-005]
+    goal: "Establish reusable Ruchy libraries"
+
+  - id: sprint-2
+    name: "Foundation - Advanced Libraries"
+    duration: 2_weeks
+    phase: phase-1
+    tickets: [RUCHY-006, RUCHY-007, RUCHY-008, RUCHY-009, RUCHY-010]
+    goal: "Complete library foundation"
+
+  - id: sprint-3
+    name: "Audio Scripts"
+    duration: 2_weeks
+    phase: phase-2
+    tickets: [RUCHY-011, RUCHY-012, RUCHY-013, RUCHY-014]
+    goal: "All audio functionality in Ruchy"
+
+  - id: sprint-4
+    name: "System - Critical"
+    duration: 1_week
+    phase: phase-3
+    tickets: [RUCHY-021, RUCHY-022, RUCHY-023, RUCHY-024, RUCHY-025]
+    goal: "Mission-critical system scripts"
+
+  - id: sprint-5
+    name: "System - Important"
+    duration: 1_week
+    phase: phase-3
+    tickets: [RUCHY-026, RUCHY-027, RUCHY-028, RUCHY-029, RUCHY-030]
+    goal: "High-priority system scripts"
+
+  - id: sprint-6
+    name: "System - Remaining (1/2)"
+    duration: 1_week
+    phase: phase-3
+    tickets: [RUCHY-031, RUCHY-032]
+    goal: "Batch convert 20 system scripts"
+
+  - id: sprint-7
+    name: "System - Remaining (2/2)"
+    duration: 1_week
+    phase: phase-3
+    tickets: [RUCHY-033, RUCHY-034]
+    goal: "Complete all system scripts"
+
+  - id: sprint-8
+    name: "Dev Scripts (1/2)"
+    duration: 1_week
+    phase: phase-4
+    tickets: [RUCHY-041, RUCHY-042, RUCHY-043, RUCHY-044]
+    goal: "Core dev tooling"
+
+  - id: sprint-9
+    name: "Dev Scripts (2/2)"
+    duration: 1_week
+    phase: phase-4
+    tickets: [RUCHY-045, RUCHY-046, RUCHY-047, RUCHY-048]
+    goal: "Complete dev tooling"
+
+  - id: sprint-10
+    name: "MCP/Search Infrastructure"
+    duration: 2_weeks
+    phase: phase-5
+    tickets: [RUCHY-051, RUCHY-052, RUCHY-053, RUCHY-054]
+    goal: "Complete MCP server and search"
+
+# Milestones
+milestones:
+  - id: milestone-1
+    name: "Foundation Complete"
+    date: "Week 4"
+    tickets: [RUCHY-001 through RUCHY-010]
+    deliverables:
+      - "All core libraries in Ruchy"
+      - "Comprehensive test suite"
+      - "Documentation complete"
+
+  - id: milestone-2
+    name: "Audio Complete"
+    date: "Week 6"
+    tickets: [RUCHY-011 through RUCHY-020]
+    deliverables:
+      - "All audio scripts in Ruchy"
+      - "Dogfooding with real audio setups"
+
+  - id: milestone-3
+    name: "Critical System Scripts Complete"
+    date: "Week 8"
+    tickets: [RUCHY-021 through RUCHY-030]
+    deliverables:
+      - "Top 10 system scripts in Ruchy"
+      - "Production-ready for critical paths"
+
+  - id: milestone-4
+    name: "All System Scripts Complete"
+    date: "Week 10"
+    tickets: [RUCHY-031 through RUCHY-034]
+    deliverables:
+      - "All 50+ system scripts in Ruchy"
+      - "Full system management capability"
+
+  - id: milestone-5
+    name: "Dev Tooling Complete"
+    date: "Week 12"
+    tickets: [RUCHY-041 through RUCHY-048]
+    deliverables:
+      - "All dev scripts in Ruchy"
+      - "Self-hosting: Ruchy tools build Ruchy project"
+
+  - id: milestone-6
+    name: "Full Conversion Complete"
+    date: "Week 14"
+    tickets: [RUCHY-051 through RUCHY-054]
+    deliverables:
+      - "All 96 scripts converted"
+      - "MCP server in Ruchy"
+      - "TypeScript scripts deprecated"
+      - "100% Ruchy codebase"
+
+# Success Metrics
+success_metrics:
+  quantitative:
+    scripts_converted: 96
+    test_coverage_min: 0.95
+    mutation_score_min: 0.90
+    performance_improvement: "3-5x"
+    binary_size_max_mb: 50
+    build_time_max_minutes: 5
+  qualitative:
+    - "Zero regressions from TypeScript"
+    - "Enhanced reliability via Rust safety"
+    - "Better maintainability"
+    - "Improved developer experience"
+
+# Risk Mitigation
+risks:
+  - risk: "Breaking changes during conversion"
+    mitigation: "Dual-support strategy, parallel testing"
+    severity: medium
+  - risk: "Performance regressions"
+    mitigation: "Comprehensive benchmarking, criterion"
+    severity: low
+  - risk: "Incomplete library ports"
+    mitigation: "Phase 1 focus on libraries first"
+    severity: medium
