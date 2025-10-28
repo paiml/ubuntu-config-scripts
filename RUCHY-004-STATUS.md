@@ -109,9 +109,9 @@ ruchy/
 
 ---
 
-**Status**: BLOCKED by ruchy#68 (tested v3.141.0 - still broken)
+**Status**: GREEN Phase Complete ✅ (unblocked by v3.143.0)
 **Last Updated**: 2025-10-28
-**GitHub Issue**: https://github.com/paiml/ruchy/issues/68
-**Tested Versions**: v3.140.0 ❌, v3.141.0 ❌
-**Note**: Bug is more complex than two &str params - appears file-size/complexity related
-**Next**: Wait for compiler fix, then resume RED phase
+**GitHub Issue**: https://github.com/paiml/ruchy/issues/68 - FIXED in v3.143.0!
+**Tested Versions**: v3.140.0 ❌, v3.141.0 ❌, v3.142.0 ❌, v3.143.0 ✅
+**Implementation**: test_config_standalone.ruchy (working!)
+**Next**: REFACTOR phase or continue with next ticket
