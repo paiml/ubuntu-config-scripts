@@ -452,16 +452,80 @@ If Ruchy version fails in production:
 4. **Establish CI/CD**: Automate 15-tool quality gate
 5. **Begin Phase 1**: Foundation libraries
 
+## Bug Reporting Protocol
+
+**CRITICAL: If you discover a Ruchy bug, STOP THE LINE immediately!**
+
+Following the Toyota Production System philosophy, any team member finding a defect must halt work and address it:
+
+### When to Stop The Line
+
+Stop work and file a bug if you encounter:
+- Ruchy compiler crashes or panics
+- Invalid syntax rejected incorrectly (or valid syntax accepted incorrectly)
+- `ruchy test` producing incorrect results
+- `ruchy check` false positives/negatives
+- Inconsistent behavior between Ruchy and Rust backends
+- Documentation contradictions
+- Toolchain failures (build, test, coverage, quality-gate)
+
+### Bug Reporting Process
+
+1. **STOP**: Halt all conversion work immediately
+2. **Document**: Capture minimal reproducible example
+3. **File Bug**: Open issue at `git@github.com:paiml/ruchy.git`
+4. **Template**:
+   ```markdown
+   ## Bug Description
+   [Clear description of issue]
+
+   ## Minimal Reproduction
+   ```ruchy
+   // Minimal code demonstrating issue
+   ```
+
+   ## Expected Behavior
+   [What should happen]
+
+   ## Actual Behavior
+   [What actually happens]
+
+   ## Environment
+   - Ruchy version: [output of `ruchy --version`]
+   - OS: [Ubuntu version]
+   - Cargo version: [output of `cargo --version`]
+
+   ## Additional Context
+   [Any relevant details, error messages, stack traces]
+   ```
+
+5. **Wait**: Do NOT work around the bug or continue with affected conversion
+6. **Track**: Add bug reference to ticket blocking you (e.g., "BLOCKED: ruchy#42")
+7. **Resume**: Only continue after bug is fixed or confirmed as "working as intended"
+
+### Philosophy
+
+The "Stop The Line" approach ensures:
+- **Zero defects propagate**: Bugs caught immediately, not accumulated
+- **Quality over speed**: Better to pause than ship broken code
+- **Team empowerment**: Any developer can halt for quality
+- **Continuous improvement**: Bugs become learning opportunities
+
+**Reference**: See `../ruchyruchy/` for examples of this process in practice
+
 ## References
 
 - Ruchy Documentation: `../ruchy/docs/`
 - Ruchy Examples: `../ruchy/examples/`
-- RuchyRuchy Project: `../ruchyruchy/`
+- RuchyRuchy Project: `../ruchyruchy/` (Stop The Line examples)
+- Rosetta Ruchy: `../rosetta-ruchy/` (Algorithm examples)
+- Ruchy Book: `../ruchy-book/` (Language guide)
 - PMAT Toolkit: `../paiml-mcp-agent-toolkit/`
 - Quality Standards: `../ruchy/CLAUDE.md`
+- Bug Tracker: `git@github.com:paiml/ruchy.git`
 
 ---
 
-**Status**: Draft - Awaiting Approval
+**Status**: Active - RUCHY-001 RED Phase Complete
 **Last Updated**: 2025-10-28
-**Next Review**: Start of Phase 1
+**Next**: RUCHY-001 GREEN Phase Implementation
