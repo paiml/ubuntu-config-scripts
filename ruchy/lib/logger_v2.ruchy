@@ -1,13 +1,34 @@
-// RUCHY-001: Logger Implementation (RED Phase - Stub)
-// All functions unimplemented - tests will fail
+// RUCHY-001: Logger Implementation (GREEN Phase)
+// Pure Ruchy logger with full TypeScript API parity
 
-// Log levels
+use chrono::Utc;
+
+// Log levels matching TypeScript
 enum LogLevel {
     Debug = 0,
     Info = 1,
     Warn = 2,
     Error = 3,
 }
+
+// ANSI color codes
+struct Colors {
+    reset: &'static str,
+    red: &'static str,
+    green: &'static str,
+    yellow: &'static str,
+    blue: &'static str,
+    gray: &'static str,
+}
+
+const COLORS: Colors = Colors {
+    reset: "\x1b[0m",
+    red: "\x1b[31m",
+    green: "\x1b[32m",
+    yellow: "\x1b[33m",
+    blue: "\x1b[34m",
+    gray: "\x1b[90m",
+};
 
 // Logger struct
 struct Logger {
@@ -16,55 +37,117 @@ struct Logger {
     use_colors: bool,
 }
 
-// Logger implementation (stub - all panic)
+// Logger implementation
 impl Logger {
-    // Create new logger with defaults
+    // Create new logger with defaults (Info level, no prefix, colors enabled)
     fun new() -> Logger {
-        panic!("Logger::new not yet implemented - RED phase")
+        Logger {
+            level: LogLevel::Info,
+            prefix: String::new(),
+            use_colors: true,
+        }
     }
 
     // Create logger with custom log level
     fun with_level(level: LogLevel) -> Logger {
-        panic!("Logger::with_level not yet implemented - RED phase")
+        Logger {
+            level,
+            prefix: String::new(),
+            use_colors: true,
+        }
     }
 
     // Create logger with prefix
     fun with_prefix(prefix: &str) -> Logger {
-        panic!("Logger::with_prefix not yet implemented - RED phase")
+        Logger {
+            level: LogLevel::Info,
+            prefix: prefix.to_string(),
+            use_colors: true,
+        }
     }
 
     // Create logger without colors
     fun without_colors() -> Logger {
-        panic!("Logger::without_colors not yet implemented - RED phase")
+        Logger {
+            level: LogLevel::Info,
+            prefix: String::new(),
+            use_colors: false,
+        }
     }
 
-    // Log debug message
+    // Format log message with timestamp and prefix
+    fun format(&self, level_name: &str, message: &str) -> String {
+        let timestamp = Utc::now().to_rfc3339();
+        let prefix_part = if self.prefix.is_empty() {
+            String::new()
+        } else {
+            format!("[{}] ", self.prefix)
+        };
+        format!("{} {}[{}] {}", timestamp, prefix_part, level_name, message)
+    }
+
+    // Internal log method with level filtering
+    fun log(&self, level: LogLevel, level_name: &str, color: &str, message: &str) {
+        // Convert enum to integer for comparison
+        let level_value = level as i32;
+        let min_level_value = self.level as i32;
+
+        if level_value >= min_level_value {
+            let formatted = self.format(level_name, message);
+            let output = if self.use_colors {
+                format!("{}{}{}", color, formatted, COLORS.reset)
+            } else {
+                formatted
+            };
+
+            // Use appropriate output stream
+            let error_level_value = LogLevel::Error as i32;
+            if level_value >= error_level_value {
+                eprintln!("{}", output);
+            } else {
+                println!("{}", output);
+            }
+        }
+    }
+
+    // Log debug message (gray color)
     fun debug(&self, message: &str) {
-        panic!("Logger::debug not yet implemented - RED phase")
+        self.log(LogLevel::Debug, "DEBUG", COLORS.gray, message);
     }
 
-    // Log info message
+    // Log info message (blue color)
     fun info(&self, message: &str) {
-        panic!("Logger::info not yet implemented - RED phase")
+        self.log(LogLevel::Info, "INFO", COLORS.blue, message);
     }
 
-    // Log warning message
+    // Log warning message (yellow color)
     fun warn(&self, message: &str) {
-        panic!("Logger::warn not yet implemented - RED phase")
+        self.log(LogLevel::Warn, "WARN", COLORS.yellow, message);
     }
 
-    // Log error message
+    // Log error message (red color)
     fun error(&self, message: &str) {
-        panic!("Logger::error not yet implemented - RED phase")
+        self.log(LogLevel::Error, "ERROR", COLORS.red, message);
     }
 
-    // Log success message
+    // Log success message (green color, Info level)
     fun success(&self, message: &str) {
-        panic!("Logger::success not yet implemented - RED phase")
+        self.log(LogLevel::Info, "SUCCESS", COLORS.green, message);
     }
 
     // Create child logger with additional prefix
+    // If parent has prefix "app", child("db") creates "app:db"
     fun child(&self, prefix: &str) -> Logger {
-        panic!("Logger::child not yet implemented - RED phase")
+        let new_prefix = if self.prefix.is_empty() {
+            prefix.to_string()
+        } else {
+            format!("{}:{}", self.prefix, prefix)
+        };
+
+        Logger {
+            level: self.level,
+            prefix: new_prefix,
+            use_colors: self.use_colors,
+        }
     }
 }
