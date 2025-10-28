@@ -1,6 +1,6 @@
 # RUCHY-007: Convert lib/system-command.ts to Pure Ruchy
 
-## Status: RED Phase In Progress 🔴
+## Status: BLOCKED 🚫 - Command Pattern Bug
 
 ### Ticket Information
 - **ID**: RUCHY-007
@@ -24,11 +24,29 @@ Converting simple command execution wrapper:
 #### Result Type (1 struct)
 - `CommandResult` - stdout, stderr, code, success
 
+### Blocker
+
+**Issue**: ruchy#73 - Parser fails on std::process::Command usage
+
+**Symptoms**:
+- Files using `Command::new().output()` fail to parse
+- Error: "Function parameters must be simple identifiers or destructuring patterns"
+- Threshold around 30-40 lines with Command usage
+- Files without Command work fine (even 276+ lines)
+
+**Minimal Reproduction**: `ruchy/lib/system_command.ruchy` (41 lines)
+
+**GitHub Issue**: https://github.com/paiml/ruchy/issues/73
+
+**Impact**: Cannot implement command execution utilities
+
 ### Progress
 
-#### RED Phase: Tests Written
-- **Status**: Starting
-- **Target**: 10+ tests covering all scenarios
+#### RED Phase: Tests Written - BLOCKED ⏸️
+- **Status**: Blocked by Command pattern bug
+- **Tests Attempted**: 3-6 tests written
+- **File**: `ruchy/tests/test_system_command_standalone.ruchy`
+- **Blocker**: Cannot parse files using std::process::Command
 
 ### TypeScript Source
 - **Original**: `scripts/lib/system-command.ts` (65 lines)
@@ -58,6 +76,7 @@ Converting simple command execution wrapper:
 
 ---
 
-**Status**: Starting RED phase
+**Status**: BLOCKED by ruchy#73
 **Last Updated**: 2025-10-28
-**Next**: Write comprehensive tests using extreme TDD
+**GitHub Issue**: https://github.com/paiml/ruchy/issues/73
+**Next**: Wait for Command pattern fix, then resume RED phase
