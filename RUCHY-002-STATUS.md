@@ -96,6 +96,7 @@ ruchy/
 
 ---
 
-**Status**: RED phase complete, ready for GREEN phase
+**Status**: RED phase complete, GREEN phase BLOCKED
 **Last Updated**: 2025-10-28
-**Next**: Implement all 13 functions with proper Ruchy syntax
+**Blocker**: While loop + HashMap syntax issue (ruchy#67)
+**Next**: Wait for Ruchy issue resolution, then implement functions
