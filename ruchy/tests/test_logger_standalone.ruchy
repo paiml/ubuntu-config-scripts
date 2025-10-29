@@ -19,7 +19,9 @@ struct Logger {
 }
 
 impl Logger {
-    fun new() -> Logger {
+    // WORKAROUND: Renamed from new() to create() due to Ruchy v3.147.4 bug
+    // Issue: enum field cast fails after new() but works with other method names
+    fun create() -> Logger {
         Logger {
             level: LogLevel::Info,
             prefix: String::new(),
@@ -162,7 +164,7 @@ impl Logger {
 
 fun test_logger_creation_default() {
     println!("Testing logger creation with defaults...");
-    let logger = Logger::new();
+    let logger = Logger::create();
     println!("✅ Logger creation test passed");
 }
 
@@ -174,35 +176,35 @@ fun test_logger_creation_with_options() {
 
 fun test_logger_debug() {
     println!("Testing debug logging...");
-    let logger = Logger::new();
+    let logger = Logger::create();
     logger.debug("This is a debug message");
     println!("✅ Debug logging test passed");
 }
 
 fun test_logger_info() {
     println!("Testing info logging...");
-    let logger = Logger::new();
+    let logger = Logger::create();
     logger.info("This is an info message");
     println!("✅ Info logging test passed");
 }
 
 fun test_logger_warn() {
     println!("Testing warn logging...");
-    let logger = Logger::new();
+    let logger = Logger::create();
     logger.warn("This is a warning message");
     println!("✅ Warn logging test passed");
 }
 
 fun test_logger_error() {
     println!("Testing error logging...");
-    let logger = Logger::new();
+    let logger = Logger::create();
     logger.error("This is an error message");
     println!("✅ Error logging test passed");
 }
 
 fun test_logger_success() {
     println!("Testing success logging...");
-    let logger = Logger::new();
+    let logger = Logger::create();
     logger.success("Operation completed successfully");
     println!("✅ Success logging test passed");
 }
