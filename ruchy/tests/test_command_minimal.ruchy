@@ -1,0 +1,11 @@
+// REPRODUCTION CASE 1 for Issue #74
+// Simplest possible Command execution - 8 lines
+// Status: Hangs at runtime in v3.146.0
+
+use std::process::Command;
+
+fun main() {
+    println!("Starting...");
+    let result = Command::new("ls").output();
+    println!("Done!");  // Never reached
+}
