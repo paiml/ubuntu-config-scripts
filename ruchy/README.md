@@ -7,7 +7,7 @@ This directory contains the complete Ruchy port of the Ubuntu Config Scripts pro
 ### Prerequisites
 
 - Rust toolchain (1.70+)
-- Ruchy programming language (1.89+)
+- Ruchy programming language (v3.147.4+): `cargo install ruchy`
 - PMAT analysis tool
 - LLVM tools for coverage
 

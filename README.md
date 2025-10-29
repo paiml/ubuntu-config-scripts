@@ -110,7 +110,8 @@ make ruchy-ci             # Full CI pipeline with quality gates
 ### For Ruchy Version (Recommended)
 - Ubuntu 20.04+ (or compatible Linux distribution)
 - [Rust](https://rustup.rs/) toolchain (1.70+)
-- [Ruchy](https://github.com/paiml/ruchy) programming language (1.89+)
+- [Ruchy](https://github.com/paiml/ruchy) programming language (v3.147.4+): `cargo install ruchy`
+- [RuchyRuchy](https://github.com/pragmatic-ai-labs/ruchyruchy) debugging tools (optional): `cargo install ruchyruchy`
 - [PMAT](https://github.com/paiml/pmat) for quality gates
 - LLVM tools for coverage analysis
 - PulseAudio/PipeWire or ALSA for audio scripts
@@ -125,18 +126,24 @@ make ruchy-ci             # Full CI pipeline with quality gates
 
 ### Quick Start (Ruchy Version)
 
-1. Clone this repository:
+1. Install Ruchy compiler:
+```bash
+cargo install ruchy
+cargo install ruchyruchy  # Optional: debugging tools
+```
+
+2. Clone this repository:
 ```bash
 git clone https://github.com/paiml/ubuntu-config-scripts.git
 cd ubuntu-config-scripts/ruchy
 ```
 
-2. Set up development environment:
+3. Set up development environment:
 ```bash
 make dev-setup
 ```
 
-3. Build and install:
+4. Build and install:
 ```bash
 make build
 sudo make install

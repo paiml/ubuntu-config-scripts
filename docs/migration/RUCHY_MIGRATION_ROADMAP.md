@@ -61,7 +61,7 @@ This document outlines the migration path from TypeScript/Deno to Ruchy for Ubun
 - **Quality**: PMAT + ESLint + TypeScript compiler
 
 ### Target (Ruchy)
-- **Compiler**: Ruchy 1.39.0+
+- **Compiler**: Ruchy v3.147.4+ (`cargo install ruchy`)
 - **Testing**: Built-in test framework + property testing
 - **CI/CD**: Native Ruchy quality gates
 - **Quality**: PMAT TDG + Ruchy scorer

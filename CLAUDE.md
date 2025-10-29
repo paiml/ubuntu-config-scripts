@@ -112,10 +112,12 @@ Ubuntu Config Scripts is a collection of system configuration and management too
 
 ### Ruchy Implementation (Primary)
 Located in `/ruchy/` directory - **This is the main, production-ready version:**
-- **Language**: Ruchy 1.89.0 (modern systems programming language)
+- **Language**: Ruchy v3.147.4+ (modern systems programming language, self-hosting compiler)
+- **Compiler**: Install via `cargo install ruchy` (main Ruchy project: https://github.com/paiml/ruchy)
 - **Performance**: 3-5x faster than TypeScript, <100ms startup
 - **Type Safety**: Compile-time type checking with runtime validation
 - **Testing**: Comprehensive property-based testing with QuickCheck/PropTest
+- **Debugging Tools**: RuchyRuchy toolkit (`cargo install ruchyruchy`) for bug detection
 - **Quality Gates**: Strict PMAT enforcement (80% coverage, complexity limits)
 - **CI/CD**: Gunner integration with cost-effective AWS spot instances
 - **Distribution**: Single binary, .deb packages, AppImage support
@@ -132,10 +134,12 @@ Located in project root - **Maintained for compatibility:**
 ## Key Design Decisions
 
 ### 1. Ruchy-First Development (Primary)
-- **Language**: Ruchy 1.89.0 with Rust interoperability
+- **Language**: Ruchy v3.147.4+ with Rust interoperability
+- **Installation**: `cargo install ruchy` (production compiler from https://github.com/paiml/ruchy)
 - **Performance**: Compiled binaries with zero runtime dependencies
 - **Type Safety**: Compile-time guarantees with runtime validation
-- **Testing**: Property-based testing with 1000+ iterations per test
+- **Testing**: Property-based testing with 1000+ iterations per test, timeout-based hang detection
+- **Debugging**: RuchyRuchy toolkit (`cargo install ruchyruchy`) for automated bug discovery
 - **Architecture**: Single binary deployment model
 
 ### 2. TypeScript Legacy Support
@@ -170,6 +174,38 @@ Located in project root - **Maintained for compatibility:**
 - Runs on AWS spot instances
 - Configuration in `gunner.yaml`
 - Workflows in `.github/workflows/`
+
+## Ruchy Ecosystem
+
+### Main Ruchy Project (Production Compiler)
+- **Repository**: https://github.com/paiml/ruchy
+- **Status**: ✅ Self-hosting compiler (August 2025)
+- **Installation**: `cargo install ruchy`
+- **Version**: v3.147.4+ (active development)
+- **Purpose**: Production Ruchy compiler
+
+### RuchyRuchy Project (Bootstrap & Debugging Tools)
+- **Repository**: https://github.com/pragmatic-ai-labs/ruchyruchy
+- **Status**: ✅ Educational resource & development tools
+- **Installation**: `cargo install ruchyruchy`
+- **Purpose**: Bootstrap education, debugging toolkit, quality analysis
+- **Tools**:
+  - `ruchydbg run` - Debug Ruchy programs with timeouts
+  - `ruchydbg validate` - Validate RuchyRuchy installation (requires full repo)
+  - Quality analysis tools (mutation testing, code churn, ML defect prediction)
+
+**Relationship**: RuchyRuchy provides educational resources and debugging tools to support the main Ruchy compiler project. Use `ruchy` for compilation, `ruchydbg` for debugging.
+
+**Quick Start for Testing**:
+```bash
+# Install both tools
+cargo install ruchy          # Production compiler
+cargo install ruchyruchy     # Debugging toolkit
+
+# Test for bugs
+timeout 1 ruchy run test.ruchy           # Detect hangs
+ruchydbg run test.ruchy --timeout 1000   # Debug with details
+```
 
 ## Project Structure
 
@@ -214,12 +250,37 @@ ubuntu-config-scripts/
 
 ### Adding a New Ruchy Script (Recommended)
 
-1. Create script in appropriate directory under `ruchy/`
-2. Use shared libraries from `ruchy/lib/`
-3. Add property-based tests in `ruchy/tests/`
-4. Add Make target to `ruchy/Makefile`
-5. Ensure PMAT quality gates pass (80% coverage, complexity < 10)
-6. Run `make validate` before commit
+1. **Create script** in appropriate directory under `ruchy/`
+2. **Use shared libraries** from `ruchy/lib/`
+3. **Add property-based tests** in `ruchy/tests/`
+4. **Test for hangs/bugs** with timeout: `timeout 1 ruchy run script.ruchy`
+5. **Add Make target** to `ruchy/Makefile`
+6. **Ensure PMAT quality gates pass** (80% coverage, complexity < 10)
+7. **Run `make validate`** before commit
+
+### Testing Ruchy Scripts for Bugs
+
+**Use timeout-based testing** to catch hangs and infinite loops:
+
+```bash
+# Test for hangs (most common Ruchy bug)
+timeout 1 ruchy run test.ruchy
+# Exit code 0 = success
+# Exit code 124 = timeout (BUG!)
+# Other = crash (also a bug)
+
+# Debug with RuchyRuchy tools
+ruchydbg run test.ruchy --timeout 1000
+
+# Run regression tests
+for test in ruchy/tests/*.ruchy; do
+    timeout 1 ruchy run "$test" || echo "FAILED: $test"
+done
+```
+
+**Key Pattern**: Always test that scripts complete within reasonable time (1 second for most tests)
+
+**See also**: [RuchyRuchy Quick Start](https://github.com/pragmatic-ai-labs/ruchyruchy/blob/main/QUICK_START_FOR_RUCHY_DEVS.md) for detailed bug discovery workflow
 
 ### Adding a New TypeScript Script (Legacy)
 
@@ -380,6 +441,37 @@ fc.assert(
 - rclean integration: Suggests interactive cleanup targets
 
 ## Known Issues and Solutions
+
+### Ruchy Compiler Bugs (v3.147.4)
+
+**Critical Bug - Enum Field Cast via &self** (Issue #79)
+- **Symptom**: Program hangs when casting enum fields accessed via `&self`
+- **Pattern**: `self.level as i32` inside impl methods
+- **Status**: Partially fixed in v3.147.4 (literals work, `&self` access still hangs)
+- **Workaround**: Extract field outside method: `let level = logger.level; let val = level as i32;` (ugly, not recommended)
+- **Impact**: Blocks Logger/Common/Schema conversions
+- **Test**: See [RUCHY-V3.147.4-TEST-RESULTS.md](RUCHY-V3.147.4-TEST-RESULTS.md)
+
+**Other Known Bugs**:
+- **Issue #75**: Command.output() hang
+- **Missing Features**: async/await, I/O operations not yet implemented
+
+**Testing for Bugs**:
+```bash
+# Always test with timeout to catch hangs
+timeout 1 ruchy run your_script.ruchy
+
+# Expected results:
+# Exit 0 = Success
+# Exit 124 = Timeout (BUG!)
+# Other = Crash (BUG!)
+```
+
+**Bug Reporting**: File detailed issues at https://github.com/paiml/ruchy/issues with:
+1. Minimal reproduction case (< 20 lines)
+2. Ruchy version (`ruchy --version`)
+3. Expected vs. actual behavior
+4. Test results showing the hang/crash
 
 ### DaVinci Resolve Audio on Linux
 - DaVinci on Linux has issues with AAC audio codec
