@@ -505,7 +505,7 @@ fun main() {
     test_zip_different_lengths();
     test_zip_empty();
 
-    // TEMPORARILY DISABLED: Tests hang (possible compiler bug with nested Vec or complex index patterns)
+    // DISABLED: Tests hang at runtime (v3.146.0 - runtime execution bug)
     // println!("\nRunning Sliding Window Tests...\n");
     // test_sliding_window_basic();
     // test_sliding_window_larger();
@@ -518,7 +518,7 @@ fun main() {
 
     println!("\n========================================");
     println!("12/18 tests passed! ✅");
-    println!("(6 tests disabled: sliding_window + rotate hang)");
+    println!("(6 tests disabled: runtime hangs in v3.146.0)");
     println!("Working: chunk, flatten, unique, zip");
     println!("GREEN Phase - PARTIAL SUCCESS");
     println!("========================================");
