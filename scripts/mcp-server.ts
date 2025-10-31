@@ -72,7 +72,7 @@ async function initialize(): Promise<void> {
 
   if (!tursoUrl || !tursoToken || !openaiKey) {
     throw new Error(
-      "Missing required environment variables: TURSO_URL, TURSO_AUTH_TOKEN, OPENAI_API_KEY"
+      "Missing required environment variables: TURSO_URL, TURSO_AUTH_TOKEN, OPENAI_API_KEY",
     );
   }
 
@@ -114,11 +114,13 @@ function listTools(): MCPTool[] {
         properties: {
           query: {
             type: "string",
-            description: "Natural language search query (e.g., 'configure audio settings')",
+            description:
+              "Natural language search query (e.g., 'configure audio settings')",
           },
           category: {
             type: "string",
-            description: "Optional category filter: 'audio', 'system', or 'dev'",
+            description:
+              "Optional category filter: 'audio', 'system', or 'dev'",
           },
           limit: {
             type: "number",
@@ -141,7 +143,8 @@ function listTools(): MCPTool[] {
         properties: {
           category: {
             type: "string",
-            description: "Optional category filter: 'audio', 'system', or 'dev'",
+            description:
+              "Optional category filter: 'audio', 'system', or 'dev'",
           },
           limit: {
             type: "number",
@@ -153,7 +156,8 @@ function listTools(): MCPTool[] {
     },
     {
       name: "get_script",
-      description: "Get detailed information about a specific script by name or path.",
+      description:
+        "Get detailed information about a specific script by name or path.",
       inputSchema: {
         type: "object",
         properties: {
@@ -173,7 +177,7 @@ function listTools(): MCPTool[] {
  */
 async function executeTool(
   name: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
 ): Promise<unknown> {
   await initialize();
 
@@ -208,10 +212,11 @@ async function executeTool(
       const category = args.category as string | undefined;
       const limit = (args.limit as number) || 50;
 
-      const listOptions: { limit: number; offset: number; category?: string } = {
-        limit,
-        offset: 0,
-      };
+      const listOptions: { limit: number; offset: number; category?: string } =
+        {
+          limit,
+          offset: 0,
+        };
       if (category) {
         listOptions.category = category;
       }
@@ -237,7 +242,7 @@ async function executeTool(
       // Search by name or path
       const allScripts = await repository.list({ limit: 1000, offset: 0 });
       const script = allScripts.find(
-        (s) => s.name === name || s.path.includes(name)
+        (s) => s.name === name || s.path.includes(name),
       );
 
       if (!script) {
@@ -337,7 +342,7 @@ async function main(): Promise<void> {
 
   // Write server greeting to stderr for debugging
   await Deno.stderr.write(
-    encoder.encode("Ubuntu Config Scripts MCP Server v0.1.0 started\n")
+    encoder.encode("Ubuntu Config Scripts MCP Server v0.1.0 started\n"),
   );
 
   const reader = Deno.stdin.readable.getReader();
@@ -364,12 +369,12 @@ async function main(): Promise<void> {
 
           // Write response to stdout
           await Deno.stdout.write(
-            encoder.encode(JSON.stringify(response) + "\n")
+            encoder.encode(JSON.stringify(response) + "\n"),
           );
         } catch (error) {
           // Log parse errors to stderr
           await Deno.stderr.write(
-            encoder.encode(`Error parsing request: ${error}\n`)
+            encoder.encode(`Error parsing request: ${error}\n`),
           );
         }
       }

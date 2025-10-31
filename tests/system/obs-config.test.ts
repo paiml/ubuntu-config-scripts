@@ -1,7 +1,7 @@
 import { assertEquals, assertExists } from "../../deps.ts";
 import {
-  OBSConfigSchema,
   type OBSConfig,
+  OBSConfigSchema,
 } from "../../scripts/system/obs-config/types.ts";
 import {
   checkNvidiaSupport,

@@ -13,7 +13,14 @@ async function enableWebcam() {
   // Install required packages
   logger.info("Installing video4linux utilities...");
   await runCommand(["apt-get", "update"]);
-  await runCommand(["apt-get", "install", "-y", "v4l-utils", "uvcdynctrl", "cheese"]);
+  await runCommand([
+    "apt-get",
+    "install",
+    "-y",
+    "v4l-utils",
+    "uvcdynctrl",
+    "cheese",
+  ]);
 
   // Load kernel module for USB Video Class devices
   logger.info("Loading UVC video kernel module...");
@@ -40,7 +47,7 @@ async function enableWebcam() {
     logger.info("Checking for blacklisted modules...");
     const blacklistFiles = [
       "/etc/modprobe.d/blacklist.conf",
-      "/etc/modprobe.d/blacklist-rare-network.conf"
+      "/etc/modprobe.d/blacklist-rare-network.conf",
     ];
 
     for (const file of blacklistFiles) {
@@ -50,7 +57,10 @@ async function enableWebcam() {
           if (content.includes("uvcvideo")) {
             logger.warn(`uvcvideo is blacklisted in ${file}`);
             logger.info("Removing blacklist entry...");
-            const newContent = content.replace(/^blacklist uvcvideo.*$/gm, "# blacklist uvcvideo");
+            const newContent = content.replace(
+              /^blacklist uvcvideo.*$/gm,
+              "# blacklist uvcvideo",
+            );
             await Deno.writeTextFile(file, newContent);
           }
         } catch (error) {
@@ -84,7 +94,9 @@ async function enableWebcam() {
     if (username) {
       logger.info(`Adding ${username} to video group...`);
       await runCommand(["usermod", "-a", "-G", "video", username]);
-      logger.success(`User ${username} added to video group. You may need to log out and back in for changes to take effect.`);
+      logger.success(
+        `User ${username} added to video group. You may need to log out and back in for changes to take effect.`,
+      );
     }
   }
 
@@ -109,9 +121,13 @@ async function enableWebcam() {
       logger.success("Webcam enablement process complete!");
     } else {
       logger.warn("No video devices found. Please check:");
-      logger.info("1. Is your webcam physically connected (for external webcams)?");
+      logger.info(
+        "1. Is your webcam physically connected (for external webcams)?",
+      );
       logger.info("2. Is the webcam enabled in BIOS/UEFI?");
-      logger.info("3. Check dmesg for hardware errors: sudo dmesg | grep -i camera");
+      logger.info(
+        "3. Check dmesg for hardware errors: sudo dmesg | grep -i camera",
+      );
       logger.info("4. Try rebooting after running this script");
     }
   } catch (error) {

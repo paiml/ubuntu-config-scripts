@@ -68,7 +68,8 @@ export async function analyzeCrashLogs(): Promise<DiagnosticResult[]> {
         results.push({
           category: "unknown",
           severity: "warning",
-          message: `Found ${resolveErrors.length} DaVinci-related error(s) in logs`,
+          message:
+            `Found ${resolveErrors.length} DaVinci-related error(s) in logs`,
           details: {
             samples: resolveErrors.slice(0, 3),
           },

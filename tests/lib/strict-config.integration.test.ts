@@ -30,7 +30,7 @@ Deno.test(
         volume: 75,
         muted: false,
         backend: "pulseaudio",
-      advanced: undefined,
+        advanced: undefined,
       };
 
       await Deno.writeTextFile(tempFile, JSON.stringify(config));
@@ -58,7 +58,7 @@ Deno.test(
         volume: 50,
         muted: false,
         backend: "alsa",
-      advanced: {
+        advanced: {
           sampleRate: 48000,
           channels: 2,
           bitDepth: 16,
@@ -89,7 +89,7 @@ Deno.test(
         volume: 150, // Invalid: > 100
         muted: false,
         backend: "pulseaudio",
-      advanced: undefined,
+        advanced: undefined,
       };
 
       await Deno.writeTextFile(tempFile, JSON.stringify(config));
@@ -134,7 +134,7 @@ Deno.test(
         volume: 75,
         muted: false,
         backend: "pulseaudio",
-      advanced: {
+        advanced: {
           sampleRate: 1000, // Invalid: < 8000
           channels: 2,
           bitDepth: 16,
@@ -161,7 +161,7 @@ Deno.test(
         volume: 75,
         muted: false,
         backend: "pulseaudio",
-      advanced: undefined,
+        advanced: undefined,
       };
 
       await Deno.writeTextFile(tempFile, JSON.stringify(config));
@@ -597,7 +597,7 @@ Deno.test(
         volume: 75,
         muted: false,
         backend: "pulseaudio",
-      advanced: {
+        advanced: {
           sampleRate: 8000, // Minimum valid
           channels: 2,
           bitDepth: 16,
@@ -625,7 +625,7 @@ Deno.test(
         volume: 75,
         muted: false,
         backend: "pulseaudio",
-      advanced: {
+        advanced: {
           sampleRate: 192000, // Maximum valid
           channels: 2,
           bitDepth: 16,
@@ -653,7 +653,7 @@ Deno.test(
         volume: 75,
         muted: false,
         backend: "pulseaudio",
-      advanced: {
+        advanced: {
           sampleRate: 48000,
           channels: 1, // Minimum valid
           bitDepth: 16,
@@ -681,7 +681,7 @@ Deno.test(
         volume: 75,
         muted: false,
         backend: "pulseaudio",
-      advanced: {
+        advanced: {
           sampleRate: 48000,
           channels: 8, // Maximum valid
           bitDepth: 16,
@@ -709,7 +709,7 @@ Deno.test(
         volume: 75,
         muted: false,
         backend: "pulseaudio",
-      advanced: {
+        advanced: {
           sampleRate: 48000,
           channels: 0, // Invalid
           bitDepth: 16,
@@ -736,7 +736,7 @@ Deno.test(
         volume: 75,
         muted: false,
         backend: "pulseaudio",
-      advanced: {
+        advanced: {
           sampleRate: 48000,
           channels: 16, // Invalid
           bitDepth: 16,

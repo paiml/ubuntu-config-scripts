@@ -1,8 +1,4 @@
-import {
-  assertEquals,
-  assertExists,
-  assertRejects,
-} from "../../deps.ts";
+import { assertEquals, assertExists, assertRejects } from "../../deps.ts";
 import { DatabaseSeeder } from "../../scripts/lib/database-seeder.ts";
 import { TursoClient } from "../../scripts/lib/turso-client.ts";
 import { ScriptAnalyzer } from "../../scripts/lib/script-analyzer.ts";
@@ -47,7 +43,7 @@ Deno.test("DatabaseSeeder - constructor throws on missing client", () => {
       });
     },
     Error,
-    "client is required"
+    "client is required",
   );
 });
 
@@ -70,7 +66,7 @@ Deno.test("DatabaseSeeder - constructor throws on missing analyzer", () => {
       });
     },
     Error,
-    "analyzer is required"
+    "analyzer is required",
   );
 });
 
@@ -90,7 +86,7 @@ Deno.test("DatabaseSeeder - constructor throws on missing embedder", () => {
       });
     },
     Error,
-    "embedder is required"
+    "embedder is required",
   );
 });
 
@@ -216,7 +212,7 @@ Deno.test("DatabaseSeeder - seedScripts processes and inserts scripts", async ()
      * deno run test.ts
      */
     import { foo } from "./lib.ts";
-    `
+    `,
   );
 
   try {
@@ -327,7 +323,7 @@ Deno.test("DatabaseSeeder - seedScripts batches embeddings", async () => {
   for (let i = 0; i < 5; i++) {
     await Deno.writeTextFile(
       `${tempDir}/test${i}.ts`,
-      `/** Script ${i} */\nconsole.log(${i});`
+      `/** Script ${i} */\nconsole.log(${i});`,
     );
   }
 

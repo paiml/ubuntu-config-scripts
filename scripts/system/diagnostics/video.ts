@@ -90,7 +90,7 @@ export async function diagnoseVideoSubsystem(): Promise<DiagnosticResult[]> {
 }
 
 export async function testHardwareDecoding(
-  testFile: string
+  testFile: string,
 ): Promise<DiagnosticResult[]> {
   const results: DiagnosticResult[] = [];
 

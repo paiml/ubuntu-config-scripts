@@ -4,11 +4,17 @@
 
 import { runCommand } from "../../lib/common.ts";
 
-export async function collectGpuInfo(): Promise<Array<Record<string, unknown>>> {
+export async function collectGpuInfo(): Promise<
+  Array<Record<string, unknown>>
+> {
   const gpus: Array<Record<string, unknown>> = [];
 
   // Check for NVIDIA GPUs
-  const nvidiaResult = await runCommand(["nvidia-smi", "--query-gpu=name,driver_version,memory.total,memory.used,temperature.gpu,utilization.gpu", "--format=csv,noheader"]);
+  const nvidiaResult = await runCommand([
+    "nvidia-smi",
+    "--query-gpu=name,driver_version,memory.total,memory.used,temperature.gpu,utilization.gpu",
+    "--format=csv,noheader",
+  ]);
 
   if (nvidiaResult.success) {
     const lines = nvidiaResult.stdout.trim().split("\n");
@@ -32,7 +38,9 @@ export async function collectGpuInfo(): Promise<Array<Record<string, unknown>>> 
   // If no NVIDIA GPUs found, check for Intel/AMD (simplified)
   if (gpus.length === 0) {
     const lspciResult = await runCommand(["lspci", "-nn"]);
-    if (lspciResult.success && lspciResult.stdout.toLowerCase().includes("vga")) {
+    if (
+      lspciResult.success && lspciResult.stdout.toLowerCase().includes("vga")
+    ) {
       gpus.push({
         vendor: "Integrated",
         model: "Unknown",

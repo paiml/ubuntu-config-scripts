@@ -91,12 +91,12 @@ export class ScriptRepository {
         script.embedding_text || null,
         embeddingBlob,
         script.tokens || null,
-      ]
+      ],
     );
 
     // Get the last inserted ID
     const result = await this.client.query<{ id: number }>(
-      "SELECT last_insert_rowid() as id"
+      "SELECT last_insert_rowid() as id",
     );
 
     return result[0]?.id || 0;
@@ -108,7 +108,7 @@ export class ScriptRepository {
   async getById(id: number): Promise<ScriptRecord | null> {
     const results = await this.client.query<DbScriptRecord>(
       "SELECT * FROM scripts WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (results.length === 0) {
@@ -124,7 +124,7 @@ export class ScriptRepository {
   async getByPath(path: string): Promise<ScriptRecord | null> {
     const results = await this.client.query<DbScriptRecord>(
       "SELECT * FROM scripts WHERE path = ?",
-      [path]
+      [path],
     );
 
     if (results.length === 0) {
@@ -139,7 +139,7 @@ export class ScriptRepository {
    */
   async update(
     id: number,
-    updates: Partial<ScriptRecord>
+    updates: Partial<ScriptRecord>,
   ): Promise<void> {
     if (id <= 0) {
       throw new Error("Invalid ID: must be positive");
@@ -241,7 +241,7 @@ export class ScriptRepository {
    */
   async listCategories(): Promise<string[]> {
     const results = await this.client.query<{ category: string }>(
-      "SELECT DISTINCT category FROM scripts ORDER BY category"
+      "SELECT DISTINCT category FROM scripts ORDER BY category",
     );
 
     return results.map((r) => r.category);

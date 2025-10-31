@@ -28,12 +28,17 @@ Deno.test("property: StringSchema - valid strings always pass", () => {
 Deno.test("property: StringSchema - non-strings always fail", () => {
   fc.assert(
     fc.property(
-      fc.oneof(fc.integer(), fc.boolean(), fc.constant(null), fc.constant(undefined)),
+      fc.oneof(
+        fc.integer(),
+        fc.boolean(),
+        fc.constant(null),
+        fc.constant(undefined),
+      ),
       (nonString) => {
         const schema = z.string();
         const result = schema.safeParse(nonString);
         assertEquals(result.success, false);
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -58,7 +63,7 @@ Deno.test("property: StringSchema.min - length boundary (mutation test)", () => 
           // str.length > minLen should pass
           assertEquals(result.success, true);
         }
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -83,7 +88,7 @@ Deno.test("property: StringSchema.max - length boundary (mutation test)", () => 
           // str.length < maxLen should pass
           assertEquals(result.success, true);
         }
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -101,7 +106,7 @@ Deno.test("property: StringSchema.regex - pattern matching", () => {
         const matches = emailPattern.test(str);
 
         assertEquals(result.success, matches);
-      }
+      },
     ),
     { numRuns: 500 },
   );
@@ -148,12 +153,17 @@ Deno.test("property: NumberSchema - valid numbers always pass", () => {
 Deno.test("property: NumberSchema - non-numbers always fail", () => {
   fc.assert(
     fc.property(
-      fc.oneof(fc.string(), fc.boolean(), fc.constant(null), fc.constant(undefined)),
+      fc.oneof(
+        fc.string(),
+        fc.boolean(),
+        fc.constant(null),
+        fc.constant(undefined),
+      ),
       (nonNumber) => {
         const schema = z.number();
         const result = schema.safeParse(nonNumber);
         assertEquals(result.success, false);
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -196,7 +206,7 @@ Deno.test("property: NumberSchema.min - boundary (mutation test)", () => {
           // num > minVal should pass
           assertEquals(result.success, true);
         }
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -221,7 +231,7 @@ Deno.test("property: NumberSchema.max - boundary (mutation test)", () => {
           // num < maxVal should pass
           assertEquals(result.success, true);
         }
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -274,7 +284,7 @@ Deno.test("property: BooleanSchema - booleans pass, others fail", () => {
         } else {
           assertEquals(result.success, false);
         }
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -321,7 +331,7 @@ Deno.test("property: ArraySchema - valid arrays pass with valid items", () => {
             assertEquals(result.data[i], arr[i]);
           }
         }
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -341,7 +351,7 @@ Deno.test("property: ArraySchema.min - length boundary", () => {
         } else {
           assertEquals(result.success, true);
         }
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -355,9 +365,9 @@ Deno.test("property: ArraySchema - invalid items cause failure", () => {
         const schema = z.array(z.number());
         const result = schema.safeParse(arr);
 
-        const allNumbers = arr.every(item => typeof item === "number");
+        const allNumbers = arr.every((item) => typeof item === "number");
         assertEquals(result.success, allNumbers);
-      }
+      },
     ),
     { numRuns: 500 },
   );
@@ -395,7 +405,7 @@ Deno.test("property: ObjectSchema - valid objects pass", () => {
           assertEquals(result.data.name, name);
           assertEquals(result.data.age, age);
         }
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -436,7 +446,7 @@ Deno.test("property: OptionalSchema - undefined always passes", () => {
         if (undefinedResult.success) {
           assertEquals(undefinedResult.data, undefined);
         }
-      }
+      },
     ),
     { numRuns: 100 },
   );
@@ -458,7 +468,7 @@ Deno.test("property: OptionalSchema - valid values pass", () => {
             assertEquals(result.data, value);
           }
         }
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -480,7 +490,7 @@ Deno.test("property: UnionSchema - matches any of the types", () => {
         if (result.success) {
           assertEquals(result.data, value);
         }
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -522,7 +532,7 @@ Deno.test("property: LiteralSchema - exact match required", () => {
         } else {
           assertEquals(result.success, false);
         }
-      }
+      },
     ),
     { numRuns: 1000 },
   );
@@ -586,11 +596,14 @@ Deno.test("property: Complex nested schema", () => {
 
   fc.assert(
     fc.property(
-      fc.array(fc.record({
-        name: fc.string({ minLength: 1, maxLength: 50 }),
-        age: fc.integer({ min: 0, max: 150 }),
-        email: fc.option(fc.string(), { nil: undefined }),
-      }), { minLength: 0, maxLength: 5 }),
+      fc.array(
+        fc.record({
+          name: fc.string({ minLength: 1, maxLength: 50 }),
+          age: fc.integer({ min: 0, max: 150 }),
+          email: fc.option(fc.string(), { nil: undefined }),
+        }),
+        { minLength: 0, maxLength: 5 },
+      ),
       fc.boolean(),
       fc.integer({ min: 1, max: 100 }),
       (users, enabled, maxCount) => {
@@ -600,7 +613,7 @@ Deno.test("property: Complex nested schema", () => {
         });
 
         assertEquals(result.success, true);
-      }
+      },
     ),
     { numRuns: 500 },
   );
@@ -641,7 +654,7 @@ Deno.test("invariant: safeParse never throws", () => {
           assertExists(result);
           assertExists(result.success);
         }
-      }
+      },
     ),
     { numRuns: 1000 },
   );

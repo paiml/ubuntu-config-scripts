@@ -13,7 +13,7 @@
 import { TursoClient } from "./lib/turso-client.ts";
 import { ScriptRepository } from "./lib/script-repository.ts";
 import { EmbeddingGenerator } from "./lib/embedding-generator.ts";
-import { VectorSearch, SearchResult } from "./lib/vector-search.ts";
+import { SearchResult, VectorSearch } from "./lib/vector-search.ts";
 import { load } from "https://deno.land/std@0.224.0/dotenv/mod.ts";
 
 export interface ParsedArgs {
@@ -130,11 +130,11 @@ export function loadConfig(): Config {
     throw new Error("Missing required environment variable: OPENAI_API_KEY");
   }
 
-  const embeddingModel =
-    Deno.env.get("EMBEDDING_MODEL") || "text-embedding-3-small";
+  const embeddingModel = Deno.env.get("EMBEDDING_MODEL") ||
+    "text-embedding-3-small";
   const embeddingDimensions = parseInt(
     Deno.env.get("EMBEDDING_DIMENSIONS") || "1536",
-    10
+    10,
   );
 
   return {
@@ -154,7 +154,9 @@ export function formatResults(results: SearchResult[]): string {
     return "No results found.\n";
   }
 
-  let output = `\nFound ${results.length} result${results.length === 1 ? "" : "s"}:\n\n`;
+  let output = `\nFound ${results.length} result${
+    results.length === 1 ? "" : "s"
+  }:\n\n`;
 
   for (const result of results) {
     const { script, similarity } = result;

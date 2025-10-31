@@ -5,8 +5,8 @@ import {
   assertThrows,
 } from "../../deps.ts";
 import {
-  EmbeddingGenerator,
   EmbeddingConfig,
+  EmbeddingGenerator,
 } from "../../scripts/lib/embedding-generator.ts";
 
 // Unit tests for EmbeddingGenerator
@@ -31,7 +31,7 @@ Deno.test("EmbeddingGenerator - constructor throws on empty API key", () => {
       });
     },
     Error,
-    "Invalid API key"
+    "Invalid API key",
   );
 });
 
@@ -44,7 +44,7 @@ Deno.test("EmbeddingGenerator - constructor throws on empty model", () => {
       });
     },
     Error,
-    "Invalid model"
+    "Invalid model",
   );
 });
 
@@ -69,7 +69,7 @@ Deno.test("EmbeddingGenerator - constructor throws on invalid dimensions", () =>
       });
     },
     Error,
-    "Invalid dimensions"
+    "Invalid dimensions",
   );
 });
 
@@ -95,7 +95,7 @@ Deno.test(
           ],
           usage: { total_tokens: 10 },
         }),
-        { status: 200 }
+        { status: 200 },
       );
     };
 
@@ -109,7 +109,7 @@ Deno.test(
     } finally {
       globalThis.fetch = originalFetch;
     }
-  }
+  },
 );
 
 Deno.test(
@@ -125,9 +125,9 @@ Deno.test(
     await assertRejects(
       async () => await generator.generateEmbedding(""),
       Error,
-      "Empty text"
+      "Empty text",
     );
-  }
+  },
 );
 
 Deno.test(
@@ -145,7 +145,7 @@ Deno.test(
     globalThis.fetch = async () => {
       return new Response(
         JSON.stringify({ error: { message: "Rate limit exceeded" } }),
-        { status: 429 }
+        { status: 429 },
       );
     };
 
@@ -153,12 +153,12 @@ Deno.test(
       await assertRejects(
         async () => await generator.generateEmbedding("test"),
         Error,
-        "Rate limit"
+        "Rate limit",
       );
     } finally {
       globalThis.fetch = originalFetch;
     }
-  }
+  },
 );
 
 Deno.test(
@@ -182,7 +182,7 @@ Deno.test(
           ],
           usage: { total_tokens: 20 },
         }),
-        { status: 200 }
+        { status: 200 },
       );
     };
 
@@ -195,7 +195,7 @@ Deno.test(
     } finally {
       globalThis.fetch = originalFetch;
     }
-  }
+  },
 );
 
 Deno.test(
@@ -210,7 +210,7 @@ Deno.test(
 
     const results = await generator.generateBatch([]);
     assertEquals(results, []);
-  }
+  },
 );
 
 Deno.test(
@@ -235,7 +235,7 @@ Deno.test(
           data: [{ embedding: new Array(1536).fill(0.1) }],
           usage: { total_tokens: 10 },
         }),
-        { status: 200 }
+        { status: 200 },
       );
     };
 
@@ -246,7 +246,7 @@ Deno.test(
     } finally {
       globalThis.fetch = originalFetch;
     }
-  }
+  },
 );
 
 Deno.test(
@@ -267,12 +267,12 @@ Deno.test(
     try {
       await assertRejects(
         async () => await generator.generateEmbedding("test"),
-        Error
+        Error,
       );
     } finally {
       globalThis.fetch = originalFetch;
     }
-  }
+  },
 );
 
 Deno.test(
@@ -292,7 +292,7 @@ Deno.test(
           data: [{ embedding: new Array(1536).fill(0.1) }],
           usage: { total_tokens: 42 },
         }),
-        { status: 200 }
+        { status: 200 },
       );
     };
 
@@ -302,7 +302,7 @@ Deno.test(
     } finally {
       globalThis.fetch = originalFetch;
     }
-  }
+  },
 );
 
 Deno.test(
@@ -324,12 +324,12 @@ Deno.test(
       await assertRejects(
         async () => await generator.generateEmbedding("test"),
         Error,
-        "Network error"
+        "Network error",
       );
     } finally {
       globalThis.fetch = originalFetch;
     }
-  }
+  },
 );
 
 Deno.test(
@@ -350,7 +350,7 @@ Deno.test(
           data: [{ embedding: new Array(512).fill(0.1) }],
           usage: { total_tokens: 10 },
         }),
-        { status: 200 }
+        { status: 200 },
       );
     };
 
@@ -360,7 +360,7 @@ Deno.test(
     } finally {
       globalThis.fetch = originalFetch;
     }
-  }
+  },
 );
 
 Deno.test(
@@ -384,7 +384,7 @@ Deno.test(
           ],
           usage: { total_tokens: 30 },
         }),
-        { status: 200 }
+        { status: 200 },
       );
     };
 
@@ -398,5 +398,5 @@ Deno.test(
     } finally {
       globalThis.fetch = originalFetch;
     }
-  }
+  },
 );

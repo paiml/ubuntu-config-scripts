@@ -50,10 +50,13 @@ export class PebbleSpeakerConfigurator {
               card: parseInt(cardMatch[1]),
               device: parseInt(deviceMatch[1]),
               name: nameMatch[0].replace(/[\[\]]/g, ""),
-              description: nameMatch[1]?.replace(/[\[\]]/g, "") || "Pebble Speakers",
+              description: nameMatch[1]?.replace(/[\[\]]/g, "") ||
+                "Pebble Speakers",
             };
 
-            this.logger.success(`Found Pebble device: ${device.name} (Card ${device.card})`);
+            this.logger.success(
+              `Found Pebble device: ${device.name} (Card ${device.card})`,
+            );
             return device;
           }
         }
@@ -114,7 +117,7 @@ export class PebbleSpeakerConfigurator {
       this.logger.success("Created new PulseAudio sink");
 
       // Wait for sink to be available
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       return await this.findPebbleSink();
     } catch (error) {
@@ -141,9 +144,12 @@ export class PebbleSpeakerConfigurator {
 
     try {
       await this.cmd.run("speaker-test", [
-        "-c", "2",
-        "-t", "wav",
-        "-l", "1",
+        "-c",
+        "2",
+        "-t",
+        "wav",
+        "-l",
+        "1",
       ]);
       this.logger.success("Audio test completed");
       return true;
@@ -155,7 +161,10 @@ export class PebbleSpeakerConfigurator {
 
   async configure(): Promise<boolean> {
     // Check dependencies
-    const deps = await validateDependencies(["pactl", "aplay", "speaker-test"], this.logger);
+    const deps = await validateDependencies(
+      ["pactl", "aplay", "speaker-test"],
+      this.logger,
+    );
     if (!deps) {
       this.logger.error("Missing required dependencies");
       return false;
@@ -164,7 +173,9 @@ export class PebbleSpeakerConfigurator {
     // Detect Pebble device
     const device = await this.detectPebbleDevice();
     if (!device) {
-      this.logger.error("No Pebble speakers detected. Please ensure they are connected via USB.");
+      this.logger.error(
+        "No Pebble speakers detected. Please ensure they are connected via USB.",
+      );
       return false;
     }
 
@@ -185,7 +196,9 @@ export class PebbleSpeakerConfigurator {
     }
 
     // Test audio
-    this.logger.info("Would you like to test the speakers? (You should hear 'Front Left' and 'Front Right')");
+    this.logger.info(
+      "Would you like to test the speakers? (You should hear 'Front Left' and 'Front Right')",
+    );
     await this.testAudio();
 
     this.logger.success("Pebble speakers configured successfully!");
@@ -200,4 +213,4 @@ if (import.meta.main) {
   Deno.exit(success ? 0 : 1);
 }
 
-export { logger, cmd };
+export { cmd, logger };

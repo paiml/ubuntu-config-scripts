@@ -1,6 +1,9 @@
 #!/usr/bin/env -S deno test --allow-run --allow-read --allow-write --allow-env
 
-import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
+import {
+  assertEquals,
+  assertExists,
+} from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { describe, it } from "https://deno.land/std@0.208.0/testing/bdd.ts";
 import fc from "https://cdn.skypack.dev/fast-check@3.14.0";
 import { PebbleSpeakerConfigurator } from "../../scripts/audio/configure-pebble-speakers.ts";
@@ -19,14 +22,18 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
         fc.property(
           fc.integer({ min: 0, max: 99 }),
           fc.integer({ min: 0, max: 99 }),
-          fc.string({ minLength: 1, maxLength: 20 }).filter((s: string) => !s.includes("[") && !s.includes("]")),
+          fc.string({ minLength: 1, maxLength: 20 }).filter((s: string) =>
+            !s.includes("[") && !s.includes("]")
+          ),
           async (cardNum: number, deviceNum: number, deviceName: string) => {
-            const cmdStub = stub(cmd, "run", () => Promise.resolve({
-              stdout: `card ${cardNum}: Pebble [${deviceName}], device ${deviceNum}: USB Audio [USB Audio]`,
-              stderr: "",
-              code: 0,
-              success: true,
-            }));
+            const cmdStub = stub(cmd, "run", () =>
+              Promise.resolve({
+                stdout:
+                  `card ${cardNum}: Pebble [${deviceName}], device ${deviceNum}: USB Audio [USB Audio]`,
+                stderr: "",
+                code: 0,
+                success: true,
+              }));
 
             try {
               const device = await configurator.detectPebbleDevice();
@@ -36,9 +43,9 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
             } finally {
               cmdStub.restore();
             }
-          }
+          },
         ),
-        { numRuns: 100 }
+        { numRuns: 100 },
       );
     });
 
@@ -49,12 +56,14 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
           fc.constantFrom("V1", "V2", "V3", "Pro", "Mini", "Max"),
           async (brand: string, model: string) => {
             const fullName = `${brand} ${model}`;
-            const cmdStub = stub(cmd, "run", () => Promise.resolve({
-              stdout: `card 1: ${fullName} [${fullName}], device 0: USB Audio [USB Audio]`,
-              stderr: "",
-              code: 0,
-              success: true,
-            }));
+            const cmdStub = stub(cmd, "run", () =>
+              Promise.resolve({
+                stdout:
+                  `card 1: ${fullName} [${fullName}], device 0: USB Audio [USB Audio]`,
+                stderr: "",
+                code: 0,
+                success: true,
+              }));
 
             try {
               const device = await configurator.detectPebbleDevice();
@@ -63,9 +72,9 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
             } finally {
               cmdStub.restore();
             }
-          }
+          },
         ),
-        { numRuns: 50 }
+        { numRuns: 50 },
       );
     });
   });
@@ -78,12 +87,14 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
           fc.constantFrom("RUNNING", "SUSPENDED", "IDLE"),
           async (sinkId: number, state: string) => {
             const sinkName = `pebble_sink_${sinkId}`;
-            const cmdStub = stub(cmd, "run", () => Promise.resolve({
-              stdout: `${sinkId}\t${sinkName}\tmodule-alsa-card.c\ts16le 2ch 48000Hz\t${state}`,
-              stderr: "",
-              code: 0,
-              success: true,
-            }));
+            const cmdStub = stub(cmd, "run", () =>
+              Promise.resolve({
+                stdout:
+                  `${sinkId}\t${sinkName}\tmodule-alsa-card.c\ts16le 2ch 48000Hz\t${state}`,
+                stderr: "",
+                code: 0,
+                success: true,
+              }));
 
             try {
               const sink = await configurator.findPebbleSink();
@@ -93,9 +104,9 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
             } finally {
               cmdStub.restore();
             }
-          }
+          },
         ),
-        { numRuns: 100 }
+        { numRuns: 100 },
       );
     });
 
@@ -107,12 +118,14 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
           fc.constantFrom("44100Hz", "48000Hz", "96000Hz", "192000Hz"),
           async (format: string, channels: string, rate: string) => {
             const audioFormat = `${format} ${channels} ${rate}`;
-            const cmdStub = stub(cmd, "run", () => Promise.resolve({
-              stdout: `5\tpebble_v3\tmodule-alsa-card.c\t${audioFormat}\tRUNNING`,
-              stderr: "",
-              code: 0,
-              success: true,
-            }));
+            const cmdStub = stub(cmd, "run", () =>
+              Promise.resolve({
+                stdout:
+                  `5\tpebble_v3\tmodule-alsa-card.c\t${audioFormat}\tRUNNING`,
+                stderr: "",
+                code: 0,
+                success: true,
+              }));
 
             try {
               const sink = await configurator.findPebbleSink();
@@ -121,9 +134,9 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
             } finally {
               cmdStub.restore();
             }
-          }
+          },
         ),
-        { numRuns: 50 }
+        { numRuns: 50 },
       );
     });
   });
@@ -157,17 +170,21 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
                 description: "Test Device",
               });
 
-              const sinkNameArg = capturedArgs.find(arg => arg.startsWith("sink_name="));
+              const sinkNameArg = capturedArgs.find((arg) =>
+                arg.startsWith("sink_name=")
+              );
               assertEquals(sinkNameArg, `sink_name=${expectedName}`);
 
-              const deviceArg = capturedArgs.find(arg => arg.startsWith("device="));
+              const deviceArg = capturedArgs.find((arg) =>
+                arg.startsWith("device=")
+              );
               assertEquals(deviceArg, `device=${deviceStr}`);
             } finally {
               cmdStub.restore();
             }
-          }
+          },
         ),
-        { numRuns: 100 }
+        { numRuns: 100 },
       );
     });
   });
@@ -178,12 +195,13 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
         fc.property(
           fc.constantFrom("", " ", "\n", "\t", "   \n\t  "),
           async (output: string) => {
-            const cmdStub = stub(cmd, "run", () => Promise.resolve({
-              stdout: output,
-              stderr: "",
-              code: 0,
-              success: true,
-            }));
+            const cmdStub = stub(cmd, "run", () =>
+              Promise.resolve({
+                stdout: output,
+                stderr: "",
+                code: 0,
+                success: true,
+              }));
 
             try {
               const device = await configurator.detectPebbleDevice();
@@ -194,24 +212,28 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
             } finally {
               cmdStub.restore();
             }
-          }
+          },
         ),
-        { numRuns: 20 }
+        { numRuns: 20 },
       );
     });
 
     it("should handle very long device names", () => {
       fc.assert(
         fc.property(
-          fc.string({ minLength: 50, maxLength: 200 }).filter((s: string) => !s.includes("\n") && !s.includes("[") && !s.includes("]")),
+          fc.string({ minLength: 50, maxLength: 200 }).filter((s: string) =>
+            !s.includes("\n") && !s.includes("[") && !s.includes("]")
+          ),
           async (longName: string) => {
             const shortName = `Pebble_${longName.substring(0, 10)}`;
-            const cmdStub = stub(cmd, "run", () => Promise.resolve({
-              stdout: `card 1: ${shortName} [${longName}], device 0: USB Audio [USB Audio]`,
-              stderr: "",
-              code: 0,
-              success: true,
-            }));
+            const cmdStub = stub(cmd, "run", () =>
+              Promise.resolve({
+                stdout:
+                  `card 1: ${shortName} [${longName}], device 0: USB Audio [USB Audio]`,
+                stderr: "",
+                code: 0,
+                success: true,
+              }));
 
             try {
               const device = await configurator.detectPebbleDevice();
@@ -222,27 +244,31 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
             } finally {
               cmdStub.restore();
             }
-          }
+          },
         ),
-        { numRuns: 50 }
+        { numRuns: 50 },
       );
     });
 
     it("should handle multiple Pebble devices in output", () => {
       fc.assert(
         fc.property(
-          fc.array(fc.integer({ min: 0, max: 10 }), { minLength: 2, maxLength: 5 }),
+          fc.array(fc.integer({ min: 0, max: 10 }), {
+            minLength: 2,
+            maxLength: 5,
+          }),
           async (cardNumbers: number[]) => {
             const lines = cardNumbers.map((num: number) =>
               `card ${num}: Pebble_${num} [Pebble V${num}], device 0: USB Audio [USB Audio]`
             );
 
-            const cmdStub = stub(cmd, "run", () => Promise.resolve({
-              stdout: lines.join("\n"),
-              stderr: "",
-              code: 0,
-              success: true,
-            }));
+            const cmdStub = stub(cmd, "run", () =>
+              Promise.resolve({
+                stdout: lines.join("\n"),
+                stderr: "",
+                code: 0,
+                success: true,
+              }));
 
             try {
               const device = await configurator.detectPebbleDevice();
@@ -252,9 +278,9 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
             } finally {
               cmdStub.restore();
             }
-          }
+          },
         ),
-        { numRuns: 50 }
+        { numRuns: 50 },
       );
     });
   });
@@ -266,16 +292,22 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
           fc.record({
             card: fc.integer({ min: 0, max: 99 }),
             device: fc.integer({ min: 0, max: 99 }),
-            name: fc.string({ minLength: 1, maxLength: 20 }).filter((s: string) => !s.includes("[") && !s.includes("]")),
-            description: fc.string({ minLength: 1, maxLength: 50 }).filter((s: string) => !s.includes("[") && !s.includes("]")),
+            name: fc.string({ minLength: 1, maxLength: 20 }).filter((
+              s: string,
+            ) => !s.includes("[") && !s.includes("]")),
+            description: fc.string({ minLength: 1, maxLength: 50 }).filter((
+              s: string,
+            ) => !s.includes("[") && !s.includes("]")),
           }),
           async (deviceInfo: any) => {
-            const cmdStub = stub(cmd, "run", () => Promise.resolve({
-              stdout: `card ${deviceInfo.card}: Pebble [${deviceInfo.name}], device ${deviceInfo.device}: USB Audio [${deviceInfo.description}]`,
-              stderr: "",
-              code: 0,
-              success: true,
-            }));
+            const cmdStub = stub(cmd, "run", () =>
+              Promise.resolve({
+                stdout:
+                  `card ${deviceInfo.card}: Pebble [${deviceInfo.name}], device ${deviceInfo.device}: USB Audio [${deviceInfo.description}]`,
+                stderr: "",
+                code: 0,
+                success: true,
+              }));
 
             try {
               const device = await configurator.detectPebbleDevice();
@@ -290,9 +322,9 @@ describe("PebbleSpeakerConfigurator Property Tests", () => {
             } finally {
               cmdStub.restore();
             }
-          }
+          },
         ),
-        { numRuns: 100 }
+        { numRuns: 100 },
       );
     });
   });

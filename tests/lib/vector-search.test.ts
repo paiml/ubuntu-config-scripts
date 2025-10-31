@@ -1,8 +1,4 @@
-import {
-  assertEquals,
-  assertExists,
-  assertRejects,
-} from "../../deps.ts";
+import { assertEquals, assertExists, assertRejects } from "../../deps.ts";
 import { VectorSearch } from "../../scripts/lib/vector-search.ts";
 import { ScriptRepository } from "../../scripts/lib/script-repository.ts";
 import { EmbeddingGenerator } from "../../scripts/lib/embedding-generator.ts";
@@ -40,7 +36,7 @@ Deno.test("VectorSearch - constructor throws on missing repository", () => {
       });
     },
     Error,
-    "repository is required"
+    "repository is required",
   );
 });
 
@@ -59,7 +55,7 @@ Deno.test("VectorSearch - constructor throws on missing embedder", () => {
       });
     },
     Error,
-    "embedder is required"
+    "embedder is required",
   );
 });
 
@@ -203,11 +199,41 @@ Deno.test("VectorSearch - search filters by topN", async () => {
 
   // Mock repository with 5 scripts
   repo.list = async () => [
-    { id: 1, name: "s1", path: "/s1.ts", category: "test", embedding: [1, 0, 0] },
-    { id: 2, name: "s2", path: "/s2.ts", category: "test", embedding: [0.9, 0.1, 0] },
-    { id: 3, name: "s3", path: "/s3.ts", category: "test", embedding: [0.8, 0.2, 0] },
-    { id: 4, name: "s4", path: "/s4.ts", category: "test", embedding: [0.7, 0.3, 0] },
-    { id: 5, name: "s5", path: "/s5.ts", category: "test", embedding: [0.6, 0.4, 0] },
+    {
+      id: 1,
+      name: "s1",
+      path: "/s1.ts",
+      category: "test",
+      embedding: [1, 0, 0],
+    },
+    {
+      id: 2,
+      name: "s2",
+      path: "/s2.ts",
+      category: "test",
+      embedding: [0.9, 0.1, 0],
+    },
+    {
+      id: 3,
+      name: "s3",
+      path: "/s3.ts",
+      category: "test",
+      embedding: [0.8, 0.2, 0],
+    },
+    {
+      id: 4,
+      name: "s4",
+      path: "/s4.ts",
+      category: "test",
+      embedding: [0.7, 0.3, 0],
+    },
+    {
+      id: 5,
+      name: "s5",
+      path: "/s5.ts",
+      category: "test",
+      embedding: [0.6, 0.4, 0],
+    },
   ];
 
   const results = await search.search("test query", { topN: 3 });
@@ -269,9 +295,27 @@ Deno.test("VectorSearch - search filters by minSimilarity", async () => {
 
   // Mock repository
   repo.list = async () => [
-    { id: 1, name: "s1", path: "/s1.ts", category: "test", embedding: [1, 0, 0] }, // sim = 1.0
-    { id: 2, name: "s2", path: "/s2.ts", category: "test", embedding: [0.7, 0.7, 0] }, // sim ≈ 0.7
-    { id: 3, name: "s3", path: "/s3.ts", category: "test", embedding: [0, 1, 0] }, // sim = 0.0
+    {
+      id: 1,
+      name: "s1",
+      path: "/s1.ts",
+      category: "test",
+      embedding: [1, 0, 0],
+    }, // sim = 1.0
+    {
+      id: 2,
+      name: "s2",
+      path: "/s2.ts",
+      category: "test",
+      embedding: [0.7, 0.7, 0],
+    }, // sim ≈ 0.7
+    {
+      id: 3,
+      name: "s3",
+      path: "/s3.ts",
+      category: "test",
+      embedding: [0, 1, 0],
+    }, // sim = 0.0
   ];
 
   const results = await search.search("test query", {
@@ -335,7 +379,13 @@ Deno.test("VectorSearch - search skips scripts without embeddings", async () => 
   // Mock repository with script without embedding
   repo.list = async () => [
     { id: 1, name: "s1", path: "/s1.ts", category: "test" }, // No embedding
-    { id: 2, name: "s2", path: "/s2.ts", category: "test", embedding: [1, 0, 0] },
+    {
+      id: 2,
+      name: "s2",
+      path: "/s2.ts",
+      category: "test",
+      embedding: [1, 0, 0],
+    },
   ];
 
   const results = await search.search("test query", { topN: 10 });
@@ -360,7 +410,7 @@ Deno.test("VectorSearch - search validates query", async () => {
   await assertRejects(
     async () => await search.search("", { topN: 10 }),
     Error,
-    "query cannot be empty"
+    "query cannot be empty",
   );
 });
 
@@ -380,12 +430,12 @@ Deno.test("VectorSearch - search validates topN", async () => {
   await assertRejects(
     async () => await search.search("test", { topN: 0 }),
     Error,
-    "topN must be positive"
+    "topN must be positive",
   );
 
   await assertRejects(
     async () => await search.search("test", { topN: -5 }),
     Error,
-    "topN must be positive"
+    "topN must be positive",
   );
 });

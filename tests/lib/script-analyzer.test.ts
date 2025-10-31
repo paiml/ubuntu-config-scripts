@@ -1,11 +1,5 @@
-import {
-  assertEquals,
-  assertExists,
-  assertRejects,
-} from "../../deps.ts";
-import {
-  ScriptAnalyzer,
-} from "../../scripts/lib/script-analyzer.ts";
+import { assertEquals, assertExists, assertRejects } from "../../deps.ts";
+import { ScriptAnalyzer } from "../../scripts/lib/script-analyzer.ts";
 
 // Unit tests for ScriptAnalyzer
 // RED phase - these tests should FAIL initially
@@ -32,7 +26,7 @@ export function main() {
   const description = analyzer.extractDescription(content);
   assertEquals(
     description,
-    "This is a test script that does something useful. It has multiple lines of description."
+    "This is a test script that does something useful. It has multiple lines of description.",
   );
 });
 
@@ -83,7 +77,7 @@ export function main() {}
   const usage = analyzer.extractUsage(content);
   assertEquals(
     usage,
-    "deno run --allow-all configure-audio.ts\ndeno run --allow-all configure-audio.ts --device=default"
+    "deno run --allow-all configure-audio.ts\ndeno run --allow-all configure-audio.ts --device=default",
   );
 });
 
@@ -192,14 +186,18 @@ export function configureGPU() {}
 Deno.test("ScriptAnalyzer - inferCategory from audio path", () => {
   const analyzer = new ScriptAnalyzer();
 
-  const category = analyzer.inferCategory("scripts/audio/configure-speakers.ts");
+  const category = analyzer.inferCategory(
+    "scripts/audio/configure-speakers.ts",
+  );
   assertEquals(category, "audio");
 });
 
 Deno.test("ScriptAnalyzer - inferCategory from system path", () => {
   const analyzer = new ScriptAnalyzer();
 
-  const category = analyzer.inferCategory("scripts/system/configure-davinci.ts");
+  const category = analyzer.inferCategory(
+    "scripts/system/configure-davinci.ts",
+  );
   assertEquals(category, "system");
 });
 
@@ -254,7 +252,7 @@ export function main() {
     } finally {
       await Deno.remove(tempFile);
     }
-  }
+  },
 );
 
 Deno.test(
@@ -276,7 +274,7 @@ Deno.test(
     } finally {
       await Deno.remove(tempFile);
     }
-  }
+  },
 );
 
 Deno.test(
@@ -286,9 +284,9 @@ Deno.test(
 
     await assertRejects(
       async () => await analyzer.analyzeScript("/nonexistent/path.ts"),
-      Error
+      Error,
     );
-  }
+  },
 );
 
 Deno.test(
@@ -302,21 +300,24 @@ Deno.test(
       // Create test scripts
       await Deno.writeTextFile(
         `${tempDir}/script1.ts`,
-        "export function main() {}"
+        "export function main() {}",
       );
       await Deno.writeTextFile(
         `${tempDir}/script2.ts`,
-        "export function run() {}"
+        "export function run() {}",
       );
 
       const results = await analyzer.analyzeAllScripts(tempDir);
 
       assertEquals(results.length, 2);
-      assertEquals(results.every((r: { name: string }) => r.name.length > 0), true);
+      assertEquals(
+        results.every((r: { name: string }) => r.name.length > 0),
+        true,
+      );
     } finally {
       await Deno.remove(tempDir, { recursive: true });
     }
-  }
+  },
 );
 
 Deno.test(
@@ -338,7 +339,7 @@ Deno.test(
     } finally {
       await Deno.remove(tempDir, { recursive: true });
     }
-  }
+  },
 );
 
 Deno.test(
@@ -354,5 +355,5 @@ Deno.test(
     } finally {
       await Deno.remove(tempDir, { recursive: true });
     }
-  }
+  },
 );

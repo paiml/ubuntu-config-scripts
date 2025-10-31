@@ -118,13 +118,19 @@ function checkEnvironment(): DiagnosticResult[] {
  */
 async function monitorProcess(
   pid: string,
-  timeout: number = 30000
+  timeout: number = 30000,
 ): Promise<void> {
   logger.info(`Monitoring process ${pid} for ${timeout / 1000}s...`);
 
   const startTime = Date.now();
   while (Date.now() - startTime < timeout) {
-    const check = await runCommand(["ps", "-p", pid, "-o", "pid,state,rss,pcpu,time"]);
+    const check = await runCommand([
+      "ps",
+      "-p",
+      pid,
+      "-o",
+      "pid,state,rss,pcpu,time",
+    ]);
 
     if (!check.success) {
       logger.error("Process terminated");
@@ -227,14 +233,14 @@ async function launchWithDiagnostics(): Promise<void> {
  */
 function performFiveWhyAnalysis(
   analyzer: FiveWhyAnalyzer,
-  results: DiagnosticResult[]
+  results: DiagnosticResult[],
 ): void {
   const critical = results.filter((r) => r.severity === "critical");
 
   if (critical.length === 0) {
     analyzer.addWhy(
       "Why did DaVinci crash?",
-      "No critical issues found in diagnostics"
+      "No critical issues found in diagnostics",
     );
     analyzer.setRootCause("Unknown - check application logs");
     return;
@@ -246,7 +252,7 @@ function performFiveWhyAnalysis(
 
   analyzer.addWhy(
     "Why did DaVinci crash?",
-    mainIssue.message
+    mainIssue.message,
   );
 
   // Categorize and dig deeper
@@ -254,30 +260,30 @@ function performFiveWhyAnalysis(
     case "gpu":
       analyzer.addWhy(
         "Why is there a GPU issue?",
-        "Driver or hardware problem"
+        "Driver or hardware problem",
       );
       analyzer.setRootCause(
-        "GPU driver needs update or GPU hardware incompatible"
+        "GPU driver needs update or GPU hardware incompatible",
       );
       break;
 
     case "libs":
       analyzer.addWhy(
         "Why are libraries missing/conflicting?",
-        "System libraries incompatible with bundled libraries"
+        "System libraries incompatible with bundled libraries",
       );
       analyzer.setRootCause(
-        "Remove conflicting bundled libraries and use system libraries"
+        "Remove conflicting bundled libraries and use system libraries",
       );
       break;
 
     case "memory":
       analyzer.addWhy(
         "Why is memory insufficient?",
-        "System doesn't meet DaVinci's requirements"
+        "System doesn't meet DaVinci's requirements",
       );
       analyzer.setRootCause(
-        "Need more RAM or need to close other applications"
+        "Need more RAM or need to close other applications",
       );
       break;
 

@@ -112,7 +112,7 @@ class SystemInfoCollector {
         info["uptimeSeconds"] as number,
         info["bootTime"] as string,
         info["timezone"] as string,
-      ]
+      ],
     );
   }
 
@@ -128,7 +128,7 @@ class SystemInfoCollector {
         info["currentFreqMhz"] as number,
         info["maxFreqMhz"] as number,
         info["usagePercent"] as number,
-      ]
+      ],
     );
   }
 
@@ -144,7 +144,7 @@ class SystemInfoCollector {
         info["usagePercent"] as number,
         info["swapTotalMb"] as number,
         info["swapUsedMb"] as number,
-      ]
+      ],
     );
   }
 
@@ -162,7 +162,7 @@ class SystemInfoCollector {
           disk["usedGb"] as number,
           disk["availableGb"] as number,
           disk["usagePercent"] as number,
-        ]
+        ],
       );
     }
   }
@@ -181,7 +181,7 @@ class SystemInfoCollector {
           iface["speedMbps"] as number,
           iface["rxBytes"] as number,
           iface["txBytes"] as number,
-        ]
+        ],
       );
     }
   }
@@ -200,7 +200,7 @@ class SystemInfoCollector {
           gpu["memoryUsedMb"] as number,
           gpu["temperatureC"] as number,
           gpu["utilizationPercent"] as number,
-        ]
+        ],
       );
     }
   }
@@ -218,7 +218,7 @@ class SystemInfoCollector {
           service["loadState"] as string,
           service["activeState"] as string,
           service["subState"] as string,
-        ]
+        ],
       );
     }
   }
@@ -246,7 +246,7 @@ class SystemInfoCollector {
     }
 
     logger.info(
-      `Cleaned up data older than ${this.config.retentionDays} days`
+      `Cleaned up data older than ${this.config.retentionDays} days`,
     );
   }
 
@@ -260,7 +260,7 @@ class SystemInfoCollector {
 
     // Get latest system info
     const sysInfo = this.db.query(
-      "SELECT * FROM system_info ORDER BY timestamp DESC LIMIT 1"
+      "SELECT * FROM system_info ORDER BY timestamp DESC LIMIT 1",
     );
 
     if (sysInfo.length > 0) {
@@ -275,7 +275,7 @@ class SystemInfoCollector {
 
     // Get latest CPU info
     const cpuInfo = this.db.query(
-      "SELECT * FROM cpu_info ORDER BY timestamp DESC LIMIT 1"
+      "SELECT * FROM cpu_info ORDER BY timestamp DESC LIMIT 1",
     );
 
     if (cpuInfo.length > 0) {
@@ -289,7 +289,7 @@ class SystemInfoCollector {
 
     // Get latest memory info
     const memInfo = this.db.query(
-      "SELECT * FROM memory_info ORDER BY timestamp DESC LIMIT 1"
+      "SELECT * FROM memory_info ORDER BY timestamp DESC LIMIT 1",
     );
 
     if (memInfo.length > 0) {

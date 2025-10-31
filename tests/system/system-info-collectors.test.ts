@@ -127,10 +127,10 @@ Deno.test("initDatabase - should create all required tables", () => {
 
   // Verify tables exist
   const tables = db.query<[string]>(
-    "SELECT name FROM sqlite_master WHERE type='table'"
+    "SELECT name FROM sqlite_master WHERE type='table'",
   );
 
-  const tableNames = tables.map(row => row[0]);
+  const tableNames = tables.map((row) => row[0]);
 
   assertEquals(tableNames.includes("system_info"), true);
   assertEquals(tableNames.includes("cpu_info"), true);
@@ -153,7 +153,7 @@ Deno.test("initDatabase - should be idempotent", () => {
 
   // Tables should still exist and be queryable
   const tables = db.query<[string]>(
-    "SELECT name FROM sqlite_master WHERE type='table'"
+    "SELECT name FROM sqlite_master WHERE type='table'",
   );
 
   assertEquals(tables.length >= 7, true);

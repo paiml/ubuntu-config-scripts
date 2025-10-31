@@ -23,12 +23,21 @@ export async function collectNetworkInfo(): Promise<
         const ipAddress = parts[2] ?? "";
 
         // Get MAC address
-        const macResult = await runCommand(["cat", `/sys/class/net/${name}/address`]);
+        const macResult = await runCommand([
+          "cat",
+          `/sys/class/net/${name}/address`,
+        ]);
         const macAddress = macResult.success ? macResult.stdout.trim() : "";
 
         // Get stats
-        const rxResult = await runCommand(["cat", `/sys/class/net/${name}/statistics/rx_bytes`]);
-        const txResult = await runCommand(["cat", `/sys/class/net/${name}/statistics/tx_bytes`]);
+        const rxResult = await runCommand([
+          "cat",
+          `/sys/class/net/${name}/statistics/rx_bytes`,
+        ]);
+        const txResult = await runCommand([
+          "cat",
+          `/sys/class/net/${name}/statistics/tx_bytes`,
+        ]);
 
         const rxBytes = rxResult.success ? parseInt(rxResult.stdout.trim()) : 0;
         const txBytes = txResult.success ? parseInt(txResult.stdout.trim()) : 0;

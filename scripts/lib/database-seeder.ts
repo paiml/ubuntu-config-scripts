@@ -185,7 +185,7 @@ export class DatabaseSeeder {
             embeddingTexts[i] || "",
             embeddingBlob,
             embedding.tokens,
-          ]
+          ],
         );
 
         result.inserted++;
@@ -196,7 +196,7 @@ export class DatabaseSeeder {
       } catch (error) {
         const err = error as Error;
         result.errors.push(
-          `Failed to insert ${metadata.path}: ${err.message}`
+          `Failed to insert ${metadata.path}: ${err.message}`,
         );
         result.failed++;
       }
@@ -214,7 +214,7 @@ export class DatabaseSeeder {
         COUNT(*) as total_scripts,
         COUNT(DISTINCT category) as total_categories,
         AVG(tokens) as avg_tokens
-       FROM scripts`
+       FROM scripts`,
     );
 
     return results[0] || {

@@ -1,18 +1,23 @@
-import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
+import {
+  assertEquals,
+  assertExists,
+} from "https://deno.land/std@0.208.0/assert/mod.ts";
 import fc from "https://cdn.skypack.dev/fast-check@3.13.2";
 import {
+  detectUSBDisplays,
+  generateXrandrCommand,
   MonitorConfig,
   parseXrandrOutput,
   validateDisplayConfig,
-  generateXrandrCommand,
-  detectUSBDisplays,
 } from "../../scripts/system/configure-usb-monitor.ts";
 
 Deno.test("parseXrandrOutput should extract display information", () => {
   fc.assert(
     fc.property(
       fc.record({
-        name: fc.string({ minLength: 1, maxLength: 20 }).filter((s: string) => s.trim().length > 0 && !/\s/.test(s.trim())),
+        name: fc.string({ minLength: 1, maxLength: 20 }).filter((s: string) =>
+          s.trim().length > 0 && !/\s/.test(s.trim())
+        ),
         connected: fc.boolean(),
         primary: fc.boolean(),
         width: fc.integer({ min: 640, max: 3840 }),
@@ -20,7 +25,9 @@ Deno.test("parseXrandrOutput should extract display information", () => {
         refreshRate: fc.float({ min: 30, max: 144, noNaN: true }),
       }),
       (display: any) => {
-        const xrandrLine = `${display.name} ${display.connected ? "connected" : "disconnected"} ${
+        const xrandrLine = `${display.name} ${
+          display.connected ? "connected" : "disconnected"
+        } ${
           display.primary ? "primary" : ""
         } ${display.width}x${display.height}+0+0`;
 
@@ -32,9 +39,9 @@ Deno.test("parseXrandrOutput should extract display information", () => {
           assertEquals(parsed.connected, display.connected);
           assertEquals(parsed.primary, display.primary);
         }
-      }
+      },
     ),
-    { numRuns: 100 }
+    { numRuns: 100 },
   );
 });
 
@@ -42,7 +49,9 @@ Deno.test("validateDisplayConfig should validate monitor configurations", () => 
   fc.assert(
     fc.property(
       fc.record({
-        name: fc.string({ minLength: 1, maxLength: 20 }).filter((s: string) => s.trim().length > 0 && !/\s/.test(s.trim())),
+        name: fc.string({ minLength: 1, maxLength: 20 }).filter((s: string) =>
+          s.trim().length > 0 && !/\s/.test(s.trim())
+        ),
         enabled: fc.boolean(),
         width: fc.integer({ min: 640, max: 3840 }),
         height: fc.integer({ min: 480, max: 2160 }),
@@ -56,15 +65,16 @@ Deno.test("validateDisplayConfig should validate monitor configurations", () => 
         const isValid = validateDisplayConfig(config);
 
         const hasValidDimensions = config.width >= 640 && config.height >= 480;
-        const hasValidRefreshRate = config.refreshRate >= 30 && config.refreshRate <= 144;
+        const hasValidRefreshRate = config.refreshRate >= 30 &&
+          config.refreshRate <= 144;
         const hasValidName = config.name.length > 0;
 
         if (hasValidDimensions && hasValidRefreshRate && hasValidName) {
           assertEquals(isValid, true);
         }
-      }
+      },
     ),
-    { numRuns: 100 }
+    { numRuns: 100 },
   );
 });
 
@@ -72,7 +82,9 @@ Deno.test("generateXrandrCommand should create valid xrandr commands", () => {
   fc.assert(
     fc.property(
       fc.record({
-        name: fc.string({ minLength: 1, maxLength: 20 }).filter((s: string) => !/\s/.test(s)),
+        name: fc.string({ minLength: 1, maxLength: 20 }).filter((s: string) =>
+          !/\s/.test(s)
+        ),
         enabled: fc.boolean(),
         width: fc.integer({ min: 640, max: 3840 }),
         height: fc.integer({ min: 480, max: 2160 }),
@@ -87,7 +99,7 @@ Deno.test("generateXrandrCommand should create valid xrandr commands", () => {
 
         assertEquals(command[0], "xrandr");
 
-        const hasDisplayName = command.some(arg => arg.includes(config.name));
+        const hasDisplayName = command.some((arg) => arg.includes(config.name));
         assertEquals(hasDisplayName, true);
 
         if (config.enabled) {
@@ -99,20 +111,23 @@ Deno.test("generateXrandrCommand should create valid xrandr commands", () => {
           const hasOffArg = command.includes("--off");
           assertEquals(hasOffArg, true);
         }
-      }
+      },
     ),
-    { numRuns: 100 }
+    { numRuns: 100 },
   );
 });
 
 Deno.test("detectUSBDisplays should identify DisplayLink devices", () => {
   fc.assert(
     fc.property(
-      fc.array(fc.record({
-        vendorId: fc.hexaString({ minLength: 4, maxLength: 4 }),
-        productId: fc.hexaString({ minLength: 4, maxLength: 4 }),
-        description: fc.string({ minLength: 1, maxLength: 50 }),
-      }), { minLength: 0, maxLength: 5 }),
+      fc.array(
+        fc.record({
+          vendorId: fc.hexaString({ minLength: 4, maxLength: 4 }),
+          productId: fc.hexaString({ minLength: 4, maxLength: 4 }),
+          description: fc.string({ minLength: 1, maxLength: 50 }),
+        }),
+        { minLength: 0, maxLength: 5 },
+      ),
       (usbDevices: any) => {
         const lsusbOutput = usbDevices.map((device: any) =>
           `Bus 001 Device 001: ID ${device.vendorId}:${device.productId} ${device.description}`
@@ -128,9 +143,9 @@ Deno.test("detectUSBDisplays should identify DisplayLink devices", () => {
         );
 
         assertEquals(displays.length >= displayLinkDevices.length, true);
-      }
+      },
     ),
-    { numRuns: 100 }
+    { numRuns: 100 },
   );
 });
 
@@ -149,7 +164,9 @@ Deno.test("monitor configuration should handle edge cases", () => {
 
   assertEquals(validateDisplayConfig(invalidConfig), false);
 
-  const disconnectedDisplay = parseXrandrOutput("DP-1 disconnected (normal left inverted right x axis y axis)");
+  const disconnectedDisplay = parseXrandrOutput(
+    "DP-1 disconnected (normal left inverted right x axis y axis)",
+  );
   assertExists(disconnectedDisplay);
   assertEquals(disconnectedDisplay.connected, false);
 
@@ -177,17 +194,21 @@ Deno.test("monitor configuration should handle edge cases", () => {
   assertEquals(disabledCommand.includes("--off"), true);
 
   // Test connected display with primary
-  const primaryDisplay = parseXrandrOutput("DP-2 connected primary 1920x1080+0+0");
+  const primaryDisplay = parseXrandrOutput(
+    "DP-2 connected primary 1920x1080+0+0",
+  );
   assertExists(primaryDisplay);
   assertEquals(primaryDisplay.primary, true);
 
   // Test USB display detection with no DisplayLink devices
-  const noDisplaysOutput = "Bus 001 Device 001: ID 1234:5678 Some Random Device";
+  const noDisplaysOutput =
+    "Bus 001 Device 001: ID 1234:5678 Some Random Device";
   const noDisplays = detectUSBDisplays(noDisplaysOutput);
   assertEquals(noDisplays.length, 0);
 
   // Test USB display detection with DisplayLink device
-  const displayLinkOutput = "Bus 001 Device 001: ID 17e9:1234 DisplayLink Device";
+  const displayLinkOutput =
+    "Bus 001 Device 001: ID 17e9:1234 DisplayLink Device";
   const displayLinkDevices = detectUSBDisplays(displayLinkOutput);
   assertEquals(displayLinkDevices.length, 1);
   assertEquals(displayLinkDevices[0]?.isDisplayLink, true);

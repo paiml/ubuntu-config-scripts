@@ -12,12 +12,15 @@ async function enableMicrodiaWebcam() {
   // Install required packages
   logger.info("Installing video utilities and drivers...");
   await runCommand(["apt-get", "update"]);
-  await runCommand(["apt-get", "install", "-y",
+  await runCommand([
+    "apt-get",
+    "install",
+    "-y",
     "v4l-utils",
     "uvcdynctrl",
     "cheese",
     "guvcview",
-    "linux-modules-extra-" + (await runCommand(["uname", "-r"])).stdout.trim()
+    "linux-modules-extra-" + (await runCommand(["uname", "-r"])).stdout.trim(),
   ]);
 
   // Load USB Video Class driver
@@ -28,9 +31,13 @@ async function enableMicrodiaWebcam() {
   logger.info("Resetting Microdia webcam USB device...");
 
   // Find the device path
-  const devicesResult = await runCommand(["ls", "-la", "/sys/bus/usb/devices/"]);
+  const devicesResult = await runCommand([
+    "ls",
+    "-la",
+    "/sys/bus/usb/devices/",
+  ]);
   if (devicesResult.success) {
-    const lines = devicesResult.stdout.split('\n');
+    const lines = devicesResult.stdout.split("\n");
     for (const line of lines) {
       if (line.includes("0c45:1a0d") || line.includes("5-6")) { // Bus 5 Device 6
         const match = line.match(/\/([0-9]+-[0-9.]+)$/);
@@ -40,9 +47,15 @@ async function enableMicrodiaWebcam() {
 
           // Unbind and rebind the device
           try {
-            await Deno.writeTextFile(`/sys/bus/usb/drivers/usb/unbind`, devicePath);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            await Deno.writeTextFile(`/sys/bus/usb/drivers/usb/bind`, devicePath);
+            await Deno.writeTextFile(
+              `/sys/bus/usb/drivers/usb/unbind`,
+              devicePath,
+            );
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await Deno.writeTextFile(
+              `/sys/bus/usb/drivers/usb/bind`,
+              devicePath,
+            );
           } catch (error) {
             logger.warn(`Could not reset device: ${error}`);
           }
@@ -57,7 +70,7 @@ async function enableMicrodiaWebcam() {
   await runCommand(["modprobe", "uvcvideo", "quirks=128"]);
 
   // Wait a moment for device to initialize
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   // Check for video devices
   logger.info("Checking for video devices...");
@@ -108,23 +121,22 @@ async function enableMicrodiaWebcam() {
     logger.info("  - cheese (simple webcam app)");
     logger.info("  - guvcview (advanced webcam app)");
     logger.info("  - Or in your browser at https://webcamtests.com");
-
   } else {
     logger.error("No video devices created. Troubleshooting steps:");
 
     // Check dmesg for errors
     const dmesgResult = await runCommand(["dmesg"]);
     if (dmesgResult.success) {
-      const relevantLines = dmesgResult.stdout.split('\n').filter(line =>
-        line.toLowerCase().includes('0c45:1a0d') ||
-        line.toLowerCase().includes('microdia') ||
-        line.toLowerCase().includes('uvcvideo') ||
-        line.toLowerCase().includes('video')
+      const relevantLines = dmesgResult.stdout.split("\n").filter((line) =>
+        line.toLowerCase().includes("0c45:1a0d") ||
+        line.toLowerCase().includes("microdia") ||
+        line.toLowerCase().includes("uvcvideo") ||
+        line.toLowerCase().includes("video")
       ).slice(-20);
 
       if (relevantLines.length > 0) {
         logger.info("Recent kernel messages:");
-        relevantLines.forEach(line => console.log(line));
+        relevantLines.forEach((line) => console.log(line));
       }
     }
 

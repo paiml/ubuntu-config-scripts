@@ -1,7 +1,12 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read --allow-env
 
 import { logger } from "../lib/logger.ts";
-import { runCommand, requireCommand, parseArgs, confirm } from "../lib/common.ts";
+import {
+  confirm,
+  parseArgs,
+  requireCommand,
+  runCommand,
+} from "../lib/common.ts";
 import { z } from "../lib/schema.ts";
 
 export interface DisplayInfo {
@@ -52,7 +57,9 @@ export function parseXrandrOutput(output: string): DisplayInfo | null {
   const line = output.trim();
 
   // Handle connected displays with resolution
-  const connectedMatch = line.match(/^(\S+)\s+(connected)(\s+primary)?.*?(\d+)x(\d+)\+(\d+)\+(\d+)/);
+  const connectedMatch = line.match(
+    /^(\S+)\s+(connected)(\s+primary)?.*?(\d+)x(\d+)\+(\d+)\+(\d+)/,
+  );
   if (connectedMatch) {
     const [, name, status, primary, width, height, x, y] = connectedMatch;
     return {
@@ -78,7 +85,7 @@ export function parseXrandrOutput(output: string): DisplayInfo | null {
 
   // Handle edge cases like names with spaces or invalid formats
   if (line.includes("connected") || line.includes("disconnected")) {
-    const parts = line.split(/\s+/).filter(p => p.length > 0);
+    const parts = line.split(/\s+/).filter((p) => p.length > 0);
     if (parts.length >= 2 && parts[0]!.trim().length > 0) {
       return {
         name: parts[0]!.trim(),
@@ -95,10 +102,10 @@ export function validateDisplayConfig(config: MonitorConfig): boolean {
   try {
     MonitorConfigSchema.parse(config);
     return config.name.length > 0 &&
-           config.width >= 640 &&
-           config.height >= 480 &&
-           config.refreshRate >= 30 &&
-           config.refreshRate <= 144;
+      config.width >= 640 &&
+      config.height >= 480 &&
+      config.refreshRate >= 30 &&
+      config.refreshRate <= 144;
   } catch {
     return false;
   }
@@ -109,9 +116,12 @@ export function generateXrandrCommand(config: MonitorConfig): string[] {
 
   if (config.enabled) {
     cmd.push(
-      "--mode", `${config.width}x${config.height}`,
-      "--rate", config.refreshRate.toString(),
-      "--pos", `${config.position.x}x${config.position.y}`
+      "--mode",
+      `${config.width}x${config.height}`,
+      "--rate",
+      config.refreshRate.toString(),
+      "--pos",
+      `${config.position.x}x${config.position.y}`,
     );
   } else {
     cmd.push("--off");
@@ -122,23 +132,26 @@ export function generateXrandrCommand(config: MonitorConfig): string[] {
 
 export function detectUSBDisplays(lsusbOutput: string): USBDisplay[] {
   const displays: USBDisplay[] = [];
-  const lines = lsusbOutput.split('\n');
+  const lines = lsusbOutput.split("\n");
 
   for (const line of lines) {
-    const match = line.match(/Bus\s+\d+\s+Device\s+\d+:\s+ID\s+([0-9a-f]{4}):([0-9a-f]{4})\s+(.*)/i);
+    const match = line.match(
+      /Bus\s+\d+\s+Device\s+\d+:\s+ID\s+([0-9a-f]{4}):([0-9a-f]{4})\s+(.*)/i,
+    );
     if (match) {
       const [, vendorId, productId, description] = match;
 
-      const isDisplayLink = description!.toLowerCase().includes('displaylink') ||
-                           description!.toLowerCase().includes('zenscreen') ||
-                           description!.toLowerCase().includes('mb168') ||
-                           description!.toLowerCase().includes('mb169') ||
-                           description!.toLowerCase().includes('billboard') || // USB-C alternate mode
-                           vendorId === '17e9' || // DisplayLink vendor ID
-                           vendorId === '1043' || // ASUS vendor ID (some models)
-                           vendorId === '0bda';    // Realtek (Billboard Device)
+      const isDisplayLink =
+        description!.toLowerCase().includes("displaylink") ||
+        description!.toLowerCase().includes("zenscreen") ||
+        description!.toLowerCase().includes("mb168") ||
+        description!.toLowerCase().includes("mb169") ||
+        description!.toLowerCase().includes("billboard") || // USB-C alternate mode
+        vendorId === "17e9" || // DisplayLink vendor ID
+        vendorId === "1043" || // ASUS vendor ID (some models)
+        vendorId === "0bda"; // Realtek (Billboard Device)
 
-      if (isDisplayLink || description!.toLowerCase().includes('display')) {
+      if (isDisplayLink || description!.toLowerCase().includes("display")) {
         displays.push({
           vendorId: vendorId!,
           productId: productId!,
@@ -161,7 +174,7 @@ async function listDisplays(): Promise<DisplayInfo[]> {
   }
 
   const displays: DisplayInfo[] = [];
-  const lines = result.stdout.split('\n');
+  const lines = result.stdout.split("\n");
 
   for (const line of lines) {
     const display = parseXrandrOutput(line);
@@ -196,7 +209,11 @@ async function installDisplayLinkDrivers(): Promise<void> {
 
   // Install EVDI kernel module
   const installResult = await runCommand([
-    "sudo", "apt", "install", "-y", "evdi-dkms"
+    "sudo",
+    "apt",
+    "install",
+    "-y",
+    "evdi-dkms",
   ]);
 
   if (!installResult.success) {
@@ -221,7 +238,7 @@ async function loadKernelModules(): Promise<void> {
   }
 
   // Wait for modules to initialize
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 }
 
 async function configureZenScreen(): Promise<void> {
@@ -231,7 +248,7 @@ async function configureZenScreen(): Promise<void> {
   const displays = await listDisplays();
 
   // Look for newly detected displays after driver installation
-  const usbDisplays = displays.filter(d =>
+  const usbDisplays = displays.filter((d) =>
     d.name.includes("DVI") ||
     d.name.includes("VGA") ||
     d.name.includes("HDMI") ||
@@ -255,7 +272,7 @@ async function configureZenScreen(): Promise<void> {
 
     const shouldConfigure = await confirm(
       `Configure display ${display.name}?`,
-      true
+      true,
     );
 
     if (shouldConfigure) {
@@ -337,7 +354,9 @@ Examples:
     // Step 1: Detect USB displays
     const usbDisplays = await detectUSBMonitors();
     if (usbDisplays.length === 0) {
-      logger.warn("No USB displays detected. Please ensure your ZenScreen is connected.");
+      logger.warn(
+        "No USB displays detected. Please ensure your ZenScreen is connected.",
+      );
       return;
     }
 
@@ -345,11 +364,11 @@ Examples:
     console.table(usbDisplays);
 
     // Step 2: Install drivers if needed
-    const needsDrivers = usbDisplays.some(d => d.isDisplayLink);
+    const needsDrivers = usbDisplays.some((d) => d.isDisplayLink);
     if (needsDrivers) {
       const installDrivers = args["auto"] || await confirm(
         "Install DisplayLink drivers?",
-        true
+        true,
       );
 
       if (installDrivers) {
@@ -362,7 +381,6 @@ Examples:
     await configureZenScreen();
 
     logger.info("USB monitor configuration complete!");
-
   } catch (error) {
     logger.error(`Configuration failed: ${error}`);
     Deno.exit(1);

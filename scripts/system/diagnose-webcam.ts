@@ -12,14 +12,14 @@ async function diagnoseWebcam() {
   // 1. Check lspci for camera controllers
   const lspciResult = await runCommand(["lspci"]);
   if (lspciResult.success) {
-    const cameraLines = lspciResult.stdout.split('\n').filter(line =>
-      line.toLowerCase().includes('camera') ||
-      line.toLowerCase().includes('multimedia') ||
-      line.toLowerCase().includes('video')
+    const cameraLines = lspciResult.stdout.split("\n").filter((line) =>
+      line.toLowerCase().includes("camera") ||
+      line.toLowerCase().includes("multimedia") ||
+      line.toLowerCase().includes("video")
     );
     if (cameraLines.length > 0) {
       logger.info("Found potential camera controllers in PCI:");
-      cameraLines.forEach(line => console.log(`  - ${line}`));
+      cameraLines.forEach((line) => console.log(`  - ${line}`));
     }
   }
 
@@ -27,7 +27,7 @@ async function diagnoseWebcam() {
   logger.info("\nChecking USB devices in detail...");
   const lsusbVerbose = await runCommand(["lsusb", "-v"]);
   if (lsusbVerbose.success) {
-    const lines = lsusbVerbose.stdout.split('\n');
+    const lines = lsusbVerbose.stdout.split("\n");
     let inVideoDevice = false;
     let deviceInfo = "";
 
@@ -39,9 +39,11 @@ async function diagnoseWebcam() {
         }
         deviceInfo = line + "\n";
         inVideoDevice = false;
-      } else if (line.toLowerCase().includes("video") ||
-                 line.toLowerCase().includes("camera") ||
-                 line.toLowerCase().includes("webcam")) {
+      } else if (
+        line.toLowerCase().includes("video") ||
+        line.toLowerCase().includes("camera") ||
+        line.toLowerCase().includes("webcam")
+      ) {
         inVideoDevice = true;
         deviceInfo += line + "\n";
       } else if (inVideoDevice) {
@@ -54,12 +56,12 @@ async function diagnoseWebcam() {
   logger.info("\nChecking loaded kernel modules...");
   const lsmodResult = await runCommand(["lsmod"]);
   if (lsmodResult.success) {
-    const videoModules = lsmodResult.stdout.split('\n').filter(line =>
-      line.includes('video') || line.includes('uvc') || line.includes('camera')
+    const videoModules = lsmodResult.stdout.split("\n").filter((line) =>
+      line.includes("video") || line.includes("uvc") || line.includes("camera")
     );
     if (videoModules.length > 0) {
       logger.info("Video-related kernel modules:");
-      videoModules.forEach(module => console.log(`  - ${module}`));
+      videoModules.forEach((module) => console.log(`  - ${module}`));
     }
   }
 
@@ -67,12 +69,12 @@ async function diagnoseWebcam() {
   logger.info("\nChecking ACPI devices...");
   const acpiResult = await runCommand(["ls", "-la", "/sys/bus/acpi/devices/"]);
   if (acpiResult.success) {
-    const cameraDevices = acpiResult.stdout.split('\n').filter(line =>
-      line.toLowerCase().includes('cam') || line.toLowerCase().includes('video')
+    const cameraDevices = acpiResult.stdout.split("\n").filter((line) =>
+      line.toLowerCase().includes("cam") || line.toLowerCase().includes("video")
     );
     if (cameraDevices.length > 0) {
       logger.info("Found ACPI camera devices:");
-      cameraDevices.forEach(device => console.log(`  - ${device}`));
+      cameraDevices.forEach((device) => console.log(`  - ${device}`));
     }
   }
 
@@ -86,7 +88,7 @@ async function diagnoseWebcam() {
     }
     if (entries.length > 0) {
       logger.success("Found V4L devices:");
-      entries.forEach(entry => console.log(`  - ${entry}`));
+      entries.forEach((entry) => console.log(`  - ${entry}`));
     } else {
       logger.warn("No V4L devices found");
     }
@@ -111,18 +113,25 @@ async function diagnoseWebcam() {
   logger.info("   - Try Fn + F6, F7, F8, or F10 (varies by laptop)");
   logger.info("   - Look for a camera icon on function keys");
   logger.info("\n3. BIOS/UEFI settings:");
-  logger.info("   - Restart and enter BIOS (usually F2, F12, or Del at startup)");
+  logger.info(
+    "   - Restart and enter BIOS (usually F2, F12, or Del at startup)",
+  );
   logger.info("   - Look for 'Camera', 'Webcam', or 'Integrated Peripherals'");
   logger.info("   - Ensure camera is enabled");
   logger.info("\n4. Laptop model:");
   logger.info("   - What's your laptop model? Some have specific quirks");
 
   // Check system info
-  const dmidecodeResult = await runCommand(["sudo", "dmidecode", "-t", "system"]);
+  const dmidecodeResult = await runCommand([
+    "sudo",
+    "dmidecode",
+    "-t",
+    "system",
+  ]);
   if (dmidecodeResult.success) {
-    const lines = dmidecodeResult.stdout.split('\n');
-    const manufacturer = lines.find(l => l.includes("Manufacturer:"));
-    const product = lines.find(l => l.includes("Product Name:"));
+    const lines = dmidecodeResult.stdout.split("\n");
+    const manufacturer = lines.find((l) => l.includes("Manufacturer:"));
+    const product = lines.find((l) => l.includes("Product Name:"));
     if (manufacturer || product) {
       logger.info("\nSystem information:");
       if (manufacturer) console.log(`  ${manufacturer.trim()}`);

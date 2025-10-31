@@ -41,7 +41,7 @@ export const OBSConfigSchema = z.object({
     fileFormat: z.enum(["mkv", "mp4", "mov", "flv"]).default("mov"),
     filenameFormat: z.string().default("%CCYY-%MM-%DD %hh-%mm-%ss"),
     encoder: z.enum(["same_as_stream", "obs_x264", "ffmpeg_nvenc"]).default(
-      "ffmpeg_nvenc"
+      "ffmpeg_nvenc",
     ),
     quality: z.enum(["lossless", "high", "medium", "low"]).default("high"),
     crf: z.number().int().min(0).max(51).default(16),

@@ -1,10 +1,5 @@
-import {
-  assertEquals,
-} from "../deps.ts";
-import {
-  parseArgs,
-  formatStatistics,
-} from "../scripts/seed.ts";
+import { assertEquals } from "../deps.ts";
+import { formatStatistics, parseArgs } from "../scripts/seed.ts";
 
 // Unit tests for seed CLI
 // RED phase - these tests should FAIL initially

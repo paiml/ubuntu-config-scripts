@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-  assertThrows,
-} from "../../deps.ts";
+import { assertEquals, assertThrows } from "../../deps.ts";
 import { TursoClient, TursoConfig } from "../../scripts/lib/turso-client.ts";
 
 // Unit tests for Turso database client
@@ -46,7 +43,7 @@ Deno.test("TursoClient - constructor throws on empty URL", () => {
       });
     },
     Error,
-    "Invalid URL"
+    "Invalid URL",
   );
 });
 
@@ -59,7 +56,7 @@ Deno.test("TursoClient - constructor throws on whitespace-only URL", () => {
       });
     },
     Error,
-    "Invalid URL"
+    "Invalid URL",
   );
 });
 
@@ -72,7 +69,7 @@ Deno.test("TursoClient - constructor throws on missing auth token", () => {
       });
     },
     Error,
-    "Invalid auth token"
+    "Invalid auth token",
   );
 });
 
@@ -85,7 +82,7 @@ Deno.test("TursoClient - constructor throws on whitespace-only token", () => {
       });
     },
     Error,
-    "Invalid auth token"
+    "Invalid auth token",
   );
 });
 
@@ -159,7 +156,7 @@ Deno.test("TursoClient - constructor validates both URL and token", () => {
       () => {
         new TursoClient(config);
       },
-      Error
+      Error,
     );
   }
 });

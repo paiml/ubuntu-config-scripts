@@ -8,7 +8,7 @@
  * - Category and similarity filtering
  */
 
-import { ScriptRepository, ScriptRecord } from "./script-repository.ts";
+import { ScriptRecord, ScriptRepository } from "./script-repository.ts";
 import { EmbeddingGenerator } from "./embedding-generator.ts";
 
 export interface SearchConfig {
@@ -81,7 +81,7 @@ export class VectorSearch {
    */
   async search(
     query: string,
-    options: SearchOptions
+    options: SearchOptions,
   ): Promise<SearchResult[]> {
     // Validate inputs
     if (!query || query.trim() === "") {
@@ -122,11 +122,14 @@ export class VectorSearch {
 
       const similarity = this.cosineSimilarity(
         queryEmbedding,
-        script.embedding
+        script.embedding,
       );
 
       // Apply minimum similarity threshold if specified
-      if (options.minSimilarity !== undefined && similarity < options.minSimilarity) {
+      if (
+        options.minSimilarity !== undefined &&
+        similarity < options.minSimilarity
+      ) {
         continue;
       }
 

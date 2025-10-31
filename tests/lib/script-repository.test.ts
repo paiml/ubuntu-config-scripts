@@ -1,8 +1,4 @@
-import {
-  assertEquals,
-  assertExists,
-  assertRejects,
-} from "../../deps.ts";
+import { assertEquals, assertExists, assertRejects } from "../../deps.ts";
 import { ScriptRepository } from "../../scripts/lib/script-repository.ts";
 import { TursoClient } from "../../scripts/lib/turso-client.ts";
 
@@ -38,7 +34,7 @@ Deno.test("ScriptRepository - constructor throws on missing client", () => {
       new ScriptRepository(null as unknown as TursoClient);
     },
     Error,
-    "client is required"
+    "client is required",
   );
 });
 
@@ -79,19 +75,19 @@ Deno.test("ScriptRepository - create validates required fields", async () => {
   await assertRejects(
     async () => await repo.create({ ...testScript, name: "" }),
     Error,
-    "name is required"
+    "name is required",
   );
 
   await assertRejects(
     async () => await repo.create({ ...testScript, path: "" }),
     Error,
-    "path is required"
+    "path is required",
   );
 
   await assertRejects(
     async () => await repo.create({ ...testScript, category: "" }),
     Error,
-    "category is required"
+    "category is required",
   );
 });
 
@@ -207,13 +203,13 @@ Deno.test("ScriptRepository - update validates ID", async () => {
   await assertRejects(
     async () => await repo.update(0, { description: "test" }),
     Error,
-    "Invalid ID"
+    "Invalid ID",
   );
 
   await assertRejects(
     async () => await repo.update(-1, { description: "test" }),
     Error,
-    "Invalid ID"
+    "Invalid ID",
   );
 });
 
@@ -248,7 +244,7 @@ Deno.test("ScriptRepository - delete validates ID", async () => {
   await assertRejects(
     async () => await repo.delete(0),
     Error,
-    "Invalid ID"
+    "Invalid ID",
   );
 });
 
@@ -263,8 +259,32 @@ Deno.test("ScriptRepository - list returns paginated results", async () => {
   // Mock query
   client.query = async <T>(): Promise<T[]> => {
     return [
-      { id: 1, name: "script1", path: "/s1.ts", category: "test", description: "", usage: "", tags: "[]", dependencies: "[]", embedding_text: "", embedding: "[]", tokens: 0 },
-      { id: 2, name: "script2", path: "/s2.ts", category: "test", description: "", usage: "", tags: "[]", dependencies: "[]", embedding_text: "", embedding: "[]", tokens: 0 },
+      {
+        id: 1,
+        name: "script1",
+        path: "/s1.ts",
+        category: "test",
+        description: "",
+        usage: "",
+        tags: "[]",
+        dependencies: "[]",
+        embedding_text: "",
+        embedding: "[]",
+        tokens: 0,
+      },
+      {
+        id: 2,
+        name: "script2",
+        path: "/s2.ts",
+        category: "test",
+        description: "",
+        usage: "",
+        tags: "[]",
+        dependencies: "[]",
+        embedding_text: "",
+        embedding: "[]",
+        tokens: 0,
+      },
     ] as T[];
   };
 

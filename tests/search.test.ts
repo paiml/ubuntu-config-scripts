@@ -1,12 +1,5 @@
-import {
-  assertEquals,
-  assertExists,
-} from "../deps.ts";
-import {
-  parseArgs,
-  loadConfig,
-  formatResults,
-} from "../scripts/search.ts";
+import { assertEquals, assertExists } from "../deps.ts";
+import { formatResults, loadConfig, parseArgs } from "../scripts/search.ts";
 import type { SearchResult } from "../scripts/lib/vector-search.ts";
 
 // Unit tests for search CLI

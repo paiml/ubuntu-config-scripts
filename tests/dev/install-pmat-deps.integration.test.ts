@@ -257,7 +257,10 @@ Deno.test(
 
     // If missing deps, should show combined command
     if (result.code !== 0) {
-      assertEquals(output.includes("&&") || output.includes("all at once"), true);
+      assertEquals(
+        output.includes("&&") || output.includes("all at once"),
+        true,
+      );
     }
   },
 );

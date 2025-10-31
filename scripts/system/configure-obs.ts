@@ -8,15 +8,11 @@
  */
 
 import { logger } from "../lib/logger.ts";
-import {
-  commandExists,
-  ensureDir,
-  runCommand,
-} from "../lib/common.ts";
+import { commandExists, ensureDir, runCommand } from "../lib/common.ts";
 import { parseArgs } from "jsr:@std/cli@^1.0.0";
 
 // Import configuration modules
-import { OBSConfigSchema, type OBSConfig } from "./obs-config/types.ts";
+import { type OBSConfig, OBSConfigSchema } from "./obs-config/types.ts";
 import {
   checkNvidiaSupport,
   checkVaapiSupport,
@@ -41,7 +37,12 @@ async function installOBS(): Promise<void> {
   }
 
   // Add PPA for latest version
-  await runCommand(["sudo", "add-apt-repository", "-y", "ppa:obsproject/obs-studio"]);
+  await runCommand([
+    "sudo",
+    "add-apt-repository",
+    "-y",
+    "ppa:obsproject/obs-studio",
+  ]);
   await runCommand(["sudo", "apt", "update"]);
 
   // Install OBS and plugins
@@ -51,7 +52,13 @@ async function installOBS(): Promise<void> {
     "v4l2loopback-dkms",
   ];
 
-  const result = await runCommand(["sudo", "apt", "install", "-y", ...packages]);
+  const result = await runCommand([
+    "sudo",
+    "apt",
+    "install",
+    "-y",
+    ...packages,
+  ]);
 
   if (result.success) {
     logger.info("✅ OBS Studio installed successfully");
@@ -65,7 +72,7 @@ async function installOBS(): Promise<void> {
  */
 async function createScreencastScene(
   sceneName: string,
-  _config: OBSConfig
+  _config: OBSConfig,
 ): Promise<void> {
   logger.info(`🎬 Creating scene: ${sceneName}`);
 
@@ -100,7 +107,7 @@ async function createScreencastScene(
 
   await Deno.writeTextFile(
     `${sceneCollectionPath}/${sceneName}.json`,
-    JSON.stringify(sceneCollection, null, 2)
+    JSON.stringify(sceneCollection, null, 2),
   );
 
   logger.info(`✅ Scene ${sceneName} created`);
@@ -137,7 +144,7 @@ async function configureHotkeys(config: OBSConfig): Promise<void> {
 
   await Deno.writeTextFile(
     hotkeyPath,
-    JSON.stringify({ ...basicConfig, ...hotkeys }, null, 2)
+    JSON.stringify({ ...basicConfig, ...hotkeys }, null, 2),
   );
 
   logger.info("✅ Hotkeys configured");
@@ -147,7 +154,7 @@ async function configureHotkeys(config: OBSConfig): Promise<void> {
  * Optimize for screencasting
  */
 async function optimizeForScreencasting(
-  config: OBSConfig
+  config: OBSConfig,
 ): Promise<void> {
   logger.info("⚙️  Optimizing for screencasting...");
 
@@ -247,7 +254,9 @@ export async function configureOBS(options?: {
   logger.info("1. Launch OBS Studio");
   logger.info("2. Select 'Screencasting' profile");
   logger.info("3. Review and adjust settings as needed");
-  logger.info(`4. Recordings will be saved to: ${config.recordingSettings.outputPath}`);
+  logger.info(
+    `4. Recordings will be saved to: ${config.recordingSettings.outputPath}`,
+  );
 }
 
 // CLI entry point

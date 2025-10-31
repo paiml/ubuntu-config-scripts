@@ -18,9 +18,9 @@ Deno.test("TursoClient - property: non-empty URL and token create valid client",
           // Some URLs might still be invalid for libsql
           return true;
         }
-      }
+      },
     ),
-    { numRuns: 1000 }
+    { numRuns: 1000 },
   );
 });
 
@@ -33,9 +33,9 @@ Deno.test("TursoClient - property: empty URL always throws", () => {
           new TursoClient({ url: "", authToken: token });
         });
         return true;
-      }
+      },
     ),
-    { numRuns: 1000 }
+    { numRuns: 1000 },
   );
 });
 
@@ -48,9 +48,9 @@ Deno.test("TursoClient - property: empty token always throws", () => {
           new TursoClient({ url: "http://example.com", authToken: "" });
         });
         return true;
-      }
+      },
     ),
-    { numRuns: 1000 }
+    { numRuns: 1000 },
   );
 });
 
@@ -65,9 +65,9 @@ Deno.test("TursoClient - property: whitespace-only URL always throws", () => {
           new TursoClient({ url: whitespaceUrl, authToken: token });
         });
         return true;
-      }
+      },
     ),
-    { numRuns: 1000 }
+    { numRuns: 1000 },
   );
 });
 
@@ -82,9 +82,9 @@ Deno.test("TursoClient - property: whitespace-only token always throws", () => {
           new TursoClient({ url, authToken: whitespaceToken });
         });
         return true;
-      }
+      },
     ),
-    { numRuns: 1000 }
+    { numRuns: 1000 },
   );
 });
 
@@ -101,9 +101,9 @@ Deno.test("TursoClient - property: isConnected is false before connect", () => {
           // Invalid config, skip
           return true;
         }
-      }
+      },
     ),
-    { numRuns: 1000 }
+    { numRuns: 1000 },
   );
 });
 
@@ -127,9 +127,9 @@ Deno.test("TursoClient - property: disconnect is idempotent", async () => {
           // Invalid config, skip
           return true;
         }
-      }
+      },
     ),
-    { numRuns: 100 } // Fewer runs for async
+    { numRuns: 100 }, // Fewer runs for async
   );
 });
 
@@ -150,16 +150,18 @@ Deno.test("TursoClient - property: valid URLs from various schemes", () => {
           // Some combinations might be invalid
           return true;
         }
-      }
+      },
     ),
-    { numRuns: 1000 }
+    { numRuns: 1000 },
   );
 });
 
 Deno.test("TursoClient - property: token formats are flexible", () => {
   fc.assert(
     fc.property(
-      fc.string({ minLength: 1, maxLength: 200 }).filter((s) => s.trim().length > 0),
+      fc.string({ minLength: 1, maxLength: 200 }).filter((s) =>
+        s.trim().length > 0
+      ),
       (token) => {
         try {
           const client = new TursoClient({
@@ -170,19 +172,22 @@ Deno.test("TursoClient - property: token formats are flexible", () => {
         } catch {
           return false;
         }
-      }
+      },
     ),
-    { numRuns: 1000 }
+    { numRuns: 1000 },
   );
 });
 
 Deno.test("TursoClient - property: multiple clients are independent", () => {
   fc.assert(
     fc.property(
-      fc.array(fc.tuple(fc.webUrl(), fc.string({ minLength: 1, maxLength: 50 })), {
-        minLength: 2,
-        maxLength: 5,
-      }),
+      fc.array(
+        fc.tuple(fc.webUrl(), fc.string({ minLength: 1, maxLength: 50 })),
+        {
+          minLength: 2,
+          maxLength: 5,
+        },
+      ),
       (configs) => {
         const clients = configs.map(([url, token]) => {
           try {
@@ -194,9 +199,9 @@ Deno.test("TursoClient - property: multiple clients are independent", () => {
 
         // All clients should be independent (not connected initially)
         return clients.every((client) => client && !client.isConnected());
-      }
+      },
     ),
-    { numRuns: 1000 }
+    { numRuns: 1000 },
   );
 });
 
@@ -223,8 +228,8 @@ Deno.test("TursoClient - property: constructor validation is deterministic", () 
         }
 
         return firstResult === secondResult;
-      }
+      },
     ),
-    { numRuns: 1000 }
+    { numRuns: 1000 },
   );
 });

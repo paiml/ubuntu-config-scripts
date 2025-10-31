@@ -37,7 +37,11 @@ export function generateReport(results: DiagnosticResult[]): void {
     const filtered = results.filter((r) => r.severity === severity);
     if (filtered.length === 0) continue;
 
-    logger.info(`\n${getSeverityIcon(severity)} ${severity.toUpperCase()} (${filtered.length}):`);
+    logger.info(
+      `\n${
+        getSeverityIcon(severity)
+      } ${severity.toUpperCase()} (${filtered.length}):`,
+    );
 
     for (const result of filtered) {
       logger.info(`  ${getCategoryEmoji(result.category)} ${result.message}`);
@@ -65,16 +69,16 @@ export function generateReport(results: DiagnosticResult[]): void {
   if (critical > 0) {
     logger.info("\n⚠️  Critical issues found! Please address them above.");
   } else if (warnings > 0) {
-    logger.info("\n⚠️  Some warnings found. System should work but may have issues.");
+    logger.info(
+      "\n⚠️  Some warnings found. System should work but may have issues.",
+    );
   } else {
     logger.info("\n✅ All checks passed! Your system is healthy.");
   }
 }
 
 export async function applyFixes(results: DiagnosticResult[]): Promise<void> {
-  const fixable = results.filter((r) =>
-    r.severity === "critical" && r.command
-  );
+  const fixable = results.filter((r) => r.severity === "critical" && r.command);
 
   if (fixable.length === 0) {
     logger.info("\nNo automatic fixes available.");

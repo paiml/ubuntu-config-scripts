@@ -9,7 +9,11 @@ export async function collectDiskInfo(): Promise<
 > {
   const disks: Array<Record<string, unknown>> = [];
 
-  const dfResult = await runCommand(["df", "-h", "--output=source,fstype,size,used,avail,pcent,target"]);
+  const dfResult = await runCommand([
+    "df",
+    "-h",
+    "--output=source,fstype,size,used,avail,pcent,target",
+  ]);
 
   if (dfResult.success) {
     const lines = dfResult.stdout.trim().split("\n").slice(1); // Skip header

@@ -11,7 +11,7 @@ const OBS_CONFIG_DIR = `${HOME}/.config/obs-studio`;
 
 export async function createOBSProfile(
   profileName: string,
-  config: OBSConfig
+  config: OBSConfig,
 ): Promise<void> {
   logger.info(`📝 Creating OBS profile: ${profileName}`);
 
@@ -26,14 +26,14 @@ export async function createOBSProfile(
   const streamEncoder = generateStreamEncoderConfig(config);
   await Deno.writeTextFile(
     `${profilePath}/streamEncoder.json`,
-    JSON.stringify(streamEncoder, null, 2)
+    JSON.stringify(streamEncoder, null, 2),
   );
 
   // Create recordEncoder.json
   const recordEncoder = generateRecordEncoderConfig(config);
   await Deno.writeTextFile(
     `${profilePath}/recordEncoder.json`,
-    JSON.stringify(recordEncoder, null, 2)
+    JSON.stringify(recordEncoder, null, 2),
   );
 
   logger.info(`✅ Profile ${profileName} created`);
@@ -64,7 +64,9 @@ ChannelSetup=${audio.channels}
 `;
 }
 
-function generateStreamEncoderConfig(config: OBSConfig): Record<string, unknown> {
+function generateStreamEncoderConfig(
+  config: OBSConfig,
+): Record<string, unknown> {
   const video = config.videoSettings;
 
   return {
@@ -79,7 +81,9 @@ function generateStreamEncoderConfig(config: OBSConfig): Record<string, unknown>
   };
 }
 
-function generateRecordEncoderConfig(config: OBSConfig): Record<string, unknown> {
+function generateRecordEncoderConfig(
+  config: OBSConfig,
+): Record<string, unknown> {
   const recording = config.recordingSettings;
 
   return {

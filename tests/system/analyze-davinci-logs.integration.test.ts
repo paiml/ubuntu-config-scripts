@@ -120,7 +120,10 @@ Deno.test(
       "scripts/system/analyze-davinci-logs.ts",
     );
 
-    assertEquals(content.includes("rm -rf ~/.local/share/DaVinciResolve"), true);
+    assertEquals(
+      content.includes("rm -rf ~/.local/share/DaVinciResolve"),
+      true,
+    );
     assertEquals(
       content.includes("rm -rf ~/.config/Blackmagic\\\\ Design"),
       true,

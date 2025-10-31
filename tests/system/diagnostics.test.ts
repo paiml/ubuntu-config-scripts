@@ -11,9 +11,9 @@ import {
   SystemInfoSchema,
 } from "../../scripts/system/diagnostics/system-info.ts";
 import {
-  generateReport,
   applyFixes,
   exportFixes,
+  generateReport,
 } from "../../scripts/system/diagnostics/reporting.ts";
 
 Deno.test("detectAudioServer - should detect audio server", async () => {

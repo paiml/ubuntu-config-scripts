@@ -52,7 +52,8 @@ export async function checkGPU(): Promise<DiagnosticResult[]> {
       results.push({
         category: "gpu",
         severity: "warning",
-        message: `GPU mode is '${mode}', should be 'nvidia' for best performance`,
+        message:
+          `GPU mode is '${mode}', should be 'nvidia' for best performance`,
         fix: "sudo prime-select nvidia",
       });
     } else {

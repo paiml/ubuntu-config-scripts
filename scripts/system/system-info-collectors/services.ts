@@ -60,8 +60,11 @@ export async function collectServiceInfo(): Promise<
       }
     }
 
-    const state = statusResult.success ? statusResult.stdout.trim() : "inactive";
-    const enabled = enabledResult.success && enabledResult.stdout.trim() === "enabled";
+    const state = statusResult.success
+      ? statusResult.stdout.trim()
+      : "inactive";
+    const enabled = enabledResult.success &&
+      enabledResult.stdout.trim() === "enabled";
 
     services.push({
       name: serviceName,

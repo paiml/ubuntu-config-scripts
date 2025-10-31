@@ -26,7 +26,10 @@ async function getMakefiles(): Promise<string[]> {
 
   // Find all Makefiles
   for await (const entry of Deno.readDir(".")) {
-    if (entry.isFile && (entry.name === "Makefile" || entry.name.startsWith("Makefile."))) {
+    if (
+      entry.isFile &&
+      (entry.name === "Makefile" || entry.name.startsWith("Makefile."))
+    ) {
       makefiles.push(entry.name);
     }
   }
@@ -36,7 +39,10 @@ async function getMakefiles(): Promise<string[]> {
   for (const dir of nestedDirs) {
     try {
       for await (const entry of Deno.readDir(dir)) {
-        if (entry.isFile && (entry.name === "Makefile" || entry.name.startsWith("Makefile."))) {
+        if (
+          entry.isFile &&
+          (entry.name === "Makefile" || entry.name.startsWith("Makefile."))
+        ) {
           makefiles.push(`${dir}/${entry.name}`);
         }
       }
@@ -58,7 +64,7 @@ async function fixMakefile(path: string): Promise<Fix[]> {
 
   // Fix 1: Add .SUFFIXES: at the top if missing
   if (!content.includes(".SUFFIXES:")) {
-    const insertIndex = lines.findIndex(line =>
+    const insertIndex = lines.findIndex((line) =>
       line.startsWith("#") || line.trim() === ""
     );
     if (insertIndex !== -1) {
@@ -122,7 +128,7 @@ async function fixMakefile(path: string): Promise<Fix[]> {
   }
 
   // Find .PHONY declaration and update it
-  const phonyIndex = lines.findIndex(line => line.startsWith(".PHONY:"));
+  const phonyIndex = lines.findIndex((line) => line.startsWith(".PHONY:"));
   if (phonyIndex !== -1) {
     // Collect all existing phony targets
     let phonyTargets = new Set<string>();
@@ -136,9 +142,9 @@ async function fixMakefile(path: string): Promise<Fix[]> {
           .replace(/^\t/, "")
           .replace(/\s*\\$/, "")
           .split(/\s+/)
-          .filter(t => t.length > 0);
+          .filter((t) => t.length > 0);
 
-        targetsInLine.forEach(t => phonyTargets.add(t));
+        targetsInLine.forEach((t) => phonyTargets.add(t));
 
         if (!line.endsWith("\\")) {
           break;
@@ -150,9 +156,9 @@ async function fixMakefile(path: string): Promise<Fix[]> {
     }
 
     // Add missing targets
-    const missingTargets = targets.filter(t => !phonyTargets.has(t));
+    const missingTargets = targets.filter((t) => !phonyTargets.has(t));
     if (missingTargets.length > 0) {
-      missingTargets.forEach(t => phonyTargets.add(t));
+      missingTargets.forEach((t) => phonyTargets.add(t));
 
       // Rebuild .PHONY declaration
       const allPhony = Array.from(phonyTargets).sort();
@@ -166,8 +172,11 @@ async function fixMakefile(path: string): Promise<Fix[]> {
         file: path,
         line: phonyIndex + 1,
         type: "MAKE004",
-        original: `.PHONY: (${phonyTargets.size - missingTargets.length} targets)`,
-        fixed: `.PHONY: (${phonyTargets.size} targets, added ${missingTargets.length})`,
+        original: `.PHONY: (${
+          phonyTargets.size - missingTargets.length
+        } targets)`,
+        fixed:
+          `.PHONY: (${phonyTargets.size} targets, added ${missingTargets.length})`,
       });
       modified = true;
     }
@@ -201,7 +210,9 @@ async function main(): Promise<void> {
     }
   }
 
-  logger.success(`Applied ${allFixes.length} fixes across ${makefiles.length} Makefiles`);
+  logger.success(
+    `Applied ${allFixes.length} fixes across ${makefiles.length} Makefiles`,
+  );
 
   // Show summary
   const byType: Record<string, number> = {};
@@ -214,7 +225,9 @@ async function main(): Promise<void> {
     logger.info(`  ${type}: ${count} fixes`);
   }
 
-  logger.info("\nRun 'bashrs make lint <makefile>' to verify remaining warnings");
+  logger.info(
+    "\nRun 'bashrs make lint <makefile>' to verify remaining warnings",
+  );
 }
 
 if (import.meta.main) {

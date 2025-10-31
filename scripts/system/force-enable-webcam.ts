@@ -11,7 +11,14 @@ async function forceEnableWebcam() {
 
   // Step 1: Remove and reload all video modules
   logger.info("Removing all video kernel modules...");
-  const modules = ["uvcvideo", "videobuf2_vmalloc", "videobuf2_memops", "videobuf2_v4l2", "videobuf2_common", "videodev"];
+  const modules = [
+    "uvcvideo",
+    "videobuf2_vmalloc",
+    "videobuf2_memops",
+    "videobuf2_v4l2",
+    "videobuf2_common",
+    "videodev",
+  ];
   for (const mod of modules) {
     await runCommand(["rmmod", mod]);
   }
@@ -24,8 +31,8 @@ async function forceEnableWebcam() {
   if (lsusbResult.success && lsusbResult.stdout) {
     const match = lsusbResult.stdout.match(/Bus (\d+) Device (\d+)/);
     if (match) {
-      const bus = match[1].padStart(3, '0');
-      const device = match[2].padStart(3, '0');
+      const bus = match[1].padStart(3, "0");
+      const device = match[2].padStart(3, "0");
 
       logger.info(`Found Microdia webcam at Bus ${bus} Device ${device}`);
 
@@ -56,17 +63,19 @@ async function forceEnableWebcam() {
 
     // Unload first
     await runCommand(["rmmod", "uvcvideo"]);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Load with quirks
     const args = ["modprobe", "uvcvideo", ...quirks];
     await runCommand(args);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Check if device appeared
     const checkResult = await runCommand(["ls", "/dev/video*"]);
     if (checkResult.success && checkResult.stdout) {
-      logger.success(`Success! Video devices found with quirks: ${quirks.join(" ")}`);
+      logger.success(
+        `Success! Video devices found with quirks: ${quirks.join(" ")}`,
+      );
       console.log(checkResult.stdout);
 
       // Make permanent
@@ -103,9 +112,14 @@ async function forceEnableWebcam() {
 
   // Disable USB autosuspend for this device
   try {
-    const usbDevices = await runCommand(["find", "/sys/bus/usb/devices/", "-name", "idVendor"]);
+    const usbDevices = await runCommand([
+      "find",
+      "/sys/bus/usb/devices/",
+      "-name",
+      "idVendor",
+    ]);
     if (usbDevices.success) {
-      for (const vendorFile of usbDevices.stdout.split('\n').filter(Boolean)) {
+      for (const vendorFile of usbDevices.stdout.split("\n").filter(Boolean)) {
         const vendor = await Deno.readTextFile(vendorFile).catch(() => "");
         if (vendor.trim() === "0c45") {
           const devicePath = vendorFile.replace("/idVendor", "");
@@ -122,7 +136,7 @@ async function forceEnableWebcam() {
             // Reset device
             const authorizedFile = `${devicePath}/authorized`;
             await Deno.writeTextFile(authorizedFile, "0");
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             await Deno.writeTextFile(authorizedFile, "1");
 
             logger.info("USB power management disabled and device reset");
@@ -135,8 +149,14 @@ async function forceEnableWebcam() {
   }
 
   // Final attempt with all modules
-  await runCommand(["modprobe", "uvcvideo", "nodrop=1", "timeout=5000", "quirks=128"]);
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await runCommand([
+    "modprobe",
+    "uvcvideo",
+    "nodrop=1",
+    "timeout=5000",
+    "quirks=128",
+  ]);
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   // Final check
   const finalCheck = await runCommand(["ls", "/dev/video*"]);
@@ -156,8 +176,8 @@ async function forceEnableWebcam() {
     const usbInfoResult = await runCommand(["lsusb", "-v", "-d", "0c45:1a0d"]);
     if (usbInfoResult.success && usbInfoResult.stdout) {
       logger.info("\nDetailed USB information:");
-      const lines = usbInfoResult.stdout.split('\n').slice(0, 50);
-      lines.forEach(line => console.log(line));
+      const lines = usbInfoResult.stdout.split("\n").slice(0, 50);
+      lines.forEach((line) => console.log(line));
     }
   }
 }

@@ -52,7 +52,8 @@ Deno.test("property: systemd unit file paths are absolute", () => {
         extension: fc.constantFrom(".service", ".timer"),
       }),
       ({ user, serviceName, extension }) => {
-        const path = `/home/${user}/.config/systemd/user/${serviceName}${extension}`;
+        const path =
+          `/home/${user}/.config/systemd/user/${serviceName}${extension}`;
 
         // Path should be absolute
         assertEquals(path.startsWith("/"), true);

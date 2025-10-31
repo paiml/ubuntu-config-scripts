@@ -104,7 +104,9 @@ function generateTestFile(schema: TestSchema, variant: TestVariant): string {
 async function runTest(
   code: string,
   timeout_ms: number,
-): Promise<{ result: TestResult; duration_ms: number; output?: string; error?: string }> {
+): Promise<
+  { result: TestResult; duration_ms: number; output?: string; error?: string }
+> {
   const start = Date.now();
 
   try {
@@ -147,7 +149,11 @@ async function runTest(
       }
     }
   } catch (error) {
-    return { result: TestResult.Error, duration_ms: Date.now() - start, error: error.toString() };
+    return {
+      result: TestResult.Error,
+      duration_ms: Date.now() - start,
+      error: error.toString(),
+    };
   }
 }
 
@@ -189,7 +195,9 @@ async function main() {
   const args = Deno.args;
   if (args.length === 0) {
     console.error("Usage: schema-test-runner.ts <schema-file.yaml>");
-    console.error("Example: schema-test-runner.ts schemas/issue79_comprehensive.yaml");
+    console.error(
+      "Example: schema-test-runner.ts schemas/issue79_comprehensive.yaml",
+    );
     Deno.exit(1);
   }
 
@@ -225,7 +233,10 @@ async function main() {
     const code = generateTestFile(schema, variant);
 
     // Run test
-    const { result, duration_ms, output, error } = await runTest(code, variant.timeout_ms);
+    const { result, duration_ms, output, error } = await runTest(
+      code,
+      variant.timeout_ms,
+    );
 
     // Check expectation
     const matched = matchesExpectation(result, variant.expected);
@@ -270,7 +281,8 @@ async function main() {
   const error = results.filter((r) => r.result === TestResult.Error).length;
   const total = results.length;
 
-  const matchedExpectations = results.filter((r) => r.matched_expectation).length;
+  const matchedExpectations =
+    results.filter((r) => r.matched_expectation).length;
 
   console.log(`  ✅ Passed:              ${passed}`);
   console.log(`  ❌ Failed:              ${failed}`);
@@ -279,17 +291,21 @@ async function main() {
   console.log(`  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
   console.log(`  📈 Total Tested:        ${total}`);
   console.log(`  🎯 Matched Expected:    ${matchedExpectations}/${total}`);
-  console.log(`  📊 Pass Rate:           ${((passed / total) * 100).toFixed(1)}%`);
+  console.log(
+    `  📊 Pass Rate:           ${((passed / total) * 100).toFixed(1)}%`,
+  );
 
   // Status-based breakdown
   console.log("");
   console.log("By Status:");
   const byStatus = {
     verified_pass: results.filter((r) =>
-      schema.variants.find((v) => v.id === r.variant_id)?.status === "verified_pass"
+      schema.variants.find((v) => v.id === r.variant_id)?.status ===
+        "verified_pass"
     ),
     verified_fail: results.filter((r) =>
-      schema.variants.find((v) => v.id === r.variant_id)?.status === "verified_fail"
+      schema.variants.find((v) => v.id === r.variant_id)?.status ===
+        "verified_fail"
     ),
     untested: results.filter((r) =>
       schema.variants.find((v) => v.id === r.variant_id)?.status === "untested"
@@ -301,12 +317,18 @@ async function main() {
   console.log(`  Previously Untested:      ${byStatus.untested.length}`);
 
   // New discoveries
-  const newFailures = byStatus.verified_pass.filter((r) => r.result !== TestResult.Pass);
-  const newPasses = byStatus.untested.filter((r) => r.result === TestResult.Pass);
+  const newFailures = byStatus.verified_pass.filter((r) =>
+    r.result !== TestResult.Pass
+  );
+  const newPasses = byStatus.untested.filter((r) =>
+    r.result === TestResult.Pass
+  );
 
   if (newFailures.length > 0) {
     console.log("");
-    console.log(`🚨 REGRESSIONS DETECTED: ${newFailures.length} previously passing variants now fail!`);
+    console.log(
+      `🚨 REGRESSIONS DETECTED: ${newFailures.length} previously passing variants now fail!`,
+    );
     newFailures.forEach((r) => {
       console.log(`   - ${r.variant_name} (${r.result})`);
     });
@@ -314,7 +336,9 @@ async function main() {
 
   if (newPasses.length > 0) {
     console.log("");
-    console.log(`🎉 NEW FIXES: ${newPasses.length} previously untested variants now pass!`);
+    console.log(
+      `🎉 NEW FIXES: ${newPasses.length} previously untested variants now pass!`,
+    );
     newPasses.forEach((r) => {
       console.log(`   - ${r.variant_name}`);
     });
@@ -330,7 +354,11 @@ async function main() {
   } else {
     const broken = total - passed;
     console.log(`🚨 ${broken} variant${broken > 1 ? "s" : ""} still broken`);
-    console.log(`⚠️  DO NOT CLOSE ISSUE - Only ${((passed / total) * 100).toFixed(1)}% verified`);
+    console.log(
+      `⚠️  DO NOT CLOSE ISSUE - Only ${
+        ((passed / total) * 100).toFixed(1)
+      }% verified`,
+    );
   }
 
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

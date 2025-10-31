@@ -52,6 +52,8 @@ export async function getAudioDevices(): Promise<{
     }
   }
 
-  logger.info(`Found ${sources.length} audio input(s), ${sinks.length} output(s)`);
+  logger.info(
+    `Found ${sources.length} audio input(s), ${sinks.length} output(s)`,
+  );
   return { sources, sinks };
 }

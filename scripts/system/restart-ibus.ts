@@ -129,7 +129,9 @@ async function restartNow(): Promise<void> {
 
   if (!result.success) {
     logger.warn(
-      `Could not restart IBus now: ${result.stderr.trim() || "already restarted"}`,
+      `Could not restart IBus now: ${
+        result.stderr.trim() || "already restarted"
+      }`,
     );
     logger.info("Timer will restart IBus on next scheduled run");
     return;

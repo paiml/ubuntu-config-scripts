@@ -5,7 +5,7 @@
  * Provides connection management and query execution
  */
 
-import { createClient, Client, Config } from "../../deps.ts";
+import { Client, Config, createClient } from "../../deps.ts";
 
 export interface TursoConfig {
   url: string;
@@ -68,7 +68,7 @@ export class TursoClient {
    */
   async query<T = unknown>(
     sql: string,
-    params?: (string | number | boolean | null)[]
+    params?: (string | number | boolean | null)[],
   ): Promise<T[]> {
     if (!this.client) {
       throw new Error("Not connected to database");
@@ -105,7 +105,7 @@ export class TursoClient {
    */
   async execute(
     sql: string,
-    params?: (string | number | boolean | null)[]
+    params?: (string | number | boolean | null)[],
   ): Promise<void> {
     if (!this.client) {
       throw new Error("Not connected to database");

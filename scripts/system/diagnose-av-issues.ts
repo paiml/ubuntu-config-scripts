@@ -12,12 +12,15 @@ import { parseArgs } from "jsr:@std/cli@^1.0.0";
 // Import diagnostic modules
 import type { DiagnosticResult } from "./diagnostics/audio.ts";
 import {
-  diagnoseAudioSubsystem,
   detectAudioServer,
+  diagnoseAudioSubsystem,
 } from "./diagnostics/audio.ts";
 import { diagnoseVideoSubsystem } from "./diagnostics/video.ts";
 import { diagnoseGPU } from "./diagnostics/gpu.ts";
-import { collectSystemInfo, SystemInfoSchema } from "./diagnostics/system-info.ts";
+import {
+  collectSystemInfo,
+  SystemInfoSchema,
+} from "./diagnostics/system-info.ts";
 import { runAllPlaybackTests } from "./diagnostics/playback-tests.ts";
 import {
   applyFixes,
@@ -202,7 +205,7 @@ class AVDiagnostics {
         ...videoResults,
         ...gpuResults,
         ...networkResults,
-        ...systemResults
+        ...systemResults,
       );
 
       // Run playback tests if requested

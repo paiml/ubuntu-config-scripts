@@ -79,7 +79,7 @@ export class EmbeddingGenerator {
     }, this.maxRetries);
 
     const tokensPerText = Math.floor(
-      response.usage.total_tokens / texts.length
+      response.usage.total_tokens / texts.length,
     );
 
     return response.data.map((item) => ({
@@ -93,7 +93,7 @@ export class EmbeddingGenerator {
    * Call OpenAI API for embeddings
    */
   private async callOpenAIAPI(
-    texts: string[]
+    texts: string[],
   ): Promise<OpenAIEmbeddingResponse> {
     const body: {
       input: string[];
@@ -126,7 +126,7 @@ export class EmbeddingGenerator {
       }
 
       throw new Error(
-        `API error (${response.status}): ${errorMessage}`
+        `API error (${response.status}): ${errorMessage}`,
       );
     }
 
@@ -138,7 +138,7 @@ export class EmbeddingGenerator {
    */
   private async retryWithBackoff<T>(
     fn: () => Promise<T>,
-    maxRetries: number
+    maxRetries: number,
   ): Promise<T> {
     let lastError: Error | null = null;
 
@@ -149,8 +149,10 @@ export class EmbeddingGenerator {
         lastError = error as Error;
 
         // Don't retry on client errors (4xx except 429)
-        if (lastError.message.includes("API error") &&
-            !lastError.message.includes("429")) {
+        if (
+          lastError.message.includes("API error") &&
+          !lastError.message.includes("429")
+        ) {
           throw lastError;
         }
 

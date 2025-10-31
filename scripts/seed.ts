@@ -149,11 +149,11 @@ function loadConfig() {
     throw new Error("Missing required environment variable: OPENAI_API_KEY");
   }
 
-  const embeddingModel =
-    Deno.env.get("EMBEDDING_MODEL") || "text-embedding-3-small";
+  const embeddingModel = Deno.env.get("EMBEDDING_MODEL") ||
+    "text-embedding-3-small";
   const embeddingDimensions = parseInt(
     Deno.env.get("EMBEDDING_DIMENSIONS") || "1536",
-    10
+    10,
   );
 
   return {

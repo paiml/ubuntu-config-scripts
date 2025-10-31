@@ -31,7 +31,7 @@ export async function detectAudioServer(): Promise<AudioServer> {
 }
 
 export async function diagnoseAudioSubsystem(
-  audioServer: AudioServer
+  audioServer: AudioServer,
 ): Promise<DiagnosticResult[]> {
   logger.info("\n🔊 Diagnosing audio subsystem...");
   const results: DiagnosticResult[] = [];

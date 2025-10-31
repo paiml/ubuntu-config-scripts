@@ -36,7 +36,9 @@ export class ScriptAnalyzer {
         .map((line) => line.trim())
         .filter((line) => line.startsWith("*") && !line.startsWith("*/"))
         .map((line) => line.replace(/^\*\s?/, ""))
-        .filter((line) => line.length > 0 && !line.toLowerCase().startsWith("usage"));
+        .filter((line) =>
+          line.length > 0 && !line.toLowerCase().startsWith("usage")
+        );
 
       return lines.join(" ").trim();
     }
@@ -55,7 +57,9 @@ export class ScriptAnalyzer {
    */
   extractUsage(content: string): string {
     // Look for "Usage:" section in JSDoc
-    const usageMatch = content.match(/Usage:\s*\n([^*]|\*(?!\/))*(?=\*\/|\n\s*\*\s*$)/s);
+    const usageMatch = content.match(
+      /Usage:\s*\n([^*]|\*(?!\/))*(?=\*\/|\n\s*\*\s*$)/s,
+    );
     if (usageMatch) {
       const usageSection = usageMatch[0];
       const lines = usageSection
@@ -63,7 +67,9 @@ export class ScriptAnalyzer {
         .map((line) => line.trim())
         .filter((line) => line.startsWith("*"))
         .map((line) => line.replace(/^\*\s*/, ""))
-        .filter((line) => line.length > 0 && !line.toLowerCase().startsWith("usage:"));
+        .filter((line) =>
+          line.length > 0 && !line.toLowerCase().startsWith("usage:")
+        );
 
       return lines.join("\n").trim();
     }
