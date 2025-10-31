@@ -1,0 +1,170 @@
+# Ubuntu Config Scripts - Audio Scripts Makefile
+#
+# Audio configuration and management scripts
+#
+
+# Colors for output
+.SUFFIXES:
+RED := \033[0;31m
+GREEN := \033[0;32m
+YELLOW := \033[0;33m
+BLUE := \033[0;34m
+CYAN := \033[0;36m
+NC := \033[0m # No Color
+
+# Tool detection
+DENO := $(shell command -v deno 2>/dev/null)
+
+# Phony targets
+.PHONY: audio-all \
+	audio-configure \
+	audio-configure-speakers \
+	audio-disable-mic \
+	audio-enable-mic \
+	audio-help \
+	audio-list-devices \
+	audio-list-speakers \
+	audio-pebble \
+	audio-set-volume \
+	audio-test \
+	audio-test-mic \
+	audio-troubleshoot \
+	audio-unmute-yamaha \
+	help
+
+audio-help: ## Show audio script commands
+	@echo "╔══════════════════════════════════════════════════════════════╗"
+	@echo "║                  🎵 Audio Configuration Scripts              ║"
+	@echo "╚══════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "$(CYAN)🎤 Microphone Commands:$(NC)"
+	@echo "────────────────────────────────────────────────────────────────"
+	@grep -E '^audio-(enable|disable|test)-mic:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-25s$(NC) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(CYAN)🔊 Audio Device Commands:$(NC)"
+	@echo "────────────────────────────────────────────────────────────────"
+	@grep -E '^audio-(list|set|configure):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-25s$(NC) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(CYAN)🔧 Utility Commands:$(NC)"
+	@echo "────────────────────────────────────────────────────────────────"
+	@grep -E '^audio-(test|troubleshoot|all):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-25s$(NC) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(YELLOW)💡 Examples:$(NC)"
+	@echo "────────────────────────────────────────────────────────────────"
+	@echo "  make audio-enable-mic                  # Enable microphone with defaults"
+	@echo "  make audio-enable-mic DEVICE=1         # Enable specific device"
+	@echo "  make audio-configure-speakers          # Configure external speakers"
+	@echo "  make audio-configure-speakers VOLUME=50 # Set speaker volume to 50%"
+	@echo "  make audio-list-speakers               # List all speaker devices"
+	@echo ""
+
+audio-all: audio-list-devices ## Run all audio diagnostics
+
+# Microphone scripts
+audio-enable-mic: ## Enable microphone (optionally: DEVICE=<id>)
+	@echo "$(CYAN)🎤 Enabling microphone...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@if [ -n "$(DEVICE)" ]; then \
+		deno run --allow-all scripts/audio/enable-mic.ts --device="$(DEVICE)"; \
+	else \
+		deno run --allow-all scripts/audio/enable-mic.ts; \
+	fi
+
+audio-disable-mic: ## Disable microphone
+	@echo "$(CYAN)🔇 Disabling microphone...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-all scripts/audio/disable-mic.ts
+
+audio-test-mic: ## Test microphone with recording
+	@echo "$(CYAN)🎙️  Testing microphone...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-all scripts/audio/test-mic.ts
+
+# Audio device management
+audio-list-devices: ## List all audio devices
+	@echo "$(CYAN)📋 Listing audio devices...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-all scripts/audio/list-devices.ts
+
+audio-set-volume: ## Set system volume (LEVEL=0-100)
+	@echo "$(CYAN)🔊 Setting volume...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@if [ -z "$(LEVEL)" ]; then \
+		@echo "$(RED)❌ Please specify LEVEL=<0-100>$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-all scripts/audio/set-volume.ts --level="$(LEVEL)"
+
+audio-configure: ## Interactive audio configuration
+	@echo "$(CYAN)⚙️  Starting audio configuration...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-all scripts/audio/configure.ts
+
+audio-configure-speakers: ## Configure external speakers (optionally: DEVICE=<id>, VOLUME=<0-100>)
+	@echo "$(CYAN)🔊 Configuring external speakers...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@ARGS=""; \
+	if [ -n "$(DEVICE)" ]; then ARGS="$$ARGS --device=$(DEVICE)"; fi; \
+	if [ -n "$(VOLUME)" ]; then ARGS="$$ARGS --volume=$(VOLUME)"; fi; \
+	if [ -n "$(PROFILE)" ]; then ARGS="$$ARGS --profile=$(PROFILE)"; fi; \
+	if [ "$(NO_TEST)" = "true" ]; then ARGS="$$ARGS --no-test"; fi; \
+	deno run --allow-all scripts/audio/configure-speakers.ts $$ARGS
+
+audio-list-speakers: ## List all available speaker devices
+	@echo "$(CYAN)📋 Listing speaker devices...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-all scripts/audio/configure-speakers.ts --list
+
+# Utility scripts
+audio-test: ## Run audio system tests
+	@echo "$(CYAN)🧪 Running audio tests...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@deno test --allow-all tests/audio/
+
+audio-troubleshoot: ## Troubleshoot audio issues
+	@echo "$(CYAN)🔍 Troubleshooting audio system...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-all scripts/audio/troubleshoot.ts
+
+audio-unmute-yamaha: ## Unmute Yamaha YCM01U microphone
+	@echo "$(CYAN)🎤 Unmuting Yamaha microphone...$(NC)"
+	@pactl set-source-mute alsa_input.usb-Yamaha_Corporation_Yamaha_YCM01U-00.capture.0.0 0
+	@echo "$(GREEN)✅ Yamaha microphone unmuted$(NC)"
+
+audio-pebble: ## Configure Pebble USB speakers
+	@echo "$(CYAN)🔊 Configuring Pebble USB speakers...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-all scripts/audio/configure-pebble-speakers.ts

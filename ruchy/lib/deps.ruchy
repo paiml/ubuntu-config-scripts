@@ -1,0 +1,32 @@
+// RUCHY-006: Dependency Checker Implementation
+
+use std::process::Command;
+
+// Check if a command exists in PATH
+pub fun check_command(command: &str) -> bool {
+    let result = Command::new("which")
+        .arg(command)
+        .output();
+
+    match result {
+        Ok(output) => output.status.success(),
+        Err(_) => false,
+    }
+}
+
+// Validate multiple dependencies
+pub fun validate_dependencies(deps: Vec<String>) -> bool {
+    let mut all_present = true;
+
+    for dep in deps {
+        let exists = check_command(&dep);
+        if !exists {
+            println!("Missing dependency: {}", dep);
+            all_present = false;
+        } else {
+            println!("Found dependency: {}", dep);
+        }
+    }
+
+    all_present
+}

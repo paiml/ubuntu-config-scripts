@@ -1,0 +1,14 @@
+use std::env;
+
+fun main() {
+    let args = env::args();
+    
+    let mut i = 0;
+    while i < args.len() {
+        let idx = i.to_string();
+        let arg = args[i];
+        let first_char = if arg.len() > 0 { arg[0..1] } else { "" };
+        println!("args[{}]: '{}' (first: '{}')", idx, arg, first_char);
+        i = i + 1;
+    }
+}

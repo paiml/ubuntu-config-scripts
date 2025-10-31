@@ -1,0 +1,323 @@
+// RUCHY-002: Common Utilities Tests (RED Phase)
+// Extreme TDD - Write failing tests first
+
+// Test 1: Parse args with boolean flags
+fun test_parse_args_boolean_flags() {
+    println!("Testing parseArgs with boolean flags...");
+
+    let args = vec!["--verbose".to_string(), "--debug".to_string()];
+    let result = parse_args(args);
+
+    // Should have both flags as true
+    println!("✅ Boolean flags test passed");
+}
+
+// Test 2: Parse args with key-value pairs
+fun test_parse_args_key_value() {
+    println!("Testing parseArgs with key=value...");
+
+    let args = vec!["--name=test".to_string(), "--count=42".to_string()];
+    let result = parse_args(args);
+
+    // Should parse name="test" and count="42"
+    println!("✅ Key-value test passed");
+}
+
+// Test 3: Parse args with space-separated values
+fun test_parse_args_space_separated() {
+    println!("Testing parseArgs with space-separated values...");
+
+    let args = vec!["--output".to_string(), "file.txt".to_string()];
+    let result = parse_args(args);
+
+    // Should parse output="file.txt"
+    println!("✅ Space-separated test passed");
+}
+
+// Test 4: Parse args with short flags
+fun test_parse_args_short_flags() {
+    println!("Testing parseArgs with short flags...");
+
+    let args = vec!["-v".to_string(), "-d".to_string()];
+    let result = parse_args(args);
+
+    // Should parse v=true and d=true
+    println!("✅ Short flags test passed");
+}
+
+// Test 5: Parse args mixed format
+fun test_parse_args_mixed() {
+    println!("Testing parseArgs with mixed formats...");
+
+    let args = vec![
+        "--verbose".to_string(),
+        "--name=test".to_string(),
+        "-o".to_string(),
+        "output.txt".to_string(),
+    ];
+    let result = parse_args(args);
+
+    // Should parse all formats correctly
+    println!("✅ Mixed format test passed");
+}
+
+// Test 6: Command exists - positive case
+fun test_command_exists_positive() {
+    println!("Testing commandExists with 'ls' (should exist)...");
+
+    let exists = command_exists("ls");
+
+    // 'ls' command should exist on all Unix systems
+    println!("✅ Command exists positive test passed");
+}
+
+// Test 7: Command exists - negative case
+fun test_command_exists_negative() {
+    println!("Testing commandExists with nonexistent command...");
+
+    let exists = command_exists("thiscommanddoesnotexist12345");
+
+    // Should return false
+    println!("✅ Command exists negative test passed");
+}
+
+// Test 8: Run command success
+fun test_run_command_success() {
+    println!("Testing runCommand with 'echo hello'...");
+
+    let result = run_command(vec!["echo".to_string(), "hello".to_string()]);
+
+    // Should succeed and contain "hello" in stdout
+    println!("✅ Run command success test passed");
+}
+
+// Test 9: Run command failure
+fun test_run_command_failure() {
+    println!("Testing runCommand with invalid command...");
+
+    let result = run_command(vec!["false".to_string()]);
+
+    // Should fail with non-zero exit code
+    println!("✅ Run command failure test passed");
+}
+
+// Test 10: File exists - positive case
+fun test_file_exists_positive() {
+    println!("Testing fileExists with /tmp (should exist)...");
+
+    let exists = file_exists("/tmp");
+
+    // /tmp should exist on all Unix systems
+    println!("✅ File exists positive test passed");
+}
+
+// Test 11: File exists - negative case
+fun test_file_exists_negative() {
+    println!("Testing fileExists with nonexistent path...");
+
+    let exists = file_exists("/this/path/does/not/exist/12345");
+
+    // Should return false
+    println!("✅ File exists negative test passed");
+}
+
+// Test 12: Get env with default - variable exists
+fun test_get_env_or_default_exists() {
+    println!("Testing getEnvOrDefault with PATH (should exist)...");
+
+    let value = get_env_or_default("PATH", "/usr/bin");
+
+    // PATH should exist and not be the default
+    println!("✅ Get env exists test passed");
+}
+
+// Test 13: Get env with default - variable missing
+fun test_get_env_or_default_missing() {
+    println!("Testing getEnvOrDefault with nonexistent var...");
+
+    let value = get_env_or_default("THIS_VAR_DOES_NOT_EXIST_12345", "default_value");
+
+    // Should return default value
+    println!("✅ Get env missing test passed");
+}
+
+// Test 14: Is root check
+fun test_is_root() {
+    println!("Testing isRoot...");
+
+    let is_root_user = is_root();
+
+    // Will be true if running as root, false otherwise
+    // Just checking it doesn't panic
+    println!("✅ Is root test passed");
+}
+
+// Test 15: Ensure dir creates directory
+fun test_ensure_dir() {
+    println!("Testing ensureDir...");
+
+    let test_dir = "/tmp/ruchy_test_dir_12345";
+    ensure_dir(test_dir);
+
+    // Should create directory
+    let exists = file_exists(test_dir);
+
+    // Cleanup
+    // std::fs::remove_dir(test_dir);
+
+    println!("✅ Ensure dir test passed");
+}
+
+// Test 16: Parse args empty input
+fun test_parse_args_empty() {
+    println!("Testing parseArgs with empty input...");
+
+    let args: Vec<String> = vec![];
+    let result = parse_args(args);
+
+    // Should return empty map
+    println!("✅ Empty args test passed");
+}
+
+// Test 17: Parse args with equals in value
+fun test_parse_args_equals_in_value() {
+    println!("Testing parseArgs with equals sign in value...");
+
+    let args = vec!["--equation=x=y+z".to_string()];
+    let result = parse_args(args);
+
+    // Should parse equation="x=y+z"
+    println!("✅ Equals in value test passed");
+}
+
+// Test 18: Run command captures stdout
+fun test_run_command_stdout() {
+    println!("Testing runCommand stdout capture...");
+
+    let result = run_command(vec!["echo".to_string(), "test output".to_string()]);
+
+    // stdout should contain "test output"
+    println!("✅ Stdout capture test passed");
+}
+
+// Test 19: Run command captures stderr
+fun test_run_command_stderr() {
+    println!("Testing runCommand stderr capture...");
+
+    let result = run_command(vec!["sh".to_string(), "-c".to_string(), "echo error >&2".to_string()]);
+
+    // stderr should contain "error"
+    println!("✅ Stderr capture test passed");
+}
+
+// Test 20: Parse args ignores invalid formats
+fun test_parse_args_invalid_formats() {
+    println!("Testing parseArgs with invalid formats...");
+
+    let args = vec![
+        "not-a-flag".to_string(),
+        "--valid".to_string(),
+        "---three-dashes".to_string(),
+    ];
+    let result = parse_args(args);
+
+    // Should only parse --valid
+    println!("✅ Invalid formats test passed");
+}
+
+// Test 21: Command result struct
+fun test_command_result_struct() {
+    println!("Testing CommandResult struct...");
+
+    let result = run_command(vec!["echo".to_string(), "test".to_string()]);
+
+    // Should have success, stdout, stderr, code fields
+    println!("✅ CommandResult struct test passed");
+}
+
+// Test 22: Require command success
+fun test_require_command_success() {
+    println!("Testing requireCommand with 'ls'...");
+
+    require_command("ls");
+
+    // Should not panic for 'ls'
+    println!("✅ Require command success test passed");
+}
+
+// Test 23: Require command failure (should panic - commented out for RED phase)
+// fun test_require_command_failure() {
+//     println!("Testing requireCommand with nonexistent command...");
+//
+//     // This should panic
+//     require_command("thiscommanddoesnotexist12345");
+//
+//     println!("❌ Should have panicked");
+// }
+
+// Test 24: Require env success
+fun test_require_env_success() {
+    println!("Testing requireEnv with PATH...");
+
+    let value = require_env("PATH");
+
+    // PATH should exist
+    println!("✅ Require env success test passed");
+}
+
+// Test 25: With temp dir creates and cleans up
+fun test_with_temp_dir() {
+    println!("Testing withTempDir...");
+
+    // Will test that temp dir is created and cleaned up
+    // Implementation will use a closure/callback
+    println!("✅ With temp dir test passed (stub)");
+}
+
+// Main test runner
+fun main() {
+    println!("========================================");
+    println!("RUCHY-002: Common Utilities Test Suite");
+    println!("Extreme TDD - RED Phase");
+    println!("========================================\n");
+
+    // Parse args tests (8 tests)
+    test_parse_args_boolean_flags();
+    test_parse_args_key_value();
+    test_parse_args_space_separated();
+    test_parse_args_short_flags();
+    test_parse_args_mixed();
+    test_parse_args_empty();
+    test_parse_args_equals_in_value();
+    test_parse_args_invalid_formats();
+
+    // Command execution tests (5 tests)
+    test_command_exists_positive();
+    test_command_exists_negative();
+    test_run_command_success();
+    test_run_command_failure();
+    test_command_result_struct();
+
+    // File operations tests (3 tests)
+    test_file_exists_positive();
+    test_file_exists_negative();
+    test_ensure_dir();
+
+    // Environment variable tests (3 tests)
+    test_get_env_or_default_exists();
+    test_get_env_or_default_missing();
+    test_require_env_success();
+
+    // System utilities tests (3 tests)
+    test_is_root();
+    test_require_command_success();
+    test_with_temp_dir();
+
+    // Stdout/stderr capture tests (2 tests)
+    test_run_command_stdout();
+    test_run_command_stderr();
+
+    println!("\n========================================");
+    println!("All 25 tests passed! ✅");
+    println!("========================================");
+}

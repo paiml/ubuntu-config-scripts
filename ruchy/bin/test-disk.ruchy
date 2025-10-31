@@ -1,0 +1,132 @@
+// RUC-009: Disk Management Library - RED PHASE TEST
+//
+// This test demonstrates the desired API for disk management.
+// It will FAIL until the disk module is implemented (GREEN phase).
+//
+// Test Coverage:
+// 1. Disk usage detection (df)
+// 2. Directory size calculation (du)
+// 3. Filesystem information (findmnt/mount)
+// 4. Storage device listing (lsblk)
+// 5. Complete disk info aggregation
+
+use disk;
+
+fun main() {
+    println!("=== RUC-009 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: Disk usage detection
+    println!("TEST 1: Disk usage detection");
+    match disk::get_disk_usage() {
+        Ok(usage_list) => {
+            println!("✓ Disk usage detection succeeded");
+            println!("  Filesystems found: {}", usage_list.len());
+
+            if usage_list.len() > 0 {
+                let usage = &usage_list[0];
+                println!("  First filesystem:");
+                println!("    Device: {}", usage.filesystem);
+                println!("    Mounted on: {}", usage.mounted_on);
+                println!("    Size: {} MB", usage.size_mb);
+                println!("    Used: {} MB", usage.used_mb);
+                println!("    Available: {} MB", usage.available_mb);
+                println!("    Usage: {}%", usage.use_percent);
+            }
+        }
+        Err(e) => println!("✗ Disk usage detection failed: {:?}", e),
+    }
+
+    // Test 2: Directory size calculation
+    println!("");
+    println!("TEST 2: Directory size calculation");
+    match disk::get_directory_size("/tmp".to_string()) {
+        Ok(dir_size) => {
+            println!("✓ Directory size calculation succeeded");
+            println!("  Path: {}", dir_size.path);
+            println!("  Size: {} MB", dir_size.size_mb);
+            println!("  File count: {}", dir_size.file_count);
+            println!("  Accessible: {}", dir_size.is_accessible);
+        }
+        Err(e) => println!("✗ Directory size calculation failed: {:?}", e),
+    }
+
+    // Test 3: Filesystem information
+    println!("");
+    println!("TEST 3: Filesystem information");
+    match disk::get_filesystems() {
+        Ok(filesystems) => {
+            println!("✓ Filesystem enumeration succeeded");
+            println!("  Filesystems found: {}", filesystems.len());
+
+            let mut i = 0;
+            while i < filesystems.len() {
+                let fs = &filesystems[i];
+                println!("  Filesystem {}:", i);
+                println!("    Device: {}", fs.device);
+                println!("    Type: {}", fs.fs_type);
+                println!("    Mount point: {}", fs.mount_point);
+                println!("    Read-only: {}", fs.is_readonly);
+                i = i + 1;
+            }
+        }
+        Err(e) => println!("✗ Filesystem enumeration failed: {:?}", e),
+    }
+
+    // Test 4: Storage device listing
+    println!("");
+    println!("TEST 4: Storage device listing");
+    match disk::list_storage_devices() {
+        Ok(devices) => {
+            println!("✓ Storage device listing succeeded");
+            println!("  Devices found: {}", devices.len());
+
+            let mut i = 0;
+            while i < devices.len() {
+                let dev = &devices[i];
+                println!("  Device {}: {}", i, dev.name);
+                println!("    Size: {} GB", dev.size_gb);
+                println!("    Type: {}", dev.device_type);
+                println!("    Model: {}", dev.model);
+                println!("    Removable: {}", dev.is_removable);
+                i = i + 1;
+            }
+        }
+        Err(e) => println!("✗ Storage device listing failed: {:?}", e),
+    }
+
+    // Test 5: Complete disk info aggregation
+    println!("");
+    println!("TEST 5: Complete disk info");
+    match disk::get_all_disk_info() {
+        Ok(info) => {
+            println!("✓ Complete disk scan succeeded");
+            println!("  Filesystems: {}", info.usage.len());
+            println!("  Mounted filesystems: {}", info.filesystems.len());
+            println!("  Storage devices: {}", info.devices.len());
+
+            // Summary
+            let mut total_size = 0;
+            let mut total_used = 0;
+            let mut i = 0;
+            while i < info.usage.len() {
+                let usage = &info.usage[i];
+                total_size = total_size + usage.size_mb;
+                total_used = total_used + usage.used_mb;
+                i = i + 1;
+            }
+
+            if total_size > 0 {
+                let total_percent = (total_used * 100) / total_size;
+                println!("  Total disk space: {} MB", total_size);
+                println!("  Total used: {} MB ({}%)", total_used, total_percent);
+            }
+        }
+        Err(e) => println!("✗ Complete disk scan failed: {:?}", e),
+    }
+
+    println!("");
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this, the module structure is correct!");
+    println!("Next: Implement the disk management functions (GREEN phase)");
+}

@@ -1,0 +1,78 @@
+// Example: Network Information
+//
+// This example demonstrates how to query network interface information
+// including IP addresses, MAC addresses, and interface status.
+//
+// Usage:
+//   cd ~/.local/share/ruchy-ubuntu-scripts
+//   ruchy examples/network_info.ruchy
+
+use network;
+use format_utils;
+
+fun main() {
+    println!("==============================================");
+    println!("  Network Interface Information");
+    println!("==============================================");
+    println!("");
+
+    // Get all network interfaces
+    match network::list_interfaces() {
+        Ok(interfaces) => {
+            println!("Found {} network interface(s):", interfaces.len().to_string());
+            println!("");
+
+            // Display each interface
+            let mut i = 0;
+            while i < interfaces.len() {
+                let iface = interfaces[i];
+
+                // Format the output nicely
+                let name_padded = format_utils::pad_right(iface.name, 15, " ");
+                let status = if iface.is_up { "UP  " } else { "DOWN" };
+
+                println!("Interface {}:", (i + 1).to_string());
+                println!("  Name:       {}", name_padded);
+                println!("  IP Address: {}", iface.ip_address);
+                println!("  MAC Address: {}", iface.mac_address);
+                println!("  Status:     {}", status);
+                println!("");
+
+                i = i + 1;
+            }
+
+            // Summary statistics
+            let mut up_count = 0;
+            let mut down_count = 0;
+
+            let mut i = 0;
+            while i < interfaces.len() {
+                if interfaces[i].is_up {
+                    up_count = up_count + 1;
+                } else {
+                    down_count = down_count + 1;
+                }
+                i = i + 1;
+            }
+
+            println!("Summary:");
+            println!("  Interfaces UP:   {}", up_count.to_string());
+            println!("  Interfaces DOWN: {}", down_count.to_string());
+            println!("  Total:           {}", interfaces.len().to_string());
+        }
+        Err(e) => {
+            println!("Error listing network interfaces:");
+            println!("  {}", e);
+            println!("");
+            println!("This may happen if:");
+            println!("  - You don't have permission to read network info");
+            println!("  - Network tools are not installed");
+            println!("  - There are no network interfaces on the system");
+        }
+    }
+
+    println!("");
+    println!("==============================================");
+    println!("  Network Info Complete!");
+    println!("==============================================");
+}

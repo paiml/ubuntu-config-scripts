@@ -1,0 +1,232 @@
+// RUCHY-008: Vector Search Standalone (RED Phase)
+// Self-contained implementation + comprehensive tests
+// Focus: Pure math algorithms, no external dependencies
+
+// ============================================================================
+// IMPLEMENTATION (GREEN phase will go here)
+// ============================================================================
+
+// Calculate cosine similarity between two vectors
+// Returns value between -1.0 (opposite) and 1.0 (identical)
+fun cosine_similarity(a: Vec<f64>, b: Vec<f64>) -> f64 {
+    // Validate vectors have same length
+    if a.len() != b.len() {
+        panic!("Vectors must have same length");
+    }
+
+    // Calculate dot product
+    let mut dot_product = 0.0;
+    let mut i = 0;
+    while i < a.len() {
+        dot_product += a[i] * b[i];
+        i += 1;
+    }
+
+    // Calculate magnitudes
+    let mut magnitude_a = 0.0;
+    let mut magnitude_b = 0.0;
+    let mut j = 0;
+    while j < a.len() {
+        magnitude_a += a[j] * a[j];
+        magnitude_b += b[j] * b[j];
+        j += 1;
+    }
+
+    magnitude_a = magnitude_a.sqrt();
+    magnitude_b = magnitude_b.sqrt();
+
+    // Handle zero vectors
+    if magnitude_a == 0.0 || magnitude_b == 0.0 {
+        return 0.0;
+    }
+
+    // Return cosine similarity
+    dot_product / (magnitude_a * magnitude_b)
+}
+
+// ============================================================================
+// TESTS - RED PHASE
+// ============================================================================
+
+// Test 1: Identical vectors should have similarity 1.0
+fun test_identical_vectors() {
+    println!("Test 1: Identical vectors should return 1.0...");
+    let vec_a = vec![1.0, 2.0, 3.0];
+    let vec_b = vec![1.0, 2.0, 3.0];
+    let similarity = cosine_similarity(vec_a, vec_b);
+
+    // Allow small floating point error
+    let diff = (similarity - 1.0).abs();
+    if diff > 0.0001 {
+        panic!("Expected similarity 1.0, got {}", similarity);
+    }
+    println!("✅ Test 1 passed: similarity = {}", similarity);
+}
+
+// Test 2: Orthogonal vectors should have similarity 0.0
+fun test_orthogonal_vectors() {
+    println!("Test 2: Orthogonal vectors should return 0.0...");
+    let vec_a = vec![1.0, 0.0, 0.0];
+    let vec_b = vec![0.0, 1.0, 0.0];
+    let similarity = cosine_similarity(vec_a, vec_b);
+
+    let diff = similarity.abs();
+    if diff > 0.0001 {
+        panic!("Expected similarity 0.0, got {}", similarity);
+    }
+    println!("✅ Test 2 passed: similarity = {}", similarity);
+}
+
+// Test 3: Opposite vectors should have similarity -1.0
+fun test_opposite_vectors() {
+    println!("Test 3: Opposite vectors should return -1.0...");
+    let vec_a = vec![1.0, 2.0, 3.0];
+    let vec_b = vec![-1.0, -2.0, -3.0];
+    let similarity = cosine_similarity(vec_a, vec_b);
+
+    let diff = (similarity - (-1.0)).abs();
+    if diff > 0.0001 {
+        panic!("Expected similarity -1.0, got {}", similarity);
+    }
+    println!("✅ Test 3 passed: similarity = {}", similarity);
+}
+
+// Test 4: Cosine similarity is commutative
+fun test_commutative_property() {
+    println!("Test 4: Commutative property (a,b) == (b,a)...");
+    let vec_a1 = vec![1.0, 2.0, 3.0];
+    let vec_b1 = vec![4.0, 5.0, 6.0];
+
+    let sim_ab = cosine_similarity(vec_a1, vec_b1);
+
+    let vec_a2 = vec![1.0, 2.0, 3.0];
+    let vec_b2 = vec![4.0, 5.0, 6.0];
+    let sim_ba = cosine_similarity(vec_b2, vec_a2);
+
+    let diff = (sim_ab - sim_ba).abs();
+    if diff > 0.0001 {
+        panic!("Expected same similarity, got {} and {}", sim_ab, sim_ba);
+    }
+    println!("✅ Test 4 passed: sim(a,b) = {} == sim(b,a) = {}", sim_ab, sim_ba);
+}
+
+// Test 5: Zero vector should return 0.0
+fun test_zero_vector() {
+    println!("Test 5: Zero vector should return 0.0...");
+    let vec_a = vec![1.0, 2.0, 3.0];
+    let vec_b = vec![0.0, 0.0, 0.0];
+    let similarity = cosine_similarity(vec_a, vec_b);
+
+    let diff = similarity.abs();
+    if diff > 0.0001 {
+        panic!("Expected similarity 0.0 for zero vector, got {}", similarity);
+    }
+    println!("✅ Test 5 passed: zero vector similarity = {}", similarity);
+}
+
+// Test 6: Single element vectors
+fun test_single_element() {
+    println!("Test 6: Single element vectors...");
+    let vec_a = vec![5.0];
+    let vec_b = vec![5.0];
+    let similarity = cosine_similarity(vec_a, vec_b);
+
+    let diff = (similarity - 1.0).abs();
+    if diff > 0.0001 {
+        panic!("Expected similarity 1.0 for identical single elements, got {}", similarity);
+    }
+    println!("✅ Test 6 passed: single element similarity = {}", similarity);
+}
+
+// Test 7: Large vectors (100+ dimensions)
+fun test_large_vectors() {
+    println!("Test 7: Large vectors (100 dimensions)...");
+    let mut vec_a = Vec::new();
+    let mut vec_b = Vec::new();
+
+    let mut i = 0;
+    while i < 100 {
+        vec_a.push(1.0);
+        vec_b.push(1.0);
+        i += 1;
+    }
+
+    let similarity = cosine_similarity(vec_a, vec_b);
+
+    let diff = (similarity - 1.0).abs();
+    if diff > 0.0001 {
+        panic!("Expected similarity 1.0 for large identical vectors, got {}", similarity);
+    }
+    println!("✅ Test 7 passed: large vector similarity = {}", similarity);
+}
+
+// Test 8: Result always in range [-1.0, 1.0]
+fun test_range_check() {
+    println!("Test 8: Result in range [-1.0, 1.0]...");
+    let vec_a = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+    let vec_b = vec![2.0, 3.0, 4.0, 5.0, 6.0];
+    let similarity = cosine_similarity(vec_a, vec_b);
+
+    if similarity < -1.0 || similarity > 1.0 {
+        panic!("Similarity {} out of range [-1.0, 1.0]", similarity);
+    }
+    println!("✅ Test 8 passed: similarity {} in valid range", similarity);
+}
+
+// Test 9: Normalized vectors
+fun test_normalized_vectors() {
+    println!("Test 9: Normalized vectors (unit vectors)...");
+    // Unit vectors pointing in same direction
+    let vec_a = vec![0.6, 0.8];  // magnitude = 1.0
+    let vec_b = vec![0.6, 0.8];
+    let similarity = cosine_similarity(vec_a, vec_b);
+
+    let diff = (similarity - 1.0).abs();
+    if diff > 0.0001 {
+        panic!("Expected similarity 1.0 for normalized vectors, got {}", similarity);
+    }
+    println!("✅ Test 9 passed: normalized vector similarity = {}", similarity);
+}
+
+// Test 10: Partial overlap vectors
+fun test_partial_overlap() {
+    println!("Test 10: Partial overlap vectors...");
+    let vec_a = vec![1.0, 1.0, 0.0];
+    let vec_b = vec![1.0, 0.0, 1.0];
+    let similarity = cosine_similarity(vec_a, vec_b);
+
+    // These should have positive but not perfect similarity
+    if similarity <= 0.0 || similarity >= 1.0 {
+        panic!("Expected 0 < similarity < 1 for partial overlap, got {}", similarity);
+    }
+    println!("✅ Test 10 passed: partial overlap similarity = {}", similarity);
+}
+
+// ============================================================================
+// MAIN TEST RUNNER
+// ============================================================================
+
+fun main() {
+    println!("========================================");
+    println!("RUCHY-008: Vector Search Test Suite");
+    println!("Extreme TDD - RED Phase");
+    println!("========================================\n");
+
+    println!("Running Cosine Similarity Tests...\n");
+
+    test_identical_vectors();
+    test_orthogonal_vectors();
+    test_opposite_vectors();
+    test_commutative_property();
+    test_zero_vector();
+    test_single_element();
+    test_large_vectors();
+    test_range_check();
+    test_normalized_vectors();
+    test_partial_overlap();
+
+    println!("\n========================================");
+    println!("All 10 tests written! ✅");
+    println!("RED Phase complete - ready for GREEN");
+    println!("========================================");
+}

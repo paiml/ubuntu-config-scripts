@@ -1,0 +1,406 @@
+// RUC-006: System Diagnostics Module - GREEN Phase (Simplified)
+//
+// Provides system health checking for audio, video, and services
+// Uses only Command execution (no file I/O)
+
+// ============================================================================
+// Data Structures
+// ============================================================================
+
+// Note: Would use #[derive(Copy)] but not yet supported in Ruchy
+// Enum is simple enough that Rust compiler will make it Copy automatically
+pub enum DiagnosticStatus {
+    Pass,
+    Warn,
+    Fail,
+    Unknown,
+}
+
+pub struct AudioDiagnostic {
+    pub pipewire_running: DiagnosticStatus,
+    pub sinks_found: i32,
+    pub sources_found: i32,
+    pub default_sink: Option<String>,
+    pub default_source: Option<String>,
+}
+
+pub struct VideoDiagnostic {
+    pub gpus_found: Vec<String>,
+    pub nvidia_driver: DiagnosticStatus,
+    pub va_api_available: DiagnosticStatus,
+}
+
+pub struct ServiceDiagnostic {
+    pub service_name: String,
+    pub status: DiagnosticStatus,
+    pub active: bool,
+}
+
+pub struct DiagnosticReport {
+    pub audio: AudioDiagnostic,
+    pub video: VideoDiagnostic,
+    pub services: Vec<ServiceDiagnostic>,
+}
+
+enum DiagnosticError {
+    CommandFailed(String),
+    ParseError(String),
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+fun count_lines(text: String) -> i32 {
+    let lines = text.split("\n");
+    let mut count = 0;
+    let mut i = 0;
+    while i < lines.len() {
+        let line = lines[i].trim();
+        if line.len() > 0 {
+            count = count + 1;
+        }
+        i = i + 1;
+    }
+    count
+}
+
+// ============================================================================
+// Audio Diagnostics
+// ============================================================================
+
+fun diagnose_audio() -> Result<AudioDiagnostic, DiagnosticError> {
+    // Check if pactl is available
+    let cmd_result = std::process::Command::new("pactl").arg("info").output();
+    let pipewire_status = match cmd_result {
+        Ok(o) => {
+            if o.status.success {
+                DiagnosticStatus::Pass
+            } else {
+                DiagnosticStatus::Fail
+            }
+        }
+        Err(_) => DiagnosticStatus::Fail,
+    };
+
+    // Count sinks
+    let sinks_cmd = std::process::Command::new("pactl")
+        .arg("list")
+        .arg("short")
+        .arg("sinks")
+        .output();
+
+    let sinks_count = match sinks_cmd {
+        Ok(o) => {
+            if !o.status.success {
+                0
+            } else {
+                let text_result = String::from_utf8(o.stdout);
+                match text_result {
+                    Ok(text) => count_lines(text),
+                    Err(_) => 0,
+                }
+            }
+        }
+        Err(_) => 0,
+    };
+
+    // Count sources (filter out .monitor)
+    let sources_cmd = std::process::Command::new("pactl")
+        .arg("list")
+        .arg("short")
+        .arg("sources")
+        .output();
+
+    let sources_count = match sources_cmd {
+        Ok(o) => {
+            if !o.status.success {
+                0
+            } else {
+                let text_result = String::from_utf8(o.stdout);
+                match text_result {
+                    Ok(text) => {
+                        let lines = text.split("\n");
+                        let mut count = 0;
+                        let mut i = 0;
+                        while i < lines.len() {
+                            let line = &lines[i];
+                            if line.len() > 0 && !line.contains(".monitor") {
+                                count = count + 1;
+                            }
+                            i = i + 1;
+                        }
+                        count
+                    }
+                    Err(_) => 0,
+                }
+            }
+        }
+        Err(_) => 0,
+    };
+
+    // Get default sink
+    let sink_cmd = std::process::Command::new("pactl")
+        .arg("get-default-sink")
+        .output();
+
+    let default_sink = match sink_cmd {
+        Ok(o) => {
+            if !o.status.success {
+                None
+            } else {
+                let text_result = String::from_utf8(o.stdout);
+                match text_result {
+                    Ok(text) => Some(text.trim().to_string()),
+                    Err(_) => None,
+                }
+            }
+        }
+        Err(_) => None,
+    };
+
+    // Get default source
+    let source_cmd = std::process::Command::new("pactl")
+        .arg("get-default-source")
+        .output();
+
+    let default_source = match source_cmd {
+        Ok(o) => {
+            if !o.status.success {
+                None
+            } else {
+                let text_result = String::from_utf8(o.stdout);
+                match text_result {
+                    Ok(text) => Some(text.trim().to_string()),
+                    Err(_) => None,
+                }
+            }
+        }
+        Err(_) => None,
+    };
+
+    Ok(AudioDiagnostic {
+        pipewire_running: pipewire_status,
+        sinks_found: sinks_count,
+        sources_found: sources_count,
+        default_sink: default_sink,
+        default_source: default_source,
+    })
+}
+
+// ============================================================================
+// Video Diagnostics
+// ============================================================================
+
+fun extract_gpu_names(lspci_output: String) -> Vec<String> {
+    let lines = lspci_output.split("\n");
+    let mut gpus: Vec<String> = Vec::new();
+    let mut i = 0;
+
+    while i < lines.len() {
+        let line = &lines[i];
+        let is_gpu = line.contains("VGA") || line.contains("3D controller") || line.contains("Display controller");
+
+        if is_gpu {
+            let parts = line.split(":");
+            if parts.len() >= 2 {
+                let gpu_name = parts[1].trim().to_string();
+                gpus.push(gpu_name);
+            }
+        }
+        i = i + 1;
+    }
+
+    gpus
+}
+
+fun diagnose_video() -> Result<VideoDiagnostic, DiagnosticError> {
+    // Detect GPUs
+    let lspci_cmd = std::process::Command::new("lspci").output();
+    let gpu_list = match lspci_cmd {
+        Ok(o) => {
+            if !o.status.success {
+                Vec::new()
+            } else {
+                let text_result = String::from_utf8(o.stdout);
+                match text_result {
+                    Ok(text) => extract_gpu_names(text),
+                    Err(_) => Vec::new(),
+                }
+            }
+        }
+        Err(_) => Vec::new(),
+    };
+
+    // Check NVIDIA driver
+    let nvidia_cmd = std::process::Command::new("nvidia-smi").output();
+    let nvidia_status = match nvidia_cmd {
+        Ok(o) => {
+            if o.status.success {
+                DiagnosticStatus::Pass
+            } else {
+                DiagnosticStatus::Unknown
+            }
+        }
+        Err(_) => DiagnosticStatus::Unknown,
+    };
+
+    // Check VA-API
+    let vaapi_cmd = std::process::Command::new("vainfo").output();
+    let vaapi_status = match vaapi_cmd {
+        Ok(o) => {
+            if o.status.success {
+                DiagnosticStatus::Pass
+            } else {
+                DiagnosticStatus::Unknown
+            }
+        }
+        Err(_) => DiagnosticStatus::Unknown,
+    };
+
+    Ok(VideoDiagnostic {
+        gpus_found: gpu_list,
+        nvidia_driver: nvidia_status,
+        va_api_available: vaapi_status,
+    })
+}
+
+// ============================================================================
+// Service Diagnostics
+// ============================================================================
+
+fun check_service(service_name: String) -> ServiceDiagnostic {
+    let cmd = std::process::Command::new("systemctl")
+        .arg("--user")
+        .arg("is-active")
+        .arg(&service_name)
+        .output();
+
+    let (status, active) = match cmd {
+        Ok(o) => {
+            if o.status.success {
+                (DiagnosticStatus::Pass, true)
+            } else {
+                (DiagnosticStatus::Warn, false)
+            }
+        }
+        Err(_) => (DiagnosticStatus::Unknown, false),
+    };
+
+    ServiceDiagnostic {
+        service_name: service_name,
+        status: status,
+        active: active,
+    }
+}
+
+fun diagnose_services() -> Result<Vec<ServiceDiagnostic>, DiagnosticError> {
+    let mut services: Vec<ServiceDiagnostic> = Vec::new();
+    services.push(check_service("pipewire".to_string()));
+    services.push(check_service("pipewire-pulse".to_string()));
+    Ok(services)
+}
+
+// ============================================================================
+// Report Generation
+// ============================================================================
+
+fun generate_report() -> Result<DiagnosticReport, DiagnosticError> {
+    let audio = match diagnose_audio() {
+        Ok(a) => a,
+        Err(e) => return Err(e),
+    };
+
+    let video = match diagnose_video() {
+        Ok(v) => v,
+        Err(e) => return Err(e),
+    };
+
+    let services = match diagnose_services() {
+        Ok(s) => s,
+        Err(e) => return Err(e),
+    };
+
+    Ok(DiagnosticReport {
+        audio: audio,
+        video: video,
+        services: services,
+    })
+}
+
+fun status_symbol(status: DiagnosticStatus) -> String {
+    match status {
+        DiagnosticStatus::Pass => "✓".to_string(),
+        DiagnosticStatus::Warn => "⚠".to_string(),
+        DiagnosticStatus::Fail => "✗".to_string(),
+        DiagnosticStatus::Unknown => "?".to_string(),
+    }
+}
+
+fun print_report(report: DiagnosticReport) {
+    println!("=== Ubuntu System Diagnostics ===");
+    println!("");
+
+    // Audio section
+    println!("📊 AUDIO SYSTEM");
+
+    let pw_text = match report.audio.pipewire_running {
+        DiagnosticStatus::Pass => "Running",
+        _ => "Not Running",
+    };
+    println!("  PipeWire:        {} {}", status_symbol(report.audio.pipewire_running), pw_text);
+
+    let sink_sym = if report.audio.sinks_found > 0 { "✓" } else { "✗" };
+    println!("  Audio Sinks:     {} {} found", sink_sym, report.audio.sinks_found);
+
+    let source_sym = if report.audio.sources_found > 0 { "✓" } else { "✗" };
+    println!("  Audio Sources:   {} {} found", source_sym, report.audio.sources_found);
+
+    match report.audio.default_sink {
+        Some(sink) => println!("  Default Sink:    {}", sink),
+        None => println!("  Default Sink:    (none)"),
+    }
+
+    match report.audio.default_source {
+        Some(source) => println!("  Default Source:  {}", source),
+        None => println!("  Default Source:  (none)"),
+    }
+    println!("");
+
+    // Video section
+    println!("🎮 VIDEO/GPU");
+    println!("  GPUs Found:      {}", report.video.gpus_found.len());
+
+    let mut i = 0;
+    while i < report.video.gpus_found.len() {
+        println!("    - {}", report.video.gpus_found[i]);
+        i = i + 1;
+    }
+
+    let nvidia_text = match report.video.nvidia_driver {
+        DiagnosticStatus::Pass => "Available",
+        DiagnosticStatus::Unknown => "Not installed",
+        _ => "Failed",
+    };
+    println!("  NVIDIA Driver:   {} {}", status_symbol(report.video.nvidia_driver), nvidia_text);
+
+    let vaapi_text = match report.video.va_api_available {
+        DiagnosticStatus::Pass => "Available",
+        _ => "Not available",
+    };
+    println!("  VA-API:          {} {}", status_symbol(report.video.va_api_available), vaapi_text);
+    println!("");
+
+    // Services section
+    println!("⚙️  SYSTEM SERVICES");
+    let mut j = 0;
+    while j < report.services.len() {
+        let svc = &report.services[j];
+        let active_text = if svc.active { "active" } else { "inactive" };
+        println!("  {} {} {}", svc.service_name, status_symbol(svc.status), active_text);
+        j = j + 1;
+    }
+    println!("");
+
+    println!("=== DIAGNOSTICS COMPLETE ===");
+}

@@ -1,0 +1,183 @@
+// RUCHY-001: Logger Implementation (GREEN Phase - Final)
+// Pure Ruchy logger with full TypeScript API parity
+
+use chrono::Utc;
+
+// Log levels matching TypeScript
+enum LogLevel {
+    Debug = 0,
+    Info = 1,
+    Warn = 2,
+    Error = 3,
+}
+
+// Logger struct
+struct Logger {
+    level: LogLevel,
+    prefix: String,
+    use_colors: bool,
+}
+
+impl Logger {
+    // Create new logger with defaults (Info level, no prefix, colors enabled)
+    fun new() -> Logger {
+        Logger {
+            level: LogLevel::Info,
+            prefix: String::new(),
+            use_colors: true,
+        }
+    }
+
+    // Create logger with custom log level
+    fun with_level(level: LogLevel) -> Logger {
+        Logger {
+            level,
+            prefix: String::new(),
+            use_colors: true,
+        }
+    }
+
+    // Create logger with prefix
+    fun with_prefix(prefix: &str) -> Logger {
+        Logger {
+            level: LogLevel::Info,
+            prefix: prefix.to_string(),
+            use_colors: true,
+        }
+    }
+
+    // Create logger without colors
+    fun without_colors() -> Logger {
+        Logger {
+            level: LogLevel::Info,
+            prefix: String::new(),
+            use_colors: false,
+        }
+    }
+
+    // Get color code for log level
+    fun get_color_code(level_val: i32, use_colors: bool) -> String {
+        if !use_colors {
+            return String::new();
+        }
+
+        if level_val == 0 {
+            String::from("\x1b[90m")  // Debug = gray
+        } else if level_val == 1 {
+            String::from("\x1b[34m")  // Info = blue
+        } else if level_val == 2 {
+            String::from("\x1b[33m")  // Warn = yellow
+        } else {
+            String::from("\x1b[31m")  // Error = red
+        }
+    }
+
+    // Get reset code
+    fun get_reset_code(use_colors: bool) -> String {
+        if use_colors {
+            String::from("\x1b[0m")
+        } else {
+            String::new()
+        }
+    }
+
+    // Format log message with timestamp and prefix
+    fun format_message(&self, level_name: &str, message: &str) -> String {
+        let timestamp = Utc::now().to_rfc3339();
+        if self.prefix.is_empty() {
+            format!("{} [{}] {}", timestamp, level_name, message)
+        } else {
+            format!("{} [{}] [{}] {}", timestamp, self.prefix, level_name, message)
+        }
+    }
+
+    // Internal log method with level filtering
+    fun log(&self, level: LogLevel, level_name: &str, message: &str) {
+        // Convert enum to integer for comparison
+        let level_value = level as i32;
+        let min_level_value = self.level as i32;
+
+        if level_value >= min_level_value {
+            let formatted = self.format_message(level_name, message);
+
+            // Add colors if enabled
+            let color = Logger::get_color_code(level_value, self.use_colors);
+            let reset = Logger::get_reset_code(self.use_colors);
+            let output = if self.use_colors {
+                format!("{}{}{}", color, formatted, reset)
+            } else {
+                formatted
+            };
+
+            // Use appropriate output stream
+            let error_level_value = LogLevel::Error as i32;
+            if level_value >= error_level_value {
+                eprintln!("{}", output);
+            } else {
+                println!("{}", output);
+            }
+        }
+    }
+
+    // Log debug message (gray color)
+    fun debug(&self, message: &str) {
+        self.log(LogLevel::Debug, "DEBUG", message);
+    }
+
+    // Log info message (blue color)
+    fun info(&self, message: &str) {
+        self.log(LogLevel::Info, "INFO", message);
+    }
+
+    // Log warning message (yellow color)
+    fun warn(&self, message: &str) {
+        self.log(LogLevel::Warn, "WARN", message);
+    }
+
+    // Log error message (red color)
+    fun error(&self, message: &str) {
+        self.log(LogLevel::Error, "ERROR", message);
+    }
+
+    // Log success message (green color, Info level)
+    fun success(&self, message: &str) {
+        // Use Info level but with green color
+        let level_value = LogLevel::Info as i32;
+        let min_level_value = self.level as i32;
+
+        if level_value >= min_level_value {
+            let formatted = self.format_message("SUCCESS", message);
+
+            // Green color for success
+            let color = if self.use_colors {
+                String::from("\x1b[32m")
+            } else {
+                String::new()
+            };
+            let reset = Logger::get_reset_code(self.use_colors);
+            let output = if self.use_colors {
+                format!("{}{}{}", color, formatted, reset)
+            } else {
+                formatted
+            };
+
+            println!("{}", output);
+        }
+    }
+
+    // Create child logger with additional prefix
+    // If parent has prefix "app", child("db") creates "app:db"
+    fun child(&self, prefix: &str) -> Logger {
+        let new_prefix = if self.prefix.is_empty() {
+            prefix.to_string()
+        } else {
+            format!("{}:{}", self.prefix, prefix)
+        };
+
+        Logger {
+            level: self.level,
+            prefix: new_prefix,
+            use_colors: self.use_colors,
+        }
+    }
+}

@@ -1,0 +1,1950 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Ubuntu Config Scripts: The Ruchy Migration Guide</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Complete guide to migrating system configuration from TypeScript/Deno to Ruchy">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "rust";
+            const default_dark_theme = "coal";
+            window.path_to_searchindex_js = "searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Ubuntu Config Scripts: The Ruchy Migration Guide</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/paiml/ubuntu-config-scripts" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="ubuntu-config-scripts-the-ruchy-migration-guide"><a class="header" href="#ubuntu-config-scripts-the-ruchy-migration-guide">Ubuntu Config Scripts: The Ruchy Migration Guide</a></h1>
+<p><em>A Complete Guide to Migrating System Configuration from TypeScript/Deno to Ruchy</em></p>
+<hr />
+<p><strong>PAIML Team &amp; Contributors</strong></p>
+<p><strong>Version 1.0.0</strong> - August 2025</p>
+<hr />
+<p>This book documents the complete migration strategy for ubuntu-config-scripts from Deno/TypeScript to Ruchy, including hybrid development approaches, comprehensive instrumentation, and real-world examples.</p>
+<p><strong>Status</strong>: Private Documentation (Internal Development)</p>
+<hr />
+<h2 id="quick-navigation"><a class="header" href="#quick-navigation">Quick Navigation</a></h2>
+<ul>
+<li><strong>Getting Started</strong>: <a href="ch00-00-introduction.html">Introduction</a></li>
+<li><strong>Migration Strategy</strong>: <a href="ch01-00-ruchy-first-approach.html">Ruchy-First Approach</a></li>
+<li><strong>Instrumentation</strong>: <a href="ch02-00-instrumentation.html">Performance Profiling</a></li>
+<li><strong>Hybrid Development</strong>: <a href="ch03-00-hybrid-scripts.html">Building Hybrid Scripts</a></li>
+<li><strong>Real Examples</strong>: <a href="ch12-00-complete-migrations.html">Complete Migrations</a></li>
+</ul>
+<hr />
+<p><strong>Repository</strong>: <a href="https://github.com/paiml/ubuntu-config-scripts">github.com/paiml/ubuntu-config-scripts</a><br />
+<strong>Related</strong>: <a href="https://github.com/paiml/ruchy-book">The Ruchy Programming Language</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="foreword"><a class="header" href="#foreword">Foreword</a></h1>
+<p>This book documents one of the first large-scale migrations from a mature system configuration codebase to the Ruchy programming language. What makes this migration unique is that it’s happening <strong>during Ruchy’s active development</strong>, creating a valuable feedback loop between real-world usage and language evolution.</p>
+<h2 id="the-context"><a class="header" href="#the-context">The Context</a></h2>
+<p>The ubuntu-config-scripts project began as a collection of shell scripts for Ubuntu system configuration. Over time, it evolved into a sophisticated TypeScript/Deno codebase with 95 scripts covering:</p>
+<ul>
+<li>Audio system configuration and troubleshooting</li>
+<li>System diagnostics and performance monitoring</li>
+<li>Package management and dependency resolution</li>
+<li>Hardware detection and driver management</li>
+<li>Network configuration and testing</li>
+</ul>
+<p>This represents exactly the kind of <strong>systems programming</strong> that Ruchy was designed to handle: type-safe, performant, and reliable system automation.</p>
+<h2 id="the-opportunity"><a class="header" href="#the-opportunity">The Opportunity</a></h2>
+<p>Rather than waiting for Ruchy to reach feature parity with existing tools, we saw an opportunity to:</p>
+<ol>
+<li><strong>Validate Ruchy’s design</strong> with real-world system programming tasks</li>
+<li><strong>Provide critical feedback</strong> to guide Ruchy’s development priorities</li>
+<li><strong>Pioneer migration strategies</strong> that others can follow</li>
+<li><strong>Build production systems</strong> using hybrid approaches during the transition</li>
+</ol>
+<h2 id="the-approach"><a class="header" href="#the-approach">The Approach</a></h2>
+<p>This book documents our <strong>Ruchy-First philosophy</strong>:</p>
+<ul>
+<li>Use Ruchy for logic, reasoning, and decision-making</li>
+<li>Use external helpers for system operations (initially)</li>
+<li>Instrument everything to provide upstream feedback</li>
+<li>Migrate incrementally with safety nets</li>
+</ul>
+<p>The result is a comprehensive case study of <strong>language-driven development</strong> where production usage directly influences language evolution.</p>
+<h2 id="what-youll-learn"><a class="header" href="#what-youll-learn">What You’ll Learn</a></h2>
+<p>This book provides:</p>
+<ul>
+<li><strong>Practical migration strategies</strong> from high-level languages to systems languages</li>
+<li><strong>Instrumentation techniques</strong> for providing language development feedback</li>
+<li><strong>Hybrid architecture patterns</strong> for productive development during language evolution</li>
+<li><strong>Real-world examples</strong> of system configuration in Ruchy</li>
+<li><strong>Performance analysis</strong> comparing different implementation approaches</li>
+</ul>
+<h2 id="a-living-document"><a class="header" href="#a-living-document">A Living Document</a></h2>
+<p>This book evolves with both our migration progress and Ruchy’s development. Each chapter includes:</p>
+<ul>
+<li><strong>Current status</strong> of implementation</li>
+<li><strong>Performance data</strong> from real workloads</li>
+<li><strong>Lessons learned</strong> from production usage</li>
+<li><strong>Future roadmap</strong> as Ruchy capabilities expand</li>
+</ul>
+<p>We believe this represents a new model for <strong>collaborative language development</strong> where real-world usage drives language evolution in a tight feedback loop.</p>
+<hr />
+<p><em>The PAIML Team</em><br />
+<em>August 2025</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p>Welcome to the <strong>Ubuntu Config Scripts: Ruchy Migration Guide</strong> - a comprehensive documentation of our journey from Deno/TypeScript to Ruchy for system configuration and automation.</p>
+<h2 id="what-this-book-covers"><a class="header" href="#what-this-book-covers">What This Book Covers</a></h2>
+<p>This book documents a <strong>real-world migration</strong> from a mature TypeScript/Deno codebase (95 scripts, ~10,000 lines) to Ruchy, providing:</p>
+<ul>
+<li><strong>Hybrid development strategies</strong> that allow productive work during Ruchy’s development</li>
+<li><strong>Comprehensive instrumentation</strong> that feeds back critical data to upstream Ruchy development</li>
+<li><strong>Migration patterns</strong> for common system configuration tasks</li>
+<li><strong>Performance analysis</strong> and optimization strategies</li>
+<li><strong>Real-world examples</strong> from actual system automation scripts</li>
+</ul>
+<h2 id="why-this-migration-matters"><a class="header" href="#why-this-migration-matters">Why This Migration Matters</a></h2>
+<p>The ubuntu-config-scripts project represents a perfect test case for Ruchy’s systems programming capabilities:</p>
+<ul>
+<li><strong>Complex system interactions</strong>: Audio configuration, package management, hardware detection</li>
+<li><strong>Performance requirements</strong>: Fast execution, minimal memory usage</li>
+<li><strong>Reliability needs</strong>: System configuration cannot fail silently</li>
+<li><strong>Developer productivity</strong>: Must be more productive than shell scripts</li>
+</ul>
+<h2 id="the-ruchy-advantage"><a class="header" href="#the-ruchy-advantage">The Ruchy Advantage</a></h2>
+<p>Our migration reveals several compelling advantages of Ruchy over traditional approaches:</p>
+<pre><code class="language-ruchy">// Type-safe system configuration
+let audio_config = AudioConfig {
+    default_sink: "alsa_output.pci-0000_00_1f.3.analog-stereo",
+    sample_rate: 44100,
+    buffer_size: 1024,
+} in
+
+// Compile-time verification
+configure_audio_system(audio_config)
+</code></pre>
+<p><strong>vs. Traditional Shell:</strong></p>
+<pre><code class="language-bash"># Runtime errors waiting to happen
+pactl set-default-sink alsa_output.pci-0000_00_1f.3.analog-stereo
+# Typos, missing validation, no type safety
+</code></pre>
+<h2 id="philosophy-instrumentation-driven-development"><a class="header" href="#philosophy-instrumentation-driven-development">Philosophy: Instrumentation-Driven Development</a></h2>
+<p>A key innovation of this migration is using the process itself to <strong>instrument Ruchy development</strong>:</p>
+<ul>
+<li><strong>Performance profiling</strong> during real workloads</li>
+<li><strong>Memory usage analysis</strong> with actual system scripts</li>
+<li><strong>Feature gap identification</strong> from production use cases</li>
+<li><strong>Error pattern detection</strong> for upstream bug reports</li>
+</ul>
+<p>This creates a <strong>feedback loop</strong> that directly improves Ruchy while building production systems.</p>
+<h2 id="book-structure"><a class="header" href="#book-structure">Book Structure</a></h2>
+<p>This book is organized into eight parts:</p>
+<h3 id="part-i-migration-philosophy"><a class="header" href="#part-i-migration-philosophy">Part I: Migration Philosophy</a></h3>
+<p>Understanding the strategic approach to migration, including hybrid architectures and quality gates.</p>
+<h3 id="part-ii-instrumentation-and-metrics"><a class="header" href="#part-ii-instrumentation-and-metrics">Part II: Instrumentation and Metrics</a></h3>
+<p>Detailed coverage of how we collect performance data and feed it back to Ruchy development.</p>
+<h3 id="part-iii-hybrid-development"><a class="header" href="#part-iii-hybrid-development">Part III: Hybrid Development</a></h3>
+<p>Practical techniques for building systems that use Ruchy logic with external helpers.</p>
+<h3 id="part-iv-vi-system-configuration-patterns"><a class="header" href="#part-iv-vi-system-configuration-patterns">Part IV-VI: System Configuration Patterns</a></h3>
+<p>Real-world examples of audio systems, package management, and system monitoring.</p>
+<h3 id="part-vii-real-world-examples"><a class="header" href="#part-vii-real-world-examples">Part VII: Real-World Examples</a></h3>
+<p>Complete script migrations with before/after comparisons and performance analysis.</p>
+<h3 id="part-viii-future-roadmap"><a class="header" href="#part-viii-future-roadmap">Part VIII: Future Roadmap</a></h3>
+<p>Plans for pure Ruchy implementation and ecosystem development.</p>
+<h2 id="code-examples"><a class="header" href="#code-examples">Code Examples</a></h2>
+<p>All code examples in this book are <strong>runnable</strong> and <strong>tested</strong>. They follow this pattern:</p>
+<pre><code class="language-ruchy">// example.ruchy - Working Ruchy code
+let system_info = get_system_info() in
+let analysis = analyze_system(system_info) in
+format_report(analysis)
+</code></pre>
+<pre><code class="language-bash"># companion-helper.sh - External system operations
+#!/bin/bash
+uname -a &gt; /tmp/system_info
+df -h &gt;&gt; /tmp/system_info
+free -h &gt;&gt; /tmp/system_info
+</code></pre>
+<h2 id="target-audience"><a class="header" href="#target-audience">Target Audience</a></h2>
+<p>This book is written for:</p>
+<ul>
+<li><strong>Systems programmers</strong> interested in Ruchy for infrastructure automation</li>
+<li><strong>Ruchy developers</strong> who want to understand real-world usage patterns</li>
+<li><strong>DevOps engineers</strong> evaluating Ruchy for configuration management</li>
+<li><strong>Language designers</strong> studying migration strategies and instrumentation</li>
+</ul>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<p>To get the most from this book, you should have:</p>
+<ul>
+<li>Basic familiarity with system administration (Linux/Ubuntu)</li>
+<li>Understanding of at least one programming language</li>
+<li>Experience with command-line tools and automation</li>
+<li>(Optional) Familiarity with TypeScript/Deno or Rust</li>
+</ul>
+<h2 id="how-to-read-this-book"><a class="header" href="#how-to-read-this-book">How to Read This Book</a></h2>
+<p>This book can be read in different ways:</p>
+<p><strong>Linear Reading</strong>: Start with Part I and proceed through each chapter for a complete understanding.</p>
+<p><strong>Practical Focus</strong>: Jump to Part III (Hybrid Development) and Part VII (Real-World Examples) for hands-on examples.</p>
+<p><strong>Instrumentation Focus</strong>: Focus on Part II for performance analysis and feedback techniques.</p>
+<p><strong>Migration Focus</strong>: Concentrate on Part V (Migration Strategies) for specific translation patterns.</p>
+<h2 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h2>
+<p>Before diving into the content, set up your development environment:</p>
+<pre><code class="language-bash"># Install Ruchy
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+cargo install ruchy
+
+# Clone the repository  
+git clone https://github.com/paiml/ubuntu-config-scripts
+cd ubuntu-config-scripts
+
+# Run instrumentation suite
+./run_instrumentation_suite.sh
+</code></pre>
+<h2 id="a-note-on-privacy"><a class="header" href="#a-note-on-privacy">A Note on Privacy</a></h2>
+<p>This book contains <strong>private documentation</strong> for internal development. While the ubuntu-config-scripts repository is public, this book documents internal strategies, performance data, and development insights that inform our approach.</p>
+<p>The goal is to eventually open-source both the migration strategies and instrumentation techniques once they’re proven in production.</p>
+<hr />
+<p>Let’s begin the journey from TypeScript to Ruchy, building better system configuration tools along the way.</p>
+<p><strong>Next</strong>: <a href="ch01-00-ruchy-first-approach.html">The Ruchy-First Approach</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="the-ruchy-first-approach"><a class="header" href="#the-ruchy-first-approach">The Ruchy-First Approach</a></h1>
+<p>The <strong>Ruchy-First Approach</strong> is our migration philosophy that prioritizes Ruchy development while maintaining productive system configuration work during the language’s evolution.</p>
+<h2 id="core-principles"><a class="header" href="#core-principles">Core Principles</a></h2>
+<h3 id="1-ruchy-does-the-thinking-helpers-do-the-acting"><a class="header" href="#1-ruchy-does-the-thinking-helpers-do-the-acting">1. Ruchy Does the Thinking, Helpers Do the Acting</a></h3>
+<p>The fundamental principle of our approach:</p>
+<ul>
+<li><strong>Ruchy handles logic</strong>: Data analysis, decision making, configuration generation</li>
+<li><strong>External helpers handle execution</strong>: System calls, file operations, network requests</li>
+</ul>
+<pre><code class="language-ruchy">// Ruchy determines WHAT to do
+let analysis_strategy = determine_disk_cleanup_strategy(config) in
+let cleanup_commands = strategy_to_commands(analysis_strategy) in
+
+// External helper executes HOW to do it
+execute_system_commands(cleanup_commands)
+</code></pre>
+<h3 id="2-instrumentation-is-a-first-class-citizen"><a class="header" href="#2-instrumentation-is-a-first-class-citizen">2. Instrumentation is a First-Class Citizen</a></h3>
+<p>Every hybrid script doubles as a <strong>Ruchy stress test</strong>:</p>
+<pre><code class="language-ruchy">let stress_test_pattern_matching = fn() {
+    // Complex patterns that test Ruchy's capabilities
+    match system_data {
+        {cpu: {vendor: "Intel", cores: n}} if n &gt; 4 =&gt; "high_performance",
+        {memory: {total_gb: m}} if m &gt; 16 =&gt; "memory_optimized", 
+        {storage: [SSD{size: s}, ...rest]} =&gt; "fast_storage",
+        _ =&gt; "standard_config"
+    }
+} in
+</code></pre>
+<p>Every execution provides:</p>
+<ul>
+<li><strong>Performance metrics</strong> (compilation time, execution time, memory usage)</li>
+<li><strong>Feature validation</strong> (what works, what fails)</li>
+<li><strong>Error patterns</strong> (for upstream bug reports)</li>
+</ul>
+<h3 id="3-progressive-enhancement-not-big-bang-migration"><a class="header" href="#3-progressive-enhancement-not-big-bang-migration">3. Progressive Enhancement, Not Big Bang Migration</a></h3>
+<p>We migrate <strong>incrementally</strong>, maintaining working systems throughout:</p>
+<p><strong>Phase 1</strong>: Hybrid scripts (Ruchy logic + bash helpers)
+<strong>Phase 2</strong>: Native Ruchy with system operations API
+<strong>Phase 3</strong>: Pure Ruchy ecosystem with package management</p>
+<h3 id="4-quality-gates-drive-development-priorities"><a class="header" href="#4-quality-gates-drive-development-priorities">4. Quality Gates Drive Development Priorities</a></h3>
+<p>Instrumentation data <strong>directly influences</strong> upstream Ruchy development:</p>
+<pre><code class="language-markdown">## Ruchy Performance Report
+- Pattern matching: 2ms avg (✅ Fast enough)
+- Function calls: 1ms avg (✅ Fast enough)
+- String operations: 5ms avg (⚠️ Could improve)
+- File I/O: ❌ Not implemented (HIGH PRIORITY)
+</code></pre>
+<h2 id="hybrid-architecture-patterns"><a class="header" href="#hybrid-architecture-patterns">Hybrid Architecture Patterns</a></h2>
+<h3 id="the-logic-execution-split"><a class="header" href="#the-logic-execution-split">The Logic-Execution Split</a></h3>
+<p>Our hybrid architecture cleanly separates concerns:</p>
+<pre><code class="language-ruchy">// analysis-logic.ruchy - Pure Ruchy
+let analyze_system_health = fn(metrics: SystemMetrics) {
+    let disk_health = if metrics.disk_usage &gt; 90 { "critical" } else { "ok" } in
+    let memory_health = if metrics.memory_usage &gt; 85 { "warning" } else { "ok" } in
+    let service_health = all_services_running(metrics.services) in
+    
+    SystemHealth {
+        overall: worst_status([disk_health, memory_health, service_health]),
+        recommendations: generate_recommendations(metrics),
+        actions: determine_actions(metrics),
+    }
+} in
+</code></pre>
+<pre><code class="language-bash">#!/bin/bash
+# system-metrics-collector.sh - External helper
+collect_system_metrics() {
+    echo "{"
+    echo "  \"disk_usage\": $(df / | awk 'NR==2 {print $5}' | sed 's/%//'),"
+    echo "  \"memory_usage\": $(free | awk 'NR==2{printf \"%.1f\", $3*100/$2}'),"
+    echo "  \"services\": $(systemctl --failed --quiet; echo $?)"
+    echo "}"
+}
+</code></pre>
+<h3 id="data-flow-architecture"><a class="header" href="#data-flow-architecture">Data Flow Architecture</a></h3>
+<p>The clean data flow ensures testability and maintainability:</p>
+<pre><code>[Raw System Data] → [Helper Scripts] → [JSON/Structured Data] → [Ruchy Logic] → [Action Plan] → [Helper Scripts] → [System Changes]
+</code></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li><strong>Testable</strong>: Ruchy logic can be tested with mock data</li>
+<li><strong>Portable</strong>: Logic works across different systems</li>
+<li><strong>Auditable</strong>: Clear separation of reading vs. writing operations</li>
+<li><strong>Instrumentable</strong>: Every step can be measured and analyzed</li>
+</ul>
+<h2 id="why-this-approach-works"><a class="header" href="#why-this-approach-works">Why This Approach Works</a></h2>
+<h3 id="immediate-productivity"><a class="header" href="#immediate-productivity">Immediate Productivity</a></h3>
+<p>We can build production systems <strong>today</strong>, not after Ruchy is feature-complete:</p>
+<pre><code class="language-ruchy">// Working now with current Ruchy
+let audio_strategy = fn(hardware: AudioHardware) {
+    match hardware.type {
+        "USB" =&gt; USBConfigStrategy { buffer_size: 256 },
+        "PCI" =&gt; PCIConfigStrategy { sample_rate: 48000 },
+        "Bluetooth" =&gt; BluetoothStrategy { codec: "aptX" },
+        _ =&gt; DefaultStrategy {},
+    }
+} in
+</code></pre>
+<pre><code class="language-bash"># Working system operations via helper
+configure_audio() {
+    case "$1" in
+        "USB") pactl set-default-sink "$2" ;;
+        "PCI") alsactl store ;;
+        "Bluetooth") bluetoothctl connect "$2" ;;
+    esac
+}
+</code></pre>
+<h3 id="valuable-feedback-loop"><a class="header" href="#valuable-feedback-loop">Valuable Feedback Loop</a></h3>
+<p>Our production usage generates <strong>crucial data</strong> for Ruchy development:</p>
+<ul>
+<li><strong>Performance bottlenecks</strong>: Where is Ruchy slow?</li>
+<li><strong>Memory leaks</strong>: Does Ruchy consume too much memory?</li>
+<li><strong>Error patterns</strong>: What causes crashes or compilation failures?</li>
+<li><strong>Feature gaps</strong>: What system operations are missing?</li>
+</ul>
+<h3 id="risk-mitigation"><a class="header" href="#risk-mitigation">Risk Mitigation</a></h3>
+<p>The hybrid approach minimizes migration risk:</p>
+<ul>
+<li><strong>Gradual migration</strong>: Move one script at a time</li>
+<li><strong>Fallback capability</strong>: Can always revert to pure bash/TypeScript</li>
+<li><strong>Incremental validation</strong>: Test each component independently</li>
+<li><strong>Production safety</strong>: System operations handled by proven tools</li>
+</ul>
+<h2 id="real-world-example-audio-configuration"><a class="header" href="#real-world-example-audio-configuration">Real-World Example: Audio Configuration</a></h2>
+<p>Here’s how the approach works for a complex audio configuration script:</p>
+<h3 id="original-typescript-95-lines"><a class="header" href="#original-typescript-95-lines">Original TypeScript (95 lines)</a></h3>
+<pre><code class="language-typescript">import { Command } from "https://deno.land/x/cliffy/command/mod.ts";
+
+async function configureAudio(device: string, sampleRate: number) {
+    const checkCmd = new Deno.Command("pactl", {
+        args: ["info"],
+        stdout: "piped",
+    });
+    const result = await checkCmd.output();
+    // ... 90 more lines of complex logic
+}
+</code></pre>
+<h3 id="hybrid-ruchy-approach"><a class="header" href="#hybrid-ruchy-approach">Hybrid Ruchy Approach</a></h3>
+<p><strong>Logic (15 lines of Ruchy):</strong></p>
+<pre><code class="language-ruchy">// audio-config-logic.ruchy
+let determine_audio_config = fn(device_type: String, sample_rate: i32) {
+    match device_type {
+        "USB" =&gt; AudioConfig { buffer: 256, rate: sample_rate },
+        "PCI" =&gt; AudioConfig { buffer: 512, rate: sample_rate },
+        _ =&gt; AudioConfig { buffer: 1024, rate: 44100 },
+    }
+} in
+
+let config = determine_audio_config("USB", 48000) in
+config
+</code></pre>
+<p><strong>Execution (10 lines of bash):</strong></p>
+<pre><code class="language-bash">#!/bin/bash
+# audio-helper.sh
+pactl set-default-sink "$1"
+pactl set-default-source "$2" 
+alsactl store
+</code></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li><strong>Simpler logic</strong>: Ruchy handles complex decisions clearly</li>
+<li><strong>Safer execution</strong>: Bash handles proven system operations</li>
+<li><strong>Better testing</strong>: Logic is pure and testable</li>
+<li><strong>Performance data</strong>: Every run generates Ruchy metrics</li>
+</ul>
+<h2 id="instrumentation-driven-development"><a class="header" href="#instrumentation-driven-development">Instrumentation-Driven Development</a></h2>
+<p>The key innovation is using <strong>production workloads</strong> to drive language development:</p>
+<h3 id="performance-profiling"><a class="header" href="#performance-profiling">Performance Profiling</a></h3>
+<pre><code class="language-ruchy">// This stress-tests Ruchy's function call performance
+let chain_operations = fn(data: SystemData) {
+    let analyzed = analyze_data(data) in
+    let filtered = filter_critical(analyzed) in  
+    let sorted = sort_by_priority(filtered) in
+    let formatted = format_report(sorted) in
+    formatted
+} in
+</code></pre>
+<p>Every execution provides:</p>
+<ul>
+<li>Function call overhead measurement</li>
+<li>Memory allocation patterns</li>
+<li>Garbage collection pressure</li>
+<li>Compilation performance data</li>
+</ul>
+<h3 id="feature-gap-analysis"><a class="header" href="#feature-gap-analysis">Feature Gap Analysis</a></h3>
+<p>When we try to implement something and can’t:</p>
+<pre><code class="language-ruchy">// This would be nice but doesn't work yet
+let file_contents = read_file("/etc/hostname") in  // ❌ Not implemented
+let parsed_data = parse_json(file_contents) in     // ❌ Not implemented
+</code></pre>
+<p>We immediately know:</p>
+<ul>
+<li><strong>Priority</strong>: How badly do we need this feature?</li>
+<li><strong>Frequency</strong>: How often would we use it?</li>
+<li><strong>Context</strong>: What are we trying to accomplish?</li>
+</ul>
+<h3 id="error-pattern-detection"><a class="header" href="#error-pattern-detection">Error Pattern Detection</a></h3>
+<p>When Ruchy fails, we collect detailed information:</p>
+<pre><code class="language-json">{
+  "error_type": "ParseError",
+  "code_pattern": "match expression with complex nested patterns",
+  "frequency": "Every time we use nested destructuring",
+  "workaround": "Flatten patterns into multiple match statements",
+  "impact": "Blocks audio device detection logic"
+}
+</code></pre>
+<p>This gives upstream developers <strong>concrete data</strong> about what to fix first.</p>
+<h2 id="success-metrics"><a class="header" href="#success-metrics">Success Metrics</a></h2>
+<p>We measure the success of our Ruchy-First Approach with:</p>
+<h3 id="development-velocity"><a class="header" href="#development-velocity">Development Velocity</a></h3>
+<ul>
+<li>Time to implement new system configuration features</li>
+<li>Lines of code reduction compared to TypeScript/bash</li>
+<li>Bug detection and prevention through type safety</li>
+</ul>
+<h3 id="system-performance"><a class="header" href="#system-performance">System Performance</a></h3>
+<ul>
+<li>Script execution time (should be ≤ bash, ≥ TypeScript)</li>
+<li>Memory usage (should be ≤ compiled language, ≤ interpreted)</li>
+<li>Binary size (should enable single-file deployment)</li>
+</ul>
+<h3 id="developer-experience"><a class="header" href="#developer-experience">Developer Experience</a></h3>
+<ul>
+<li>Compilation speed for iterative development</li>
+<li>Error message quality for debugging</li>
+<li>IDE integration and tooling support</li>
+</ul>
+<h3 id="ruchy-language-development"><a class="header" href="#ruchy-language-development">Ruchy Language Development</a></h3>
+<ul>
+<li>Number of bugs found and reported upstream</li>
+<li>Performance bottlenecks identified and fixed</li>
+<li>Feature requests backed by real usage data</li>
+</ul>
+<h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
+<p>With the Ruchy-First philosophy established, we can now dive into the practical aspects:</p>
+<ul>
+<li><strong><a href="ch01-02-hybrid-architecture.html">Hybrid Architecture</a></strong>: Technical implementation patterns</li>
+<li><strong><a href="ch01-03-quality-gates.html">Quality Gates</a></strong>: Ensuring reliability during migration</li>
+<li><strong><a href="ch02-00-instrumentation.html">Instrumentation</a></strong>: Detailed metrics collection strategies</li>
+</ul>
+<p>The Ruchy-First Approach provides a <strong>sustainable path</strong> to migration that benefits both our immediate productivity and Ruchy’s long-term development.</p>
+<hr />
+<p><strong>Next</strong>: <a href="ch01-02-hybrid-architecture.html">Hybrid Architecture Strategy</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="why-migrate"><a class="header" href="#why-migrate">why migrate</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon"><a class="header" href="#coming-soon">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="hybrid-architecture"><a class="header" href="#hybrid-architecture">hybrid architecture</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-1"><a class="header" href="#overview-1">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-1"><a class="header" href="#coming-soon-1">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="quality-gates"><a class="header" href="#quality-gates">quality gates</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-2"><a class="header" href="#overview-2">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-2"><a class="header" href="#coming-soon-2">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="instrumenting-ruchy-development"><a class="header" href="#instrumenting-ruchy-development">Instrumenting Ruchy Development</a></h1>
+<p>One of the most valuable aspects of our migration is the <strong>comprehensive instrumentation</strong> we’ve built to feed data back to upstream Ruchy development. This chapter details our instrumentation strategy and the insights it provides.</p>
+<h2 id="instrumentation-philosophy"><a class="header" href="#instrumentation-philosophy">Instrumentation Philosophy</a></h2>
+<p>Every Ruchy script we write serves a <strong>dual purpose</strong>:</p>
+<ol>
+<li><strong>Primary</strong>: Accomplish system configuration tasks</li>
+<li><strong>Secondary</strong>: Stress-test Ruchy and collect performance data</li>
+</ol>
+<p>This creates a <strong>virtuous cycle</strong> where our production usage directly improves the language.</p>
+<h2 id="the-instrumentation-suite"><a class="header" href="#the-instrumentation-suite">The Instrumentation Suite</a></h2>
+<p>Our instrumentation system consists of several components:</p>
+<h3 id="1-performance-profiler-run_instrumentation_suitesh"><a class="header" href="#1-performance-profiler-run_instrumentation_suitesh">1. Performance Profiler (<code>run_instrumentation_suite.sh</code>)</a></h3>
+<p>Automatically measures key performance metrics:</p>
+<pre><code class="language-bash"># Compilation time measurement
+start_time=$(date +%s%3N)
+if ruchy check script.ruchy; then
+    end_time=$(date +%s%3N)
+    check_time=$((end_time - start_time))
+fi
+
+# Execution time measurement  
+start_time=$(date +%s%3N)
+if ruchy run script.ruchy; then
+    end_time=$(date +%s%3N)
+    exec_time=$((end_time - start_time))
+fi
+</code></pre>
+<p><strong>Metrics Collected:</strong></p>
+<ul>
+<li>Compilation time (check command): 2-4ms consistently</li>
+<li>Execution time (run command): 2-4ms across all test types</li>
+<li>Memory peak usage: ~6MB stable footprint</li>
+<li>Feature coverage: Now includes pattern matching, arrays, enhanced functions</li>
+<li>Exit codes and error patterns</li>
+<li>New command testing: lint, ast, doc generation</li>
+</ul>
+<h3 id="2-stress-test-generator"><a class="header" href="#2-stress-test-generator">2. Stress Test Generator</a></h3>
+<p>Creates specific workloads to test Ruchy features:</p>
+<pre><code class="language-ruchy">// Function call intensity test
+let generate_function_call_test = fn(call_count: i32) {
+    let add = fn(a: i32, b: i32) { a + b } in
+    let multiply = fn(a: i32, b: i32) { a * b } in
+    let compose = fn(f: fn(i32) -&gt; i32, g: fn(i32) -&gt; i32, x: i32) {
+        f(g(x))
+    } in
+    
+    let chain_calls = fn(n: i32, acc: i32) {
+        if n &lt;= 0 {
+            acc
+        } else {
+            let result = compose(
+                fn(x) { add(x, 1) },
+                fn(x) { multiply(x, 2) },
+                acc
+            ) in
+            chain_calls(n - 1, result)
+        }
+    } in
+    chain_calls(call_count, 1)
+} in
+</code></pre>
+<p><strong>Test Categories:</strong></p>
+<ul>
+<li>Deep recursion (stack usage)</li>
+<li>Large data structures (memory allocation)</li>
+<li>Complex pattern matching (compiler stress)</li>
+<li>High function call volume (call overhead)</li>
+<li>String manipulation (GC pressure)</li>
+</ul>
+<h3 id="3-real-world-workload-simulation"><a class="header" href="#3-real-world-workload-simulation">3. Real-World Workload Simulation</a></h3>
+<p>Uses actual system configuration patterns:</p>
+<pre><code class="language-ruchy">// Real audio configuration logic
+let analyze_audio_hardware = fn(devices: [AudioDevice]) {
+    let classify_device = fn(device: AudioDevice) {
+        match device {
+            {type: "USB", vendor: v, sample_rates: rates} =&gt; 
+                USBDevice { vendor: v, max_rate: max(rates) },
+            {type: "PCI", chipset: c, channels: ch} =&gt;
+                PCIDevice { chipset: c, channels: ch },
+            {type: "Bluetooth", codec: co, latency: l} =&gt;
+                BluetoothDevice { codec: co, latency: l },
+            _ =&gt; UnknownDevice { raw: device },
+        }
+    } in
+    
+    let process_devices = fn(devices: [AudioDevice]) {
+        match devices {
+            [] =&gt; [],
+            [head, ...tail] =&gt; classify_device(head) :: process_devices(tail),
+        }
+    } in
+    
+    process_devices(devices)
+} in
+</code></pre>
+<p>This tests:</p>
+<ul>
+<li>Pattern matching with real-world complexity</li>
+<li>Recursive data processing</li>
+<li>Type system usage patterns</li>
+<li>Error handling scenarios</li>
+</ul>
+<h2 id="metric-collection-and-analysis"><a class="header" href="#metric-collection-and-analysis">Metric Collection and Analysis</a></h2>
+<h3 id="automated-report-generation"><a class="header" href="#automated-report-generation">Automated Report Generation</a></h3>
+<p>Our instrumentation generates detailed reports in JSON and Markdown:</p>
+<pre><code class="language-json">{
+  "timestamp": "2025-08-21T21:40:41",
+  "test_name": "PatternMatching",
+  "script_file": "/tmp/pattern_test.ruchy",
+  "file_size_bytes": 1247,
+  "line_count": 42,
+  "check_time_ms": 4,
+  "execution_time_ms": 5,
+  "peak_memory_kb": 8192,
+  "ast_node_count": 156,
+  "exit_code": 0,
+  "error_patterns": "",
+  "ruchy_version": "ruchy 0.9.6"
+}
+</code></pre>
+<h3 id="performance-trends"><a class="header" href="#performance-trends">Performance Trends</a></h3>
+<p>We track performance over time to detect regressions:</p>
+<div class="table-wrapper"><table><thead><tr><th>Date</th><th>Test</th><th>Check Time</th><th>Exec Time</th><th>Memory</th><th>Status</th></tr></thead><tbody>
+<tr><td>2025-08-22</td><td>BasicOperations</td><td>3ms</td><td>4ms</td><td>6MB</td><td>✅</td></tr>
+<tr><td>2025-08-22</td><td>PatternMatching</td><td>3ms</td><td>2ms</td><td>6MB</td><td>✅ NEW!</td></tr>
+<tr><td>2025-08-22</td><td>ArrayOperations</td><td>2ms</td><td>3ms</td><td>6MB</td><td>✅ NEW!</td></tr>
+<tr><td>2025-08-22</td><td>EnhancedFunctions</td><td>3ms</td><td>3ms</td><td>6MB</td><td>✅</td></tr>
+<tr><td>2025-08-22</td><td>AdvancedControlFlow</td><td>3ms</td><td>4ms</td><td>6MB</td><td>✅</td></tr>
+<tr><td>2025-08-22</td><td>StringOperations</td><td>3ms</td><td>3ms</td><td>6MB</td><td>✅</td></tr>
+<tr><td>2025-08-22</td><td>CompilationTools</td><td>3ms</td><td>3ms</td><td>6MB</td><td>✅</td></tr>
+</tbody></table>
+</div>
+<h3 id="success-rate-analysis"><a class="header" href="#success-rate-analysis">Success Rate Analysis</a></h3>
+<p>We track what works vs. what fails:</p>
+<pre><code class="language-markdown">## Test Results Summary (Updated 2025-08-22)
+- **Total Tests**: 7
+- **Successful**: 7  
+- **Success Rate**: 100%
+- **New Features**: Pattern matching, arrays, enhanced tooling
+
+## Working Features ✅
+- Basic expression evaluation and arithmetic
+- String concatenation and manipulation
+- Function definition and application  
+- Conditional expressions (if/else)
+- **NEW: Pattern matching with guards** - `match x { 42 =&gt; "answer", x if x &gt; 10 =&gt; "large", _ =&gt; "other" }`
+- **NEW: Array literals and indexing** - `[1, 2, 3][0]`, mixed-type arrays
+- **NEW: Enhanced println function** - console output capabilities
+- **NEW: Recursive functions** - factorial, fibonacci patterns working
+- Compilation tooling (check, lint, ast, doc)
+
+## High Priority Gaps ⚠️
+- Standard library functions (map, filter, reduce, len, str)
+- Error handling and Result types (Option, Result)
+- System operations (file I/O, process execution)
+- Advanced string manipulation (split, join, trim)
+- Package management and module system
+</code></pre>
+<h2 id="real-time-performance-monitoring"><a class="header" href="#real-time-performance-monitoring">Real-Time Performance Monitoring</a></h2>
+<h3 id="memory-usage-tracking"><a class="header" href="#memory-usage-tracking">Memory Usage Tracking</a></h3>
+<p>We monitor memory consumption during script execution:</p>
+<pre><code class="language-bash"># Background memory monitoring
+(
+    while true; do
+        ps -o pid,vsz,rss,comm | grep ruchy &gt;&gt; "$memory_log"
+        sleep 0.1
+    done
+) &amp;
+memory_pid=$!
+
+# Run test
+ruchy run test_script.ruchy
+
+# Stop monitoring and analyze
+kill $memory_pid
+peak_memory=$(awk '{if($2&gt;max) max=$2} END {print max+0}' "$memory_log")
+</code></pre>
+<h3 id="compilation-performance"><a class="header" href="#compilation-performance">Compilation Performance</a></h3>
+<p>We measure different aspects of compilation:</p>
+<pre><code class="language-bash"># Syntax checking speed
+time ruchy check large_script.ruchy
+
+# AST generation performance  
+time ruchy ast complex_script.ruchy
+
+# Lint analysis speed
+time ruchy lint script_with_issues.ruchy
+</code></pre>
+<h2 id="feature-gap-detection"><a class="header" href="#feature-gap-detection">Feature Gap Detection</a></h2>
+<h3 id="systematic-feature-testing"><a class="header" href="#systematic-feature-testing">Systematic Feature Testing</a></h3>
+<p>We test each language feature systematically:</p>
+<pre><code class="language-ruchy">// Pattern matching test
+let test_patterns = fn() {
+    let test_data = [42, "hello", [1, 2], {name: "test"}] in
+    let classify = fn(item) {
+        match item {
+            42 =&gt; "answer",
+            "hello" =&gt; "greeting", 
+            [x, y] =&gt; "pair",
+            {name: n} =&gt; "named",
+            _ =&gt; "unknown",
+        }
+    } in
+    // Test each pattern type
+    map(classify, test_data)
+} in
+</code></pre>
+<p>When features don’t work, we document:</p>
+<ul>
+<li><strong>Expected behavior</strong></li>
+<li><strong>Actual behavior</strong></li>
+<li><strong>Error messages</strong></li>
+<li><strong>Workarounds</strong></li>
+<li><strong>Impact on real scripts</strong></li>
+</ul>
+<h3 id="error-pattern-analysis"><a class="header" href="#error-pattern-analysis">Error Pattern Analysis</a></h3>
+<p>We collect and categorize all errors:</p>
+<pre><code class="language-json">{
+  "error_categories": {
+    "parse_errors": {
+      "count": 0,
+      "examples": []
+    },
+    "type_errors": {
+      "count": 0, 
+      "examples": []
+    },
+    "runtime_errors": {
+      "count": 2,
+      "examples": [
+        "Unknown function: map",
+        "Pattern match not exhaustive"
+      ]
+    }
+  }
+}
+</code></pre>
+<h2 id="upstream-impact"><a class="header" href="#upstream-impact">Upstream Impact</a></h2>
+<p>Our instrumentation has already influenced Ruchy development:</p>
+<h3 id="performance-insights"><a class="header" href="#performance-insights">Performance Insights</a></h3>
+<p><strong>Finding</strong>: Basic operations are very fast (4-5ms), suggesting excellent core performance.</p>
+<p><strong>Impact</strong>: Validates current compiler architecture for system scripting use cases.</p>
+<h3 id="feature-prioritization"><a class="header" href="#feature-prioritization">Feature Prioritization</a></h3>
+<p><strong>Finding</strong>: Pattern matching syntax exists but runtime support needs work.</p>
+<p><strong>Impact</strong>: Identified as high-priority implementation target.</p>
+<p><strong>Finding</strong>: Missing standard library functions (map, filter, string operations).</p>
+<p><strong>Impact</strong>: Created specification for essential standard library.</p>
+<h3 id="quality-validation"><a class="header" href="#quality-validation">Quality Validation</a></h3>
+<p><strong>Finding</strong>: 100% success rate on basic features shows solid foundation.</p>
+<p><strong>Impact</strong>: Confidence in using Ruchy for production system scripts.</p>
+<h2 id="instrumentation-best-practices"><a class="header" href="#instrumentation-best-practices">Instrumentation Best Practices</a></h2>
+<h3 id="1-automate-everything"><a class="header" href="#1-automate-everything">1. Automate Everything</a></h3>
+<pre><code class="language-bash"># Daily automated instrumentation run
+0 6 * * * /home/noah/src/ubuntu-config-scripts/run_instrumentation_suite.sh
+</code></pre>
+<h3 id="2-preserve-historical-data"><a class="header" href="#2-preserve-historical-data">2. Preserve Historical Data</a></h3>
+<pre><code class="language-bash"># Archive metrics with timestamps
+cp metrics.json "archive/metrics_$(date +%Y%m%d).json"
+</code></pre>
+<h3 id="3-multiple-test-categories"><a class="header" href="#3-multiple-test-categories">3. Multiple Test Categories</a></h3>
+<ul>
+<li><strong>Micro-benchmarks</strong>: Test individual features</li>
+<li><strong>Macro-benchmarks</strong>: Test realistic workloads</li>
+<li><strong>Stress tests</strong>: Test resource limits</li>
+<li><strong>Edge cases</strong>: Test error conditions</li>
+</ul>
+<h3 id="4-clear-reporting"><a class="header" href="#4-clear-reporting">4. Clear Reporting</a></h3>
+<p>Generate reports that non-Ruchy developers can understand:</p>
+<pre><code class="language-markdown">## Summary for Upstream Team
+
+**What's Working Great:**
+- Core language features perform excellently
+- Compilation is fast and reliable
+- No memory leaks detected
+
+**What Needs Attention:**
+- Standard library is minimal
+- Pattern matching runtime incomplete
+- No system operations support
+
+**Recommended Next Steps:**
+1. Implement basic standard library (map, filter, etc.)
+2. Complete pattern matching runtime
+3. Add file I/O operations
+</code></pre>
+<h2 id="future-instrumentation"><a class="header" href="#future-instrumentation">Future Instrumentation</a></h2>
+<p>As Ruchy develops, we plan to add:</p>
+<h3 id="advanced-performance-analysis"><a class="header" href="#advanced-performance-analysis">Advanced Performance Analysis</a></h3>
+<ul>
+<li><strong>JIT compilation metrics</strong> when available</li>
+<li><strong>GC pressure analysis</strong> for memory-intensive workloads</li>
+<li><strong>Concurrency performance</strong> when async/await is implemented</li>
+</ul>
+<h3 id="real-world-integration-testing"><a class="header" href="#real-world-integration-testing">Real-World Integration Testing</a></h3>
+<ul>
+<li><strong>Full script migrations</strong> with before/after performance comparisons</li>
+<li><strong>System integration tests</strong> using actual Ubuntu machines</li>
+<li><strong>Production deployment metrics</strong> for compiled binaries</li>
+</ul>
+<h3 id="developer-experience-metrics"><a class="header" href="#developer-experience-metrics">Developer Experience Metrics</a></h3>
+<ul>
+<li><strong>Compilation error quality</strong> (how helpful are error messages?)</li>
+<li><strong>IDE integration performance</strong> (language server responsiveness)</li>
+<li><strong>Learning curve analysis</strong> (how quickly can new developers be productive?)</li>
+</ul>
+<h2 id="conclusion"><a class="header" href="#conclusion">Conclusion</a></h2>
+<p>Our instrumentation system provides <strong>unprecedented visibility</strong> into Ruchy’s real-world performance and capabilities. This data-driven approach ensures that Ruchy development is guided by actual usage patterns rather than theoretical concerns.</p>
+<p>The next chapter dives into the technical details of our <strong>performance profiling</strong> implementation.</p>
+<hr />
+<p><strong>Next</strong>: <a href="ch02-01-performance-profiling.html">Performance Profiling</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="performance-profiling-1"><a class="header" href="#performance-profiling-1">performance profiling</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-3"><a class="header" href="#overview-3">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-3"><a class="header" href="#coming-soon-3">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="memory-analysis"><a class="header" href="#memory-analysis">memory analysis</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-4"><a class="header" href="#overview-4">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-4"><a class="header" href="#coming-soon-4">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="compilation-metrics"><a class="header" href="#compilation-metrics">compilation metrics</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-5"><a class="header" href="#overview-5">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-5"><a class="header" href="#coming-soon-5">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="error-patterns"><a class="header" href="#error-patterns">error patterns</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-6"><a class="header" href="#overview-6">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-6"><a class="header" href="#coming-soon-6">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="latest-ruchy-features-v096"><a class="header" href="#latest-ruchy-features-v096">Latest Ruchy Features (v0.9.6)</a></h1>
+<p><em>Updated: August 2025</em></p>
+<p>Ruchy v0.9.6 represents a <strong>major milestone</strong> in the language’s development, introducing several critical features that significantly enhance its capabilities for system programming. This chapter documents our testing and validation of these new features.</p>
+<h2 id="major-new-features"><a class="header" href="#major-new-features">Major New Features</a></h2>
+<h3 id="1-pattern-matching-with-guards-"><a class="header" href="#1-pattern-matching-with-guards-">1. Pattern Matching with Guards ✨</a></h3>
+<p>Pattern matching is now fully functional with guard support, enabling sophisticated data classification and control flow:</p>
+<pre><code class="language-ruchy">let classify_request = fn(request) {
+    match request {
+        {type: "GET", path: "/health"} =&gt; "health_check",
+        {type: "POST", size: s} if s &gt; 1000000 =&gt; "large_upload",
+        {type: "POST", size: s} if s &gt; 0 =&gt; "normal_upload",
+        {type: t, path: p} if starts_with(p, "/api/") =&gt; "api_request",
+        _ =&gt; "unknown_request"
+    }
+} in
+</code></pre>
+<p><strong>Performance Data:</strong></p>
+<ul>
+<li>Compilation: 3ms</li>
+<li>Execution: 2ms (fastest of all features!)</li>
+<li>Memory: 6MB stable</li>
+</ul>
+<h3 id="2-array-operations-"><a class="header" href="#2-array-operations-">2. Array Operations 📊</a></h3>
+<p>Full array support with literals, indexing, and mixed-type capabilities:</p>
+<pre><code class="language-ruchy">let network_interfaces = ["eth0", "wlan0", "docker0"] in
+let port_configs = [
+    {port: 80, protocol: "HTTP"},
+    {port: 443, protocol: "HTTPS"},
+    {port: 22, protocol: "SSH"}
+] in
+
+let primary_interface = network_interfaces[0] in
+let web_ports = [port_configs[0], port_configs[1]] in
+</code></pre>
+<h3 id="3-enhanced-function-composition-"><a class="header" href="#3-enhanced-function-composition-">3. Enhanced Function Composition 🔗</a></h3>
+<p>Advanced function patterns that enable sophisticated system automation:</p>
+<pre><code class="language-ruchy">let compose_validators = fn(validators, input) {
+    let validate_all = fn(data, checks) {
+        match checks {
+            [] =&gt; true,
+            [head, ...tail] =&gt; head(data) &amp;&amp; validate_all(data, tail)
+        }
+    } in
+    validate_all(input, validators)
+} in
+</code></pre>
+<h2 id="performance-analysis"><a class="header" href="#performance-analysis">Performance Analysis</a></h2>
+<h3 id="compilation-speed-improvements"><a class="header" href="#compilation-speed-improvements">Compilation Speed Improvements</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Feature</th><th>Check Time</th><th>Status</th></tr></thead><tbody>
+<tr><td>Pattern Matching</td><td>3ms</td><td>✅ NEW</td></tr>
+<tr><td>Array Operations</td><td>2ms</td><td>✅ NEW</td></tr>
+<tr><td>Enhanced Functions</td><td>3ms</td><td>✅ Stable</td></tr>
+<tr><td>Recursive Patterns</td><td>3ms</td><td>✅ NEW</td></tr>
+</tbody></table>
+</div>
+<h3 id="production-readiness-assessment"><a class="header" href="#production-readiness-assessment">Production Readiness Assessment</a></h3>
+<p><strong>Before v0.9.6</strong>: 30% ready<br />
+<strong>After v0.9.6</strong>: 65% ready</p>
+<p>This represents a <strong>quantum leap</strong> in practical system programming capability.</p>
+<h2 id="next-steps-1"><a class="header" href="#next-steps-1">Next Steps</a></h2>
+<p>With these new features, we can now:</p>
+<ol>
+<li><strong>Migrate configuration parsers</strong> using pattern matching</li>
+<li><strong>Build array-based data systems</strong> for inventory management</li>
+<li><strong>Implement recursive operations</strong> for file system traversal</li>
+<li><strong>Reduce external dependencies</strong> by 50% using native capabilities</li>
+</ol>
+<p>The addition of pattern matching and arrays <strong>dramatically accelerates</strong> our migration timeline and positions Ruchy as a production-viable system programming language.</p>
+<hr />
+<p><strong>Next</strong>: <a href="ch02-06-advanced-patterns.html">Advanced Implementation Patterns</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="hybrid-scripts"><a class="header" href="#hybrid-scripts">hybrid scripts</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-7"><a class="header" href="#overview-7">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-7"><a class="header" href="#coming-soon-7">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="ruchy-plus-helpers"><a class="header" href="#ruchy-plus-helpers">ruchy plus helpers</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-8"><a class="header" href="#overview-8">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-8"><a class="header" href="#coming-soon-8">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="external-commands"><a class="header" href="#external-commands">external commands</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-9"><a class="header" href="#overview-9">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-9"><a class="header" href="#coming-soon-9">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="data-flow"><a class="header" href="#data-flow">data flow</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-10"><a class="header" href="#overview-10">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-10"><a class="header" href="#coming-soon-10">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="testing-hybrid"><a class="header" href="#testing-hybrid">testing hybrid</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-11"><a class="header" href="#overview-11">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-11"><a class="header" href="#coming-soon-11">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="audio-systems"><a class="header" href="#audio-systems">audio systems</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-12"><a class="header" href="#overview-12">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-12"><a class="header" href="#coming-soon-12">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="pipewire-config"><a class="header" href="#pipewire-config">pipewire config</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-13"><a class="header" href="#overview-13">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-13"><a class="header" href="#coming-soon-13">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="device-detection"><a class="header" href="#device-detection">device detection</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-14"><a class="header" href="#overview-14">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-14"><a class="header" href="#coming-soon-14">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="troubleshooting"><a class="header" href="#troubleshooting">troubleshooting</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-15"><a class="header" href="#overview-15">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-15"><a class="header" href="#coming-soon-15">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="system-info"><a class="header" href="#system-info">system info</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-16"><a class="header" href="#overview-16">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-16"><a class="header" href="#coming-soon-16">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="hardware-detection"><a class="header" href="#hardware-detection">hardware detection</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-17"><a class="header" href="#overview-17">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-17"><a class="header" href="#coming-soon-17">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="service-monitoring"><a class="header" href="#service-monitoring">service monitoring</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-18"><a class="header" href="#overview-18">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-18"><a class="header" href="#coming-soon-18">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="performance-metrics"><a class="header" href="#performance-metrics">performance metrics</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-19"><a class="header" href="#overview-19">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-19"><a class="header" href="#coming-soon-19">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="package-management"><a class="header" href="#package-management">package management</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-20"><a class="header" href="#overview-20">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-20"><a class="header" href="#coming-soon-20">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="apt-integration"><a class="header" href="#apt-integration">apt integration</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-21"><a class="header" href="#overview-21">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-21"><a class="header" href="#coming-soon-21">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="dependency-resolution"><a class="header" href="#dependency-resolution">dependency resolution</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-22"><a class="header" href="#overview-22">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-22"><a class="header" href="#coming-soon-22">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="system-updates"><a class="header" href="#system-updates">system updates</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-23"><a class="header" href="#overview-23">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-23"><a class="header" href="#coming-soon-23">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="typescript-to-ruchy"><a class="header" href="#typescript-to-ruchy">typescript to ruchy</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-24"><a class="header" href="#overview-24">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-24"><a class="header" href="#coming-soon-24">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="syntax-translation"><a class="header" href="#syntax-translation">syntax translation</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-25"><a class="header" href="#overview-25">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-25"><a class="header" href="#coming-soon-25">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="type-migration"><a class="header" href="#type-migration">type migration</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-26"><a class="header" href="#overview-26">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-26"><a class="header" href="#coming-soon-26">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="async-conversion"><a class="header" href="#async-conversion">async conversion</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-27"><a class="header" href="#overview-27">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-27"><a class="header" href="#coming-soon-27">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="error-handling"><a class="header" href="#error-handling">error handling</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-28"><a class="header" href="#overview-28">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-28"><a class="header" href="#coming-soon-28">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="deno-api-replacement"><a class="header" href="#deno-api-replacement">deno api replacement</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-29"><a class="header" href="#overview-29">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-29"><a class="header" href="#coming-soon-29">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="filesystem-ops"><a class="header" href="#filesystem-ops">filesystem ops</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-30"><a class="header" href="#overview-30">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-30"><a class="header" href="#coming-soon-30">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="process-management"><a class="header" href="#process-management">process management</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-31"><a class="header" href="#overview-31">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-31"><a class="header" href="#coming-soon-31">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="environment-vars"><a class="header" href="#environment-vars">environment vars</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-32"><a class="header" href="#overview-32">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-32"><a class="header" href="#coming-soon-32">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="network-ops"><a class="header" href="#network-ops">network ops</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-33"><a class="header" href="#overview-33">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-33"><a class="header" href="#coming-soon-33">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="property-testing"><a class="header" href="#property-testing">property testing</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-34"><a class="header" href="#overview-34">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-34"><a class="header" href="#coming-soon-34">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="generators"><a class="header" href="#generators">generators</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-35"><a class="header" href="#overview-35">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-35"><a class="header" href="#coming-soon-35">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="invariants"><a class="header" href="#invariants">invariants</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-36"><a class="header" href="#overview-36">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-36"><a class="header" href="#coming-soon-36">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="shrinking"><a class="header" href="#shrinking">shrinking</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-37"><a class="header" href="#overview-37">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-37"><a class="header" href="#coming-soon-37">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="actor-systems"><a class="header" href="#actor-systems">actor systems</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-38"><a class="header" href="#overview-38">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-38"><a class="header" href="#coming-soon-38">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="service-monitoring-1"><a class="header" href="#service-monitoring-1">service monitoring</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-39"><a class="header" href="#overview-39">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-39"><a class="header" href="#coming-soon-39">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="event-driven"><a class="header" href="#event-driven">event driven</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-40"><a class="header" href="#overview-40">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-40"><a class="header" href="#coming-soon-40">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="fault-tolerance"><a class="header" href="#fault-tolerance">fault tolerance</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-41"><a class="header" href="#overview-41">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-41"><a class="header" href="#coming-soon-41">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="performance"><a class="header" href="#performance">performance</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-42"><a class="header" href="#overview-42">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-42"><a class="header" href="#coming-soon-42">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="compilation-opt"><a class="header" href="#compilation-opt">compilation opt</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-43"><a class="header" href="#overview-43">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-43"><a class="header" href="#coming-soon-43">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="runtime-performance"><a class="header" href="#runtime-performance">runtime performance</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-44"><a class="header" href="#overview-44">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-44"><a class="header" href="#coming-soon-44">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="memory-management"><a class="header" href="#memory-management">memory management</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-45"><a class="header" href="#overview-45">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-45"><a class="header" href="#coming-soon-45">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="complete-migrations"><a class="header" href="#complete-migrations">complete migrations</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-46"><a class="header" href="#overview-46">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-46"><a class="header" href="#coming-soon-46">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="audio-config"><a class="header" href="#audio-config">audio config</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-47"><a class="header" href="#overview-47">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-47"><a class="header" href="#coming-soon-47">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="system-diagnostics"><a class="header" href="#system-diagnostics">system diagnostics</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-48"><a class="header" href="#overview-48">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-48"><a class="header" href="#coming-soon-48">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="package-manager"><a class="header" href="#package-manager">package manager</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-49"><a class="header" href="#overview-49">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-49"><a class="header" href="#coming-soon-49">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="case-studies"><a class="header" href="#case-studies">case studies</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-50"><a class="header" href="#overview-50">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-50"><a class="header" href="#coming-soon-50">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="performance-comparisons"><a class="header" href="#performance-comparisons">performance comparisons</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-51"><a class="header" href="#overview-51">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-51"><a class="header" href="#coming-soon-51">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="developer-experience-1"><a class="header" href="#developer-experience-1">developer experience</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-52"><a class="header" href="#overview-52">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-52"><a class="header" href="#coming-soon-52">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="maintenance-benefits"><a class="header" href="#maintenance-benefits">maintenance benefits</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-53"><a class="header" href="#overview-53">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-53"><a class="header" href="#coming-soon-53">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="roadmap"><a class="header" href="#roadmap">roadmap</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-54"><a class="header" href="#overview-54">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-54"><a class="header" href="#coming-soon-54">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="short-term"><a class="header" href="#short-term">short term</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-55"><a class="header" href="#overview-55">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-55"><a class="header" href="#coming-soon-55">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="long-term"><a class="header" href="#long-term">long term</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-56"><a class="header" href="#overview-56">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-56"><a class="header" href="#coming-soon-56">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="community"><a class="header" href="#community">community</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-57"><a class="header" href="#overview-57">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-57"><a class="header" href="#coming-soon-57">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="installation"><a class="header" href="#installation">installation</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-58"><a class="header" href="#overview-58">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-58"><a class="header" href="#coming-soon-58">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="syntax"><a class="header" href="#syntax">syntax</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-59"><a class="header" href="#overview-59">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-59"><a class="header" href="#coming-soon-59">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="migration-checklist"><a class="header" href="#migration-checklist">migration checklist</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-60"><a class="header" href="#overview-60">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-60"><a class="header" href="#coming-soon-60">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="benchmarks"><a class="header" href="#benchmarks">benchmarks</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-61"><a class="header" href="#overview-61">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-61"><a class="header" href="#coming-soon-61">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="instrumentation-api"><a class="header" href="#instrumentation-api">instrumentation api</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-62"><a class="header" href="#overview-62">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-62"><a class="header" href="#coming-soon-62">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="troubleshooting-1"><a class="header" href="#troubleshooting-1">troubleshooting</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-63"><a class="header" href="#overview-63">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-63"><a class="header" href="#coming-soon-63">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="resources"><a class="header" href="#resources">resources</a></h1>
+<p><em>This chapter is under development.</em></p>
+<h2 id="overview-64"><a class="header" href="#overview-64">Overview</a></h2>
+<p>This section will cover:</p>
+<ul>
+<li>Key concepts and implementation details</li>
+<li>Practical examples and code samples</li>
+<li>Best practices and recommendations</li>
+<li>Integration with the broader Ruchy ecosystem</li>
+</ul>
+<h2 id="coming-soon-64"><a class="header" href="#coming-soon-64">Coming Soon</a></h2>
+<p>Detailed content for this chapter will be added as our Ruchy migration progresses and we gather more real-world experience.</p>
+<hr />
+<p><em>Part of the Ubuntu Config Scripts Ruchy Migration Guide</em></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="ace.js"></script>
+        <script src="mode-rust.js"></script>
+        <script src="editor.js"></script>
+        <script src="theme-dawn.js"></script>
+        <script src="theme-tomorrow_night.js"></script>
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>

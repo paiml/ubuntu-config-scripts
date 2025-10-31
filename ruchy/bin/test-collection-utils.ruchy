@@ -1,0 +1,138 @@
+// RUC-017: Collection Utilities Library - RED PHASE TEST
+//
+// Test for collection utility functions
+// Will FAIL until collection_utils module is implemented
+
+use collection_utils;
+
+fun main() {
+    println!("=== RUC-017 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: Contains check
+    println!("TEST 1: Contains check");
+    let numbers = vec![1, 2, 3, 4, 5];
+    let has_three = collection_utils::contains(numbers, 3);
+    let has_ten = collection_utils::contains(numbers, 10);
+    println!("  contains([1,2,3,4,5], 3) = {}", has_three);
+    println!("  contains([1,2,3,4,5], 10) = {}", has_ten);
+    if has_three && !has_ten {
+        println!("✓ Contains works");
+    } else {
+        println!("✗ Contains failed");
+    }
+
+    // Test 2: Find index
+    println!("");
+    println!("TEST 2: Find index");
+    let idx = collection_utils::find_index(numbers, 4);
+    let not_found = collection_utils::find_index(numbers, 99);
+    println!("  find_index([1,2,3,4,5], 4) = {}", idx);
+    println!("  find_index([1,2,3,4,5], 99) = {}", not_found);
+    if idx == 3 && not_found == -1 {
+        println!("✓ Find index works");
+    } else {
+        println!("✗ Find index failed");
+    }
+
+    // Test 3: Reverse
+    println!("");
+    println!("TEST 3: Reverse");
+    let reversed = collection_utils::reverse(numbers);
+    println!("  reverse([1,2,3,4,5])[0] = {}", reversed[0]);
+    println!("  reverse([1,2,3,4,5])[4] = {}", reversed[4]);
+    if reversed.len() == 5 && reversed[0] == 5 && reversed[4] == 1 {
+        println!("✓ Reverse works");
+    } else {
+        println!("✗ Reverse failed");
+    }
+
+    // Test 4: Deduplicate
+    println!("");
+    println!("TEST 4: Deduplicate");
+    let dupes = vec![1, 2, 3, 2, 4, 3, 5, 1];
+    let unique = collection_utils::deduplicate(dupes);
+    println!("  deduplicate([1,2,3,2,4,3,5,1]).len() = {}", unique.len());
+    if unique.len() == 5 {
+        println!("✓ Deduplicate works");
+    } else {
+        println!("✗ Deduplicate failed (expected 5, got {})", unique.len());
+    }
+
+    // Test 5: Take first n
+    println!("");
+    println!("TEST 5: Take first n");
+    let first_three = collection_utils::take(numbers, 3);
+    println!("  take([1,2,3,4,5], 3).len() = {}", first_three.len());
+    println!("  take([1,2,3,4,5], 3)[0] = {}", first_three[0]);
+    println!("  take([1,2,3,4,5], 3)[2] = {}", first_three[2]);
+    if first_three.len() == 3 && first_three[0] == 1 && first_three[2] == 3 {
+        println!("✓ Take works");
+    } else {
+        println!("✗ Take failed");
+    }
+
+    // Test 6: Drop first n
+    println!("");
+    println!("TEST 6: Drop first n");
+    let dropped = collection_utils::drop(numbers, 2);
+    println!("  drop([1,2,3,4,5], 2).len() = {}", dropped.len());
+    println!("  drop([1,2,3,4,5], 2)[0] = {}", dropped[0]);
+    if dropped.len() == 3 && dropped[0] == 3 {
+        println!("✓ Drop works");
+    } else {
+        println!("✗ Drop failed");
+    }
+
+    // Test 7: Max in vector
+    println!("");
+    println!("TEST 7: Max in vector");
+    let max_val = collection_utils::max_in_vec(numbers);
+    println!("  max_in_vec([1,2,3,4,5]) = {}", max_val);
+    if max_val == 5 {
+        println!("✓ Max works");
+    } else {
+        println!("✗ Max failed");
+    }
+
+    // Test 8: Min in vector
+    println!("");
+    println!("TEST 8: Min in vector");
+    let min_val = collection_utils::min_in_vec(numbers);
+    println!("  min_in_vec([1,2,3,4,5]) = {}", min_val);
+    if min_val == 1 {
+        println!("✓ Min works");
+    } else {
+        println!("✗ Min failed");
+    }
+
+    // Test 9: Count occurrences
+    println!("");
+    println!("TEST 9: Count occurrences");
+    let count = collection_utils::count_occurrences(dupes, 3);
+    println!("  count_occurrences([1,2,3,2,4,3,5,1], 3) = {}", count);
+    if count == 2 {
+        println!("✓ Count occurrences works");
+    } else {
+        println!("✗ Count occurrences failed");
+    }
+
+    // Test 10: All positive
+    println!("");
+    println!("TEST 10: All positive");
+    let all_pos = collection_utils::all_positive(numbers);
+    let mixed = vec![-1, 2, 3];
+    let not_all_pos = collection_utils::all_positive(mixed);
+    println!("  all_positive([1,2,3,4,5]) = {}", all_pos);
+    println!("  all_positive([-1,2,3]) = {}", not_all_pos);
+    if all_pos && !not_all_pos {
+        println!("✓ All positive works");
+    } else {
+        println!("✗ All positive failed");
+    }
+
+    println!("");
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this, the test structure is correct!");
+    println!("Next: Implement collection_utils module (GREEN phase)");
+}

@@ -1,0 +1,15 @@
+// REPRODUCTION CASE 2 for Issue #74
+// Command with arguments - 12 lines
+// Status: Hangs at runtime in v3.146.0
+
+use std::process::Command;
+
+fun main() {
+    println!("Testing command with args...");
+
+    let result = Command::new("echo")
+        .arg("hello")
+        .output();
+
+    println!("Command completed");  // Never reached
+}

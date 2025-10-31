@@ -1,0 +1,223 @@
+// Enable and configure microphone for Ubuntu
+use crate::lib::common::{run_command, command_exists, require_command}
+use crate::lib::logger::{info, warn, error, success}
+use regex::Regex
+
+#[derive(Debug, Clone)]
+pub struct MicrophoneDevice {
+    pub id: String,
+    pub name: String,
+    pub is_muted: bool,
+    pub volume: u32,
+    pub is_default: bool,
+}
+
+pub fun get_microphone_sources() -> Result<Vec<MicrophoneDevice>, String> {
+    let mut devices = Vec::new();
+    
+    let sources_result = run_command(vec!["pactl".to_string(), "list".to_string(), "sources".to_string()], None);
+    if !sources_result.success {
+        return Err(format!("Failed to list audio sources: {}", sources_result.stderr));
+    }
+    
+    let default_source_result = run_command(vec!["pactl".to_string(), "get-default-source".to_string()], None);
+    let default_source = if default_source_result.success {
+        default_source_result.stdout.trim().to_string()
+    } else {
+        String::new()
+    };
+    
+    let sources: Vec<&str> = sources_result.stdout.split("\n\n").collect();
+    
+    for source in sources {
+        if !source.contains("Source #") || source.contains(".monitor") {
+            continue;
+        }
+        
+        let id_re = Regex::new(r"Source #(\d+)").unwrap();
+        let name_re = Regex::new(r"Name: (.+)").unwrap();
+        let desc_re = Regex::new(r"Description: (.+)").unwrap();
+        let mute_re = Regex::new(r"Mute: (.+)").unwrap();
+        let volume_re = Regex::new(r"Volume:.*?(\d+)%").unwrap();
+        
+        if let (Some(id_match), Some(name_match)) = (id_re.captures(source), name_re.captures(source)) {
+            let source_name = name_match.get(1).unwrap().as_str();
+            
+            devices.push(MicrophoneDevice {
+                id: id_match.get(1).unwrap().as_str().to_string(),
+                name: desc_re.captures(source)
+                    .and_then(|m| m.get(1))
+                    .map(|m| m.as_str().to_string())
+                    .unwrap_or_else(|| source_name.to_string()),
+                is_muted: mute_re.captures(source)
+                    .and_then(|m| m.get(1))
+                    .map(|m| m.as_str() == "yes")
+                    .unwrap_or(false),
+                volume: volume_re.captures(source)
+                    .and_then(|m| m.get(1))
+                    .and_then(|m| m.as_str().parse().ok())
+                    .unwrap_or(0),
+                is_default: source_name == default_source,
+            });
+        }
+    }
+    
+    Ok(devices)
+}
+
+pub fun set_default_source(source_name: &str) -> Result<(), String> {
+    info(&format!("Setting default microphone to {}", source_name));
+    
+    let result = run_command(vec![
+        "pactl".to_string(),
+        "set-default-source".to_string(),
+        source_name.to_string()
+    ], None);
+    
+    if !result.success {
+        return Err(format!("Failed to set default source: {}", result.stderr));
+    }
+    
+    Ok(())
+}
+
+pub fun set_source_volume(source_id: &str, volume: u32) -> Result<(), String> {
+    let volume_percent = volume.min(100);
+    info(&format!("Setting microphone {} volume to {}%", source_id, volume_percent));
+    
+    let result = run_command(vec![
+        "pactl".to_string(),
+        "set-source-volume".to_string(),
+        source_id.to_string(),
+        format!("{}%", volume_percent)
+    ], None);
+    
+    if !result.success {
+        return Err(format!("Failed to set source volume: {}", result.stderr));
+    }
+    
+    Ok(())
+}
+
+pub fun unmute_source(source_id: &str) -> Result<(), String> {
+    info(&format!("Unmuting microphone {}", source_id));
+    
+    let result = run_command(vec![
+        "pactl".to_string(),
+        "set-source-mute".to_string(),
+        source_id.to_string(),
+        "0".to_string()
+    ], None);
+    
+    if !result.success {
+        return Err(format!("Failed to unmute source: {}", result.stderr));
+    }
+    
+    Ok(())
+}
+
+pub fun test_microphone(source_name: &str) -> Result<(), String> {
+    info("Testing microphone - speak for 5 seconds");
+    
+    // Record 5 seconds of audio
+    let record_result = run_command(vec![
+        "arecord".to_string(),
+        "-D".to_string(),
+        format!("pulse:{}", source_name),
+        "-f".to_string(),
+        "cd".to_string(),
+        "-d".to_string(),
+        "5".to_string(),
+        "-t".to_string(),
+        "wav".to_string(),
+        "/tmp/mic_test.wav".to_string()
+    ], None);
+    
+    if !record_result.success {
+        return Err(format!("Failed to record audio: {}", record_result.stderr));
+    }
+    
+    info("Playing back recorded audio...");
+    
+    // Play back the recording
+    let play_result = run_command(vec![
+        "aplay".to_string(),
+        "/tmp/mic_test.wav".to_string()
+    ], None);
+    
+    if !play_result.success {
+        warn(&format!("Playback may have issues: {}", play_result.stderr));
+    }
+    
+    // Clean up test file
+    let _ = run_command(vec!["rm".to_string(), "/tmp/mic_test.wav".to_string()], None);
+    
+    Ok(())
+}
+
+pub fun run() -> Result<(), String> {
+    info("Enabling and configuring microphone");
+    
+    // Check for required commands
+    require_command("pactl")?;
+    require_command("arecord")?;
+    require_command("aplay")?;
+    
+    // Get current microphone sources
+    let sources = get_microphone_sources()?;
+    
+    if sources.is_empty() {
+        return Err("No microphone sources found".to_string());
+    }
+    
+    info(&format!("Found {} microphone(s):", sources.len()));
+    for (i, source) in sources.iter().enumerate() {
+        let default_marker = if source.is_default { " [DEFAULT]" } else { "" };
+        let mute_status = if source.is_muted { " [MUTED]" } else { "" };
+        println!("  {}. {} (Volume: {}%){}{}", 
+                i + 1, 
+                source.name, 
+                source.volume,
+                default_marker,
+                mute_status);
+    }
+    
+    // Find USB or external microphones first
+    let preferred_mic = sources.iter()
+        .find(|s| s.name.contains("USB") || 
+                 s.name.contains("Yamaha") || 
+                 s.name.contains("Blue") ||
+                 s.name.contains("Yeti") ||
+                 s.name.contains("Audio-Technica"))
+        .or_else(|| sources.first());
+    
+    if let Some(mic) = preferred_mic {
+        // Set as default if not already
+        if !mic.is_default {
+            set_default_source(&mic.id)?;
+        }
+        
+        // Unmute if muted
+        if mic.is_muted {
+            unmute_source(&mic.id)?;
+        }
+        
+        // Set appropriate volume (70% is usually good for most mics)
+        set_source_volume(&mic.id, 70)?;
+        
+        success(&format!("Configured microphone: {}", mic.name));
+        
+        // Test microphone
+        println!("\nWould you like to test the microphone? [Y/n]: ");
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();
+        
+        if input.trim().is_empty() || input.trim().to_lowercase().starts_with('y') {
+            test_microphone(&mic.id)?;
+        }
+    } else {
+        return Err("No suitable microphone found".to_string());
+    }
+    
+    Ok(())
+}

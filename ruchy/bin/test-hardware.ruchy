@@ -1,0 +1,113 @@
+// RUC-008: Hardware Detection Library - RED Phase Test
+//
+// This demonstrates what we WANT to achieve.
+// RED phase: Will fail until we implement the hardware module.
+
+use hardware;
+
+fun main() {
+    println!("=== RUC-008 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: Can we import the hardware module?
+    println!("TEST 1: Module import");
+    println!("✓ Hardware module imported");
+    println!("");
+
+    // Test 2: CPU information
+    println!("TEST 2: CPU information");
+    match hardware::detect_cpu() {
+        Ok(cpu) => {
+            println!("✓ CPU detection succeeded");
+            println!("  Model: {}", cpu.model);
+            println!("  Cores: {}", cpu.cores);
+            println!("  Threads: {}", cpu.threads);
+            println!("  Architecture: {}", cpu.architecture);
+        }
+        Err(e) => {
+            println!("✗ CPU detection failed: {:?}", e);
+        }
+    }
+    println!("");
+
+    // Test 3: Memory information
+    println!("TEST 3: Memory information");
+    match hardware::detect_memory() {
+        Ok(mem) => {
+            println!("✓ Memory detection succeeded");
+            println!("  Total: {} MB", mem.total_mb);
+            println!("  Available: {} MB", mem.available_mb);
+            println!("  Used: {} MB", mem.used_mb);
+            println!("  Swap Total: {} MB", mem.swap_total_mb);
+        }
+        Err(e) => {
+            println!("✗ Memory detection failed: {:?}", e);
+        }
+    }
+    println!("");
+
+    // Test 4: GPU details
+    println!("TEST 4: Detailed GPU information");
+    match hardware::detect_gpus_detailed() {
+        Ok(gpus) => {
+            println!("✓ GPU detection succeeded");
+            println!("  GPUs found: {}", gpus.len());
+            let mut i = 0;
+            while i < gpus.len() {
+                let gpu = &gpus[i];
+                println!("  GPU {}: {} {}", i, gpu.vendor, gpu.model);
+                println!("    PCI ID: {}", gpu.pci_id);
+                println!("    Driver: {}", gpu.driver);
+                i = i + 1;
+            }
+        }
+        Err(e) => {
+            println!("✗ GPU detection failed: {:?}", e);
+        }
+    }
+    println!("");
+
+    // Test 5: Audio device details
+    println!("TEST 5: Detailed audio device information");
+    match hardware::detect_audio_devices_detailed() {
+        Ok(devices) => {
+            println!("✓ Audio device detection succeeded");
+            println!("  Devices found: {}", devices.len());
+            let mut i = 0;
+            while i < devices.len() {
+                let dev = &devices[i];
+                println!("  Device {}: {}", i, dev.name);
+                println!("    ID: {}", dev.id);
+                println!("    Driver: {}", dev.driver);
+                println!("    Channels: {}", dev.channels);
+                println!("    Sample Rate: {} Hz", dev.sample_rate);
+                i = i + 1;
+            }
+        }
+        Err(e) => {
+            println!("✗ Audio detection failed: {:?}", e);
+        }
+    }
+    println!("");
+
+    // Test 6: Complete hardware scan
+    println!("TEST 6: Complete hardware scan");
+    match hardware::detect_all_hardware() {
+        Ok(hw) => {
+            println!("✓ Complete hardware scan succeeded");
+            println!("  Audio devices: {}", hw.audio_devices.len());
+            println!("  GPUs: {}", hw.gpus.len());
+            println!("  CPU: {}", hw.cpu.model);
+            println!("  Memory: {} MB total", hw.memory.total_mb);
+            println!("  PCI devices: {}", hw.pci_devices.len());
+        }
+        Err(e) => {
+            println!("✗ Complete scan failed: {:?}", e);
+        }
+    }
+    println!("");
+
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this, the module structure is correct!");
+    println!("Next: Implement the hardware detection functions (GREEN phase)");
+}

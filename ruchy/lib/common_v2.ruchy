@@ -1,0 +1,75 @@
+// RUCHY-002: Common Utilities Implementation (RED Phase - Stub)
+// All functions unimplemented - tests will fail
+
+use std::collections::HashMap;
+
+// Command execution result
+struct CommandResult {
+    success: bool,
+    stdout: String,
+    stderr: String,
+    code: i32,
+}
+
+// Parse command-line arguments
+// Supports: --flag, --key=value, --key value, -f, -k value
+fun parse_args(args: Vec<String>) -> HashMap<String, String> {
+    panic!("parse_args not yet implemented - RED phase")
+}
+
+// Check if a command exists in PATH
+fun command_exists(command: &str) -> bool {
+    panic!("command_exists not yet implemented - RED phase")
+}
+
+// Require a command to exist or panic
+fun require_command(command: &str) {
+    panic!("require_command not yet implemented - RED phase")
+}
+
+// Run a command and capture output
+fun run_command(cmd: Vec<String>) -> CommandResult {
+    panic!("run_command not yet implemented - RED phase")
+}
+
+// Check if file or directory exists
+fun file_exists(path: &str) -> bool {
+    panic!("file_exists not yet implemented - RED phase")
+}
+
+// Create directory recursively
+fun ensure_dir(path: &str) {
+    panic!("ensure_dir not yet implemented - RED phase")
+}
+
+// Get environment variable with default
+fun get_env_or_default(key: &str, default_value: &str) -> String {
+    panic!("get_env_or_default not yet implemented - RED phase")
+}
+
+// Require environment variable or panic
+fun require_env(key: &str) -> String {
+    panic!("require_env not yet implemented - RED phase")
+}
+
+// Check if running as root (UID 0)
+fun is_root() -> bool {
+    panic!("is_root not yet implemented - RED phase")
+}
+
+// Require running as root or panic
+fun require_root() {
+    panic!("require_root not yet implemented - RED phase")
+}
+
+// Execute function with temporary directory (cleanup after)
+// TODO: Implement after compiler bug fixed
+// fun with_temp_dir(callback_name: &str) -> String {
+//     panic!("with_temp_dir not yet implemented - RED phase")
+// }
+
+// Interactive yes/no confirmation prompt
+// TODO: Implement after compiler bug fixed
+// fun confirm(message: &str, use_default: bool) -> bool {
+//     panic!("confirm not yet implemented - RED phase")
+// }

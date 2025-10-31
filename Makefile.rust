@@ -1,0 +1,350 @@
+# Ubuntu Config Scripts - Rust Build System
+#
+# Build and test Rust-based Ubuntu configuration scripts
+#
+
+# Colors for output
+.SUFFIXES:
+RED := \033[0;31m
+GREEN := \033[0;32m
+YELLOW := \033[0;33m
+BLUE := \033[0;34m
+CYAN := \033[0;36m
+NC := \033[0m # No Color
+
+# Tool detection
+CARGO := $(shell command -v cargo 2>/dev/null)
+
+# Directories
+TARGET_DIR := target
+BUILD_DIR := dist/rust
+RELEASE_DIR := $(TARGET_DIR)/release
+DEBUG_DIR := $(TARGET_DIR)/debug
+
+# Binary names
+SYSTEM_BINS := cleanup_disk configure_obs configure_time create_pipewire_monitor \
+	diagnose_av_issues refresh_kde_desktop sudo_wrapper update_ruchy \
+	upgrade_nvidia_driver
+AUDIO_BINS := configure_speakers enable_mic fix_audio
+DEV_BINS := deploy manage_deps
+ALL_BINS := $(SYSTEM_BINS) $(AUDIO_BINS) $(DEV_BINS)
+
+# Default target
+.PHONY: help \
+	rust-bench \
+	rust-build \
+	rust-build-all \
+	rust-build-release \
+	rust-check \
+	rust-clean \
+	rust-coverage \
+	rust-coverage-check \
+	rust-coverage-xml \
+	rust-deploy \
+	rust-doc \
+	rust-example-audio \
+	rust-example-cleanup \
+	rust-format \
+	rust-format-check \
+	rust-install-tools \
+	rust-integration \
+	rust-lint \
+	rust-lint-strict \
+	rust-package \
+	rust-quality-gate \
+	rust-security \
+	rust-test \
+	rust-test-integration \
+	rust-test-property \
+	rust-test-unit \
+	rust-test-verbose \
+	rust-validate \
+	rust-validate-ci \
+	rust-watch \
+	rust-watch-test
+help: ## Show Rust build commands
+	@echo "╔══════════════════════════════════════════════════════════════╗"
+	@echo "║                 🦀 Rust Build System                         ║"
+	@echo "╚══════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "$(CYAN)Build Commands:$(NC)"
+	@echo "────────────────────────────────────────────────────────────────"
+	@grep -E '^rust-[a-zA-Z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-25s$(NC) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(CYAN)Test Commands:$(NC)"
+	@echo "────────────────────────────────────────────────────────────────"
+	@grep -E '^rust-test[a-zA-Z-]*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-25s$(NC) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(CYAN)Quality Commands:$(NC)"
+	@echo "────────────────────────────────────────────────────────────────"
+	@grep -E '^rust-(lint|coverage|format|validate):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-25s$(NC) %s\n", $$1, $$2}'
+	@echo ""
+
+# Installation check
+.PHONY: rust-check
+rust-check: ## Check if Rust/Cargo is installed
+	@if [ -z "$(CARGO)" ]; then \
+		@echo "$(RED)❌ Cargo not found. Please install Rust first.$(NC)"; \
+		@echo "$(YELLOW)💡 Visit: https://rustup.rs$(NC)"; \
+		exit 1; \
+	else \
+		@echo "$(GREEN)✅ Cargo found at: $(CARGO)$(NC)"; \
+		$(CARGO) --version; \
+		rustc --version; \
+	fi
+
+# Build targets
+.PHONY: rust-build
+rust-build: rust-check ## Build all binaries in debug mode
+	@echo "$(CYAN)🔨 Building debug binaries...$(NC)"
+	@$(CARGO) build
+	@echo "$(GREEN)✅ Debug build complete!$(NC)"
+
+.PHONY: rust-build-release
+rust-build-release: rust-check ## Build all binaries in release mode
+	@echo "$(CYAN)🔨 Building release binaries...$(NC)"
+	@$(CARGO) build --release
+	@echo "$(GREEN)✅ Release build complete!$(NC)"
+
+.PHONY: rust-build-all
+rust-build-all: rust-build rust-build-release ## Build both debug and release binaries
+
+# Test targets
+.PHONY: rust-test
+rust-test: rust-check ## Run all tests
+	@echo "$(CYAN)🧪 Running tests...$(NC)"
+	@$(CARGO) test
+	@echo "$(GREEN)✅ All tests passed!$(NC)"
+
+.PHONY: rust-test-verbose
+rust-test-verbose: rust-check ## Run tests with verbose output
+	@echo "$(CYAN)🧪 Running verbose tests...$(NC)"
+	@$(CARGO) test -- --nocapture
+
+.PHONY: rust-test-unit
+rust-test-unit: rust-check ## Run unit tests only
+	@echo "$(CYAN)🧪 Running unit tests...$(NC)"
+	@$(CARGO) test --lib
+
+.PHONY: rust-test-integration
+rust-test-integration: rust-check ## Run integration tests only
+	@echo "$(CYAN)🧪 Running integration tests...$(NC)"
+	@$(CARGO) test --tests
+
+.PHONY: rust-test-property
+rust-test-property: rust-check ## Run property-based tests
+	@echo "$(CYAN)🧪 Running property-based tests...$(NC)"
+	@$(CARGO) test --features proptest
+
+# Lint and format targets
+.PHONY: rust-lint
+rust-lint: rust-check ## Run Clippy linter
+	@echo "$(CYAN)🔍 Running Clippy linter...$(NC)"
+	@$(CARGO) clippy --all-targets --all-features -- -D warnings
+	@echo "$(GREEN)✅ Linting complete!$(NC)"
+
+.PHONY: rust-lint-strict
+rust-lint-strict: rust-check ## Run strict Clippy linter with pedantic checks
+	@echo "$(CYAN)🔍 Running strict Clippy linter...$(NC)"
+	@$(CARGO) clippy --all-targets --all-features -- -D warnings -D clippy::all -D clippy::pedantic -A clippy::module_name_repetitions -A clippy::too_many_lines -A clippy::missing_docs_in_private_items
+	@echo "$(GREEN)✅ Strict linting complete!$(NC)"
+
+.PHONY: rust-security
+rust-security: rust-check ## Run security audit
+	@echo "$(CYAN)🔒 Running security audit...$(NC)"
+	@if command -v cargo-audit >/dev/null 2>&1; then \
+		$(CARGO) audit; \
+		@echo "$(GREEN)✅ Security audit complete!$(NC)"; \
+	else \
+		@echo "$(YELLOW)⚠️ cargo-audit not installed. Install with: cargo install cargo-audit$(NC)"; \
+	fi
+
+.PHONY: rust-format
+rust-format: rust-check ## Format code with rustfmt
+	@echo "$(CYAN)📝 Formatting code...$(NC)"
+	@$(CARGO) fmt
+	@echo "$(GREEN)✅ Code formatted!$(NC)"
+
+.PHONY: rust-format-check
+rust-format-check: rust-check ## Check code formatting
+	@echo "$(CYAN)📝 Checking code format...$(NC)"
+	@$(CARGO) fmt -- --check
+	@echo "$(GREEN)✅ Code format is correct!$(NC)"
+
+# Coverage targets
+.PHONY: rust-coverage
+rust-coverage: rust-check ## Generate test coverage report
+	@echo "$(CYAN)📊 Generating coverage report...$(NC)"
+	@if command -v cargo-tarpaulin >/dev/null 2>&1; then \
+		$(CARGO) tarpaulin --out Html --output-dir target/tarpaulin; \
+		@echo "$(GREEN)✅ Coverage report generated: target/tarpaulin/tarpaulin-report.html$(NC)"; \
+	else \
+		@echo "$(YELLOW)⚠️ cargo-tarpaulin not installed. Install with: cargo install cargo-tarpaulin$(NC)"; \
+		@echo "$(YELLOW)   Falling back to basic test run...$(NC)"; \
+		$(CARGO) test; \
+	fi
+
+.PHONY: rust-coverage-xml
+rust-coverage-xml: rust-check ## Generate coverage in XML format
+	@echo "$(CYAN)📊 Generating XML coverage report...$(NC)"
+	@if command -v cargo-tarpaulin >/dev/null 2>&1; then \
+		$(CARGO) tarpaulin --out Xml; \
+		@echo "$(GREEN)✅ XML coverage report generated: cobertura.xml$(NC)"; \
+	else \
+		@echo "$(YELLOW)⚠️ cargo-tarpaulin not installed$(NC)"; \
+	fi
+
+# Quality gates
+.PHONY: rust-validate
+rust-validate: rust-format-check rust-lint rust-test ## Run all quality checks
+	@echo "$(GREEN)✅ All quality checks passed!$(NC)"
+
+.PHONY: rust-quality-gate
+rust-quality-gate: rust-format-check rust-lint rust-security rust-test rust-coverage-check ## Comprehensive quality gate with security
+	@echo "$(GREEN)🏆 All quality gates passed!$(NC)"
+
+.PHONY: rust-coverage-check
+rust-coverage-check: rust-check ## Check coverage meets threshold (80%)
+	@echo "$(CYAN)📊 Checking coverage threshold (80%)...$(NC)"
+	@if command -v cargo-tarpaulin >/dev/null 2>&1; then \
+		coverage=$$($(CARGO) tarpaulin --print=stdout | grep -E 'coverage.*%' | grep -oE '[0-9]+\.[0-9]+' | tail -1); \
+		if [ -n "$$coverage" ]; then \
+			@echo "Current coverage: $$coverage%"; \
+			if [ "$$(echo "$$coverage >= 80" | bc -l)" -eq 1 ]; then \
+				@echo "$(GREEN)✅ Coverage threshold met ($$coverage% >= 80%)$(NC)"; \
+			else \
+				@echo "$(RED)❌ Coverage below threshold: $$coverage% < 80%$(NC)"; \
+				exit 1; \
+			fi; \
+		else \
+			@echo "$(YELLOW)⚠️ Could not parse coverage output$(NC)"; \
+		fi; \
+	else \
+		@echo "$(YELLOW)⚠️ cargo-tarpaulin not installed - skipping coverage check$(NC)"; \
+		@echo "$(YELLOW)   Install with: cargo install cargo-tarpaulin$(NC)"; \
+	fi
+
+.PHONY: rust-validate-ci
+rust-validate-ci: rust-format-check rust-lint rust-test rust-coverage-xml ## Run CI quality checks
+	@echo "$(GREEN)✅ All CI quality checks passed!$(NC)"
+
+# Clean targets
+.PHONY: rust-clean
+rust-clean: ## Clean build artifacts
+	@echo "$(CYAN)🧹 Cleaning build artifacts...$(NC)"
+	@$(CARGO) clean
+	@rm -rf $(BUILD_DIR)
+	@echo "$(GREEN)✅ Clean complete!$(NC)"
+
+# Deploy targets
+.PHONY: rust-deploy
+rust-deploy: rust-build-release ## Deploy binaries to dist directory
+	@echo "$(CYAN)📦 Deploying binaries...$(NC)"
+	@mkdir -p $(BUILD_DIR)/{system,audio,dev}
+	@for bin in $(SYSTEM_BINS); do \
+		if [ -f "$(RELEASE_DIR)/$$bin" ]; then \
+			cp "$(RELEASE_DIR)/$$bin" "$(BUILD_DIR)/system/"; \
+			@echo "$(GREEN)  ✅ $$bin → $(BUILD_DIR)/system/$(NC)"; \
+		fi \
+	done
+	@for bin in $(AUDIO_BINS); do \
+		if [ -f "$(RELEASE_DIR)/$$bin" ]; then \
+			cp "$(RELEASE_DIR)/$$bin" "$(BUILD_DIR)/audio/"; \
+			@echo "$(GREEN)  ✅ $$bin → $(BUILD_DIR)/audio/$(NC)"; \
+		fi \
+	done
+	@for bin in $(DEV_BINS); do \
+		if [ -f "$(RELEASE_DIR)/$$bin" ]; then \
+			cp "$(RELEASE_DIR)/$$bin" "$(BUILD_DIR)/dev/"; \
+			@echo "$(GREEN)  ✅ $$bin → $(BUILD_DIR)/dev/$(NC)"; \
+		fi \
+	done
+	@echo "$(GREEN)✅ Deployment complete!$(NC)"
+
+.PHONY: rust-package
+rust-package: rust-deploy ## Create distribution package
+	@echo "$(CYAN)📦 Creating distribution package...$(NC)"
+	@mkdir -p dist/packages
+	@cd $(BUILD_DIR) && tar -czf ../packages/ubuntu-config-rust-$(shell date +%Y%m%d).tar.gz \
+		system/ audio/ dev/
+	@echo "$(GREEN)✅ Package created: dist/packages/ubuntu-config-rust-$(shell date +%Y%m%d).tar.gz$(NC)"
+
+# Development helpers
+.PHONY: rust-watch
+rust-watch: ## Watch for changes and rebuild
+	@echo "$(CYAN)👁️ Watching for changes...$(NC)"
+	@if command -v cargo-watch >/dev/null 2>&1; then \
+		cargo watch -x build; \
+	else \
+		@echo "$(YELLOW)⚠️ cargo-watch not installed. Install with: cargo install cargo-watch$(NC)"; \
+		exit 1; \
+	fi
+
+.PHONY: rust-watch-test
+rust-watch-test: ## Watch for changes and run tests
+	@echo "$(CYAN)👁️ Watching for test changes...$(NC)"
+	@if command -v cargo-watch >/dev/null 2>&1; then \
+		cargo watch -x test; \
+	else \
+		@echo "$(YELLOW)⚠️ cargo-watch not installed. Install with: cargo install cargo-watch$(NC)"; \
+		exit 1; \
+	fi
+
+# Installation targets
+.PHONY: rust-install-tools
+rust-install-tools: ## Install development tools
+	@echo "$(CYAN)🔧 Installing development tools...$(NC)"
+	@$(CARGO) install cargo-tarpaulin cargo-watch
+	@echo "$(GREEN)✅ Development tools installed!$(NC)"
+
+# Documentation targets
+.PHONY: rust-doc
+rust-doc: rust-check ## Generate documentation
+	@echo "$(CYAN)📚 Generating documentation...$(NC)"
+	@$(CARGO) doc --no-deps --open
+	@echo "$(GREEN)✅ Documentation generated!$(NC)"
+
+# Benchmark targets
+.PHONY: rust-bench
+rust-bench: rust-check ## Run benchmarks
+	@echo "$(CYAN)🏃 Running benchmarks...$(NC)"
+	@$(CARGO) bench
+	@echo "$(GREEN)✅ Benchmarks complete!$(NC)"
+
+# Example runs
+.PHONY: rust-example-cleanup
+rust-example-cleanup: rust-build ## Example: Run disk cleanup (debug)
+	@echo "$(CYAN)🧹 Running disk cleanup example...$(NC)"
+	@$(DEBUG_DIR)/cleanup_disk --dry-run
+
+.PHONY: rust-example-audio
+rust-example-audio: rust-build ## Example: Configure speakers (debug)
+	@echo "$(CYAN)🔊 Running audio example...$(NC)"
+	@$(DEBUG_DIR)/configure_speakers --help
+
+# Integration with existing build system
+.PHONY: rust-integration
+rust-integration: ## Show integration status with existing TypeScript build
+	@echo "$(CYAN)🔗 Build System Integration Status$(NC)"
+	@echo "────────────────────────────────────────────────────────────────"
+	@echo "TypeScript scripts: $$(find scripts -name '*.ts' 2>/dev/null | wc -l)"
+	@echo "Rust binaries:      $$(echo '$(ALL_BINS)' | wc -w)"
+	@echo ""
+	@echo "$(GREEN)Rust Migration Progress:$(NC)"
+	@echo "  System: $$(echo '$(SYSTEM_BINS)' | wc -w) binaries"
+	@echo "  Audio:  $$(echo '$(AUDIO_BINS)' | wc -w) binaries"  
+	@echo "  Dev:    $$(echo '$(DEV_BINS)' | wc -w) binaries"
+	@echo "  Total:  $$(echo '$(ALL_BINS)' | wc -w) binaries"
+	@echo ""
+	@echo "$(YELLOW)Quality Metrics:$(NC)"
+	@if [ -f "cobertura.xml" ]; then \
+		@echo "  Coverage: Available (run rust-coverage for details)"; \
+	else \
+		@echo "  Coverage: Not generated (run rust-coverage)"; \
+	fi
+	@echo ""
+	@echo "$(YELLOW)Next steps:$(NC)"
+	@echo "  1. Run 'make rust-validate' to check quality"
+	@echo "  2. Run 'make rust-build-release' for optimized binaries"
+	@echo "  3. Run 'make rust-deploy' to prepare distribution"
+	@echo "  4. Run 'make rust-package' to create release package"

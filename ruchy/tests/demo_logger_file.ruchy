@@ -1,0 +1,112 @@
+// Demo: Logger with File Support
+// Tests the logger_file module implementation
+
+mod logger_file;
+use std::fs;
+
+fun main() {
+    println!("========================================");
+    println!("Logger with File Support - Demo");
+    println!("========================================");
+    println!("");
+
+    let log_file = "/tmp/ruchy_logger_demo.log";
+
+    // Clean up any existing log
+    match fs::remove_file(log_file) {
+        Ok(_) => {},
+        Err(e) => {}, // Ignore if doesn't exist
+    }
+
+    println!("Demo 1: Console-only logging");
+    println!("------------------------------");
+    logger_file::info(String::from("Application started"));
+    logger_file::warn(String::from("This is a warning"));
+    logger_file::error(String::from("This is an error"));
+    println!("");
+
+    println!("Demo 2: File-only logging");
+    println!("------------------------------");
+    match logger_file::log_file_new(String::from(log_file), String::from("INFO"), String::from("First log entry")) {
+        Ok(_) => println!("✅ File log created"),
+        Err(e) => {
+            println!("❌ File log failed: {}", e);
+            return;
+        },
+    }
+
+    // Verify file was created
+    match fs::read_to_string(log_file) {
+        Ok(content) => {
+            println!("✅ File content:");
+            println!("{}", content);
+        },
+        Err(e) => {
+            println!("❌ File read failed");
+            return;
+        },
+    }
+
+    println!("Demo 3: Append to log file");
+    println!("------------------------------");
+    match logger_file::log_file_append(String::from(log_file), String::from("WARN"), String::from("Second log entry")) {
+        Ok(_) => println!("✅ Log appended"),
+        Err(e) => {
+            println!("❌ Append failed: {}", e);
+            return;
+        },
+    }
+
+    match logger_file::log_file_append(String::from(log_file), String::from("ERROR"), String::from("Third log entry")) {
+        Ok(_) => println!("✅ Log appended"),
+        Err(e) => {
+            println!("❌ Append failed: {}", e);
+            return;
+        },
+    }
+
+    // Show final file contents
+    match fs::read_to_string(log_file) {
+        Ok(content) => {
+            println!("✅ Final file content:");
+            println!("{}", content);
+        },
+        Err(e) => {
+            println!("❌ File read failed");
+            return;
+        },
+    }
+
+    println!("Demo 4: Log to both console and file");
+    println!("------------------------------");
+    logger_file::log_both(String::from(log_file), String::from("INFO"), String::from("Logged to both targets"));
+    println!("✅ Logged to console and file");
+    println!("");
+
+    println!("Demo 5: Convenience functions with file");
+    println!("------------------------------");
+    logger_file::info_file(String::from(log_file), String::from("Info message with file"));
+    logger_file::warn_file(String::from(log_file), String::from("Warning message with file"));
+    logger_file::error_file(String::from(log_file), String::from("Error message with file"));
+    println!("");
+
+    // Show final file
+    println!("Final log file contents:");
+    println!("========================");
+    match fs::read_to_string(log_file) {
+        Ok(content) => println!("{}", content),
+        Err(e) => println!("❌ Read failed"),
+    }
+
+    // Cleanup
+    println!("Cleanup...");
+    match fs::remove_file(log_file) {
+        Ok(_) => println!("✅ Demo log file removed"),
+        Err(e) => println!("⚠️  Cleanup warning"),
+    }
+
+    println!("");
+    println!("========================================");
+    println!("Demo Complete!");
+    println!("========================================");
+}

@@ -1,0 +1,556 @@
+# Claude Context for Ubuntu Config Scripts
+
+This document provides context for Claude or other AI assistants working on this project.
+
+## CRITICAL REQUIREMENTS - RUCHY BUG FILING
+
+**MANDATORY - STOP THE LINE**: When discovering Ruchy bugs or unoptimal behavior, you MUST:
+
+1. **Use Debugging Tools Before Filing**:
+   ```bash
+   # Parse AST to show what was parsed
+   ruchy parse file.ruchy
+
+   # Run with trace and verbose
+   ruchy --verbose --trace run file.ruchy
+
+   # Use ruchyruchy debugging tools
+   ruchydbg run file.ruchy
+   ```
+
+2. **Include in Bug Report**:
+   - Minimal reproduction case
+   - AST output from `ruchy parse`
+   - Trace output from `ruchy --verbose --trace run`
+   - Expected vs actual behavior
+   - Impact on development
+
+3. **Toyota Way - Stop the Line**:
+   - Halt implementation immediately when bug discovered
+   - Don't waste time on workarounds for unknown issues
+   - File comprehensive bug report with debugging data
+   - Document blocker in project docs
+
+4. **Never Skip Debugging Tools**:
+   - Always run `ruchy parse` to see AST
+   - Always run `ruchy --trace` to see execution
+   - Use `ruchydbg` for timeout and execution analysis
+
+## CRITICAL REQUIREMENTS - PMAT QUALITY GATES
+
+**MANDATORY**: PMAT MUST be used ONLY via MCP (Model Context Protocol) registration:
+
+### PMAT MCP Integration
+
+**IMPORTANT**: Do NOT run pmat commands directly in the terminal or Makefile. PMAT must be:
+1. **Registered as an MCP server** in Claude Desktop
+2. **Used via MCP tools** that appear as `mcp_pmat_*` functions
+3. **Accessed through the MCP protocol** for all quality gates
+
+### Setting Up PMAT MCP
+
+```json
+// In Claude Desktop settings:
+{
+  "mcpServers": {
+    "pmat": {
+      "command": "pmat",
+      "args": ["serve", "--mode", "mcp"]
+    }
+  }
+}
+```
+
+### Using PMAT via MCP
+
+Once registered, use PMAT features through MCP tools:
+- `mcp_pmat_analyze` - Analyze code quality
+- `mcp_pmat_quality_gate` - Run quality gate checks
+- `mcp_pmat_context` - Generate project context
+- `mcp_pmat_enforce` - Enforce quality standards
+- `mcp_pmat_refactor` - Refactor code with analysis
+
+### Quality Gate Requirements
+
+- **Test Coverage**: Minimum 80% for all scripts
+- **Code Quality**: No critical issues from PMAT analysis via MCP
+- **Security**: No security vulnerabilities detected
+- **Architecture**: Must follow project architecture patterns
+- **Complexity**: Cyclomatic complexity must be within limits
+
+### Workflow
+
+1. **Before ANY commit**: Use MCP tools to run quality gates
+2. **During development**: Use MCP context generation for understanding
+3. **For refactoring**: Use MCP refactor tools with real-time analysis
+4. **Quality enforcement**: Use MCP enforce for extreme quality standards
+
+## Ubuntu Scripts MCP Integration
+
+**NEW**: Ubuntu Config Scripts now provides its own MCP server for semantic script discovery!
+
+### Setting Up Ubuntu Scripts MCP
+
+```json
+// In Claude Desktop settings:
+{
+  "mcpServers": {
+    "pmat": {
+      "command": "pmat",
+      "args": ["serve", "--mode", "mcp"]
+    },
+    "ubuntu-scripts": {
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-env",
+        "--allow-net",
+        "--allow-read",
+        "/home/YOUR_USERNAME/src/ubuntu-config-scripts/scripts/mcp-server.ts"
+      ],
+      "env": {
+        "TURSO_URL": "libsql://your-database.turso.io",
+        "TURSO_AUTH_TOKEN": "your-auth-token",
+        "OPENAI_API_KEY": "sk-your-api-key"
+      }
+    }
+  }
+}
+```
+
+### Using Ubuntu Scripts via MCP
+
+Once registered, use these MCP tools for script discovery:
+- `search_scripts` - Natural language semantic search (e.g., "find audio configuration scripts")
+- `list_scripts` - Browse all scripts, optionally filtered by category
+- `get_script` - Get detailed information about a specific script
+
+**Example Usage**:
+```
+User: "How do I fix microphone issues?"
+Claude: [Uses search_scripts tool with query "fix microphone"]
+Claude: "I found 3 relevant scripts: enable-mic.ts, configure-audio.ts, diagnose-av-issues.ts..."
+```
+
+### Prerequisites for MCP Server
+
+1. **Seed the database**: Run `make seed-db` to index all scripts
+2. **Configure .env**: Add Turso and OpenAI credentials
+3. **Restart Claude Desktop**: After adding MCP server configuration
+
+See [docs/MCP_INTEGRATION.md](docs/MCP_INTEGRATION.md) for complete setup instructions.
+
+## Project Overview
+
+Ubuntu Config Scripts is a collection of system configuration and management tools for Ubuntu, available in two implementations:
+
+### Ruchy Implementation (Primary)
+Located in `/ruchy/` directory - **This is the main, production-ready version:**
+- **Language**: Ruchy v3.147.8 (modern systems programming language, self-hosting compiler)
+- **Compiler**: Install via `cargo install ruchy` (main Ruchy project: https://github.com/paiml/ruchy)
+- **Performance**: 3-5x faster than TypeScript, <100ms startup
+- **Type Safety**: Compile-time type checking with runtime validation
+- **Testing**: Comprehensive property-based testing with QuickCheck/PropTest
+- **Debugging Tools**: RuchyRuchy toolkit v1.6.1+ (`cargo install ruchyruchy`) for bug detection
+- **Quality Gates**: Strict PMAT enforcement (80% coverage, complexity limits)
+- **CI/CD**: Self-hosted GitHub Actions runners
+- **Distribution**: Single binary, .deb packages, AppImage support
+
+### TypeScript Implementation (Legacy)
+Located in project root - **Maintained for compatibility:**
+- **Language**: Deno TypeScript
+- **Type Safety**: Strict TypeScript with runtime validation
+- **Testing**: Property-based testing with fast-check
+- **Quality Gates**: PMAT enforcement for all code
+- **CI/CD**: Self-hosted GitHub Actions runners
+- **Architecture**: No bash scripts allowed - all TypeScript
+
+## Key Design Decisions
+
+### 1. Ruchy-First Development (Primary)
+- **Language**: Ruchy v3.147.8 with Rust interoperability
+- **Installation**: `cargo install ruchy` (production compiler from https://github.com/paiml/ruchy)
+- **Performance**: Compiled binaries with zero runtime dependencies
+- **Type Safety**: Compile-time guarantees with runtime validation
+- **Testing**: Property-based testing with 1000+ iterations per test, timeout-based hang detection
+- **Debugging**: RuchyRuchy toolkit (`cargo install ruchyruchy`) for automated bug discovery
+- **Architecture**: Single binary deployment model
+
+### 2. TypeScript Legacy Support
+- **Requirement**: NO bash scripts allowed (TypeScript version only)
+- All legacy scripts in TypeScript for Deno runtime
+- Scripts compiled to standalone binaries for deployment
+
+### 2. Strict Type Checking
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true
+  }
+}
+```
+
+### 3. Property-Based Testing
+- Uses fast-check for property testing
+- Tests invariants and contracts
+- Located in `tests/**/*.property.test.ts`
+
+### 4. Makefile-Driven Workflow
+- Main Makefile includes category-specific Makefiles
+- Categories: audio, system, dev
+- Auto-update Deno before commands
+
+### 5. Self-Hosted CI/CD
+- Self-hosted GitHub Actions runners
+- Workflows in `.github/workflows/`
+
+## Ruchy Ecosystem
+
+### Main Ruchy Project (Production Compiler)
+- **Repository**: https://github.com/paiml/ruchy
+- **Status**: ✅ Self-hosting compiler (August 2025)
+- **Installation**: `cargo install ruchy --version 3.147.9`
+- **Version**: **v3.147.9+** (REQUIRED - stdlib issues resolved)
+- **Purpose**: Production Ruchy compiler
+- **Fixed Issues**:
+  - ✅ Issue #79: Enum field casts (v3.147.6+)
+  - ✅ Issue #82: chrono::Utc support (v3.147.9+)
+  - ✅ Issue #83: format! macro (v3.147.9+)
+
+### RuchyRuchy Project (Bootstrap & Debugging Tools)
+- **Repository**: https://github.com/paiml/ruchyruchy
+- **Status**: ✅ Educational resource & development tools
+- **Installation**: `cargo install ruchyruchy`
+- **Purpose**: Bootstrap education, debugging toolkit, quality analysis
+- **Tools**:
+  - `ruchydbg run` - Debug Ruchy programs with timeouts
+  - `ruchydbg validate` - Validate RuchyRuchy installation (requires full repo)
+  - Quality analysis tools (mutation testing, code churn, ML defect prediction)
+
+**Relationship**: RuchyRuchy provides educational resources and debugging tools to support the main Ruchy compiler project. Use `ruchy` for compilation, `ruchydbg` for debugging.
+
+**Quick Start for Testing**:
+```bash
+# Install both tools
+cargo install ruchy          # Production compiler
+cargo install ruchyruchy     # Debugging toolkit
+
+# Test for bugs
+timeout 1 ruchy run test.ruchy           # Detect hangs
+ruchydbg run test.ruchy --timeout 1000   # Debug with details
+```
+
+## Project Structure
+
+```
+ubuntu-config-scripts/
+├── ruchy/                   # RUCHY IMPLEMENTATION (PRIMARY)
+│   ├── Cargo.toml          # Rust dependencies
+│   ├── Makefile            # Ruchy build system with PMAT
+│   ├── .pmat.toml          # PMAT quality configuration
+│   ├── src/main.ruchy      # Main CLI application
+│   ├── lib/                # Core libraries
+│   │   ├── logger.ruchy    # High-performance logging
+│   │   ├── common.ruchy    # System utilities
+│   │   └── schema.ruchy    # Type-safe validation
+│   ├── audio/              # Audio configuration modules
+│   │   ├── configure_speakers.ruchy
+│   │   ├── enable_mic.ruchy
+│   │   └── fix_audio.ruchy
+│   ├── system/             # System management modules
+│   │   ├── diagnose_av.ruchy
+│   │   ├── check_davinci.ruchy
+│   │   ├── configure_obs.ruchy
+│   │   └── pipewire_monitor.ruchy
+│   ├── dev/                # Development tools
+│   │   ├── install_pmat_deps.ruchy
+│   │   ├── ruchy_monitor.ruchy
+│   │   ├── deploy.ruchy
+│   │   └── bridge_validator.ruchy
+│   ├── tests/              # Property-based test suite
+│   └── README.md           # Ruchy-specific documentation
+├── scripts/                 # TYPESCRIPT IMPLEMENTATION (LEGACY)
+│   ├── lib/                # TypeScript shared libraries
+│   ├── audio/              # TypeScript audio scripts
+│   ├── system/             # TypeScript system scripts
+│   └── dev/                # TypeScript development scripts
+├── Makefile                # TypeScript build system
+└── README.md               # Main project documentation
+```
+
+## Common Tasks
+
+### Adding a New Ruchy Script (Recommended)
+
+1. **Create script** in appropriate directory under `ruchy/`
+2. **Use shared libraries** from `ruchy/lib/`
+3. **Add property-based tests** in `ruchy/tests/`
+4. **Test for hangs/bugs** with timeout: `timeout 1 ruchy run script.ruchy`
+5. **Add Make target** to `ruchy/Makefile`
+6. **Ensure PMAT quality gates pass** (80% coverage, complexity < 10)
+7. **Run `make validate`** before commit
+
+### Testing Ruchy Scripts for Bugs
+
+**Use timeout-based testing** to catch hangs and infinite loops:
+
+```bash
+# Test for hangs (most common Ruchy bug)
+timeout 1 ruchy run test.ruchy
+# Exit code 0 = success
+# Exit code 124 = timeout (BUG!)
+# Other = crash (also a bug)
+
+# Debug with RuchyRuchy tools
+ruchydbg run test.ruchy --timeout 1000
+
+# Run regression tests
+for test in ruchy/tests/*.ruchy; do
+    timeout 1 ruchy run "$test" || echo "FAILED: $test"
+done
+```
+
+**Key Pattern**: Always test that scripts complete within reasonable time (1 second for most tests)
+
+**See also**: [RuchyRuchy Quick Start](https://github.com/pragmatic-ai-labs/ruchyruchy/blob/main/QUICK_START_FOR_RUCHY_DEVS.md) for detailed bug discovery workflow
+
+### Adding a New TypeScript Script (Legacy)
+
+1. Create script in appropriate directory under `scripts/`
+2. Use shared libraries from `scripts/lib/`
+3. Add tests in `tests/`
+4. Add Make target to appropriate Makefile
+5. Ensure strict typing and property tests
+
+### Working with Dependencies
+
+```bash
+make deps           # List dependencies
+make deps-outdated  # Check for updates
+make deps-update    # Update all dependencies
+make deps-lock      # Update lock file
+```
+
+### Running CI Locally
+
+```bash
+make validate       # Run full validation
+make test-property  # Run property tests
+make check         # Type check only
+```
+
+### Deployment
+
+```bash
+make deploy                    # Build all binaries
+make deploy-package            # Create distribution package
+make deploy TARGETS=linux      # Build for specific platform
+```
+
+## Type Safety Patterns
+
+### Runtime Validation
+```typescript
+import { z } from "./lib/schema.ts";
+
+const ConfigSchema = z.object({
+  port: z.number().int().min(1).max(65535),
+  debug: z.boolean(),
+});
+
+type Config = z.infer<typeof ConfigSchema>;
+const config = ConfigSchema.parse(data); // Runtime validation
+```
+
+### Exhaustive Pattern Matching
+```typescript
+type Command = 
+  | { type: "start" }
+  | { type: "stop" }
+  | { type: "restart" };
+
+function handle(cmd: Command) {
+  switch (cmd.type) {
+    case "start": return start();
+    case "stop": return stop();
+    case "restart": return restart();
+    // No default needed - TypeScript ensures exhaustiveness
+  }
+}
+```
+
+### Property Testing
+```typescript
+import { fc } from "../../deps.ts";
+
+fc.assert(
+  fc.property(fc.array(fc.integer()), (arr) => {
+    const sorted = [...arr].sort((a, b) => a - b);
+    // Test invariants
+    assertEquals(sorted.length, arr.length);
+  })
+);
+```
+
+## Troubleshooting
+
+### Type Errors
+- Check `deno.json` for strict settings
+- Use `make check` to validate types
+- Look for `noUncheckedIndexedAccess` issues with arrays
+
+### Test Failures
+- Property tests may find edge cases
+- Check test output for counterexamples
+- Use `make test-watch` for debugging
+
+### CI Issues
+- Self-hosted runners use labels: `[self-hosted, Linux, X64]`
+- Runner may lack tools like `unzip` - we install Deno manually
+- Auto-update is disabled in CI (`AUTO_UPDATE_DENO=false`)
+
+## Important Notes
+
+1. **Never use bash scripts** - All functionality must be TypeScript
+2. **ALWAYS run `make validate` before committing** - This includes PMAT quality gates
+3. **Use PMAT todo management** - Track all tasks with `pmat todo`
+4. **Maintain 80% test coverage** - Verify with `pmat coverage`
+5. **Use property tests for complex logic**
+6. **Prefer exhaustive type checking over runtime checks**
+7. **Auto-update is enabled by default** - Set `AUTO_UPDATE_DENO=false` to disable
+8. **Run `pmat check --all` before EVERY push to GitHub**
+
+## Recent Additions
+
+### OBS Studio Configuration (configure-obs.ts)
+- Automated OBS setup for screencasting and course recording
+- Hardware encoder detection (NVIDIA NVENC, VAAPI, x264)
+- 1080p recording optimized for DaVinci Resolve (MOV format, CRF 16)
+- Audio device configuration with Yamaha mic support
+- Scene and source management
+- Hotkey configuration
+- Fix for screen capture issues (fix-obs-capture.ts)
+- Launch script with XSHM capture support
+
+### DaVinci Resolve Support
+- NVIDIA driver management (upgrade-nvidia-driver.ts)
+- GPU optimization with prime-select nvidia for dedicated GPU usage
+- Launch script with window positioning fixes (launch-davinci.ts)
+- Audio configuration: Use WAV/AIFF with PCM audio for Linux compatibility
+- OBS Integration: Record in MOV format with PCM audio for DaVinci import
+
+### Audio/Video Diagnostics
+- Comprehensive audio/video diagnostic tool (diagnose-av-issues.ts)
+- Real-time playback testing with FFmpeg-generated test files
+- Audio sink detection and status monitoring
+- Video acceleration testing (VA-API, NVDEC)
+- Hardware encoder detection and validation
+- Network streaming diagnostics
+- System resource monitoring
+- Automated fix generation and application
+- PipeWire/PulseAudio troubleshooting
+- GPU driver and CUDA diagnostics
+
+### Audio System Management
+- External speaker configuration (configure-speakers.ts)
+- Audio troubleshooting and device detection
+- Property-based testing for audio configurations
+- Automatic audio sink management and restart
+- PipeWire monitor service (create-pipewire-monitor.ts): Auto-recovery from audio errors
+  - Monitors for "Broken pipe" and error states every 30 seconds
+  - Automatically restarts PipeWire services when issues detected
+  - Configures PipeWire with improved buffer and timeout settings
+  - Prevents recurring audio failures with systemd service
+
+### Disk Management Tools
+- Disk usage analyzer (analyze-disk-usage.ts): Find large files and directories
+- Smart cleanup tool (cleanup-disk.ts): Safe cleanup with dry-run mode
+- Rust build artifact cleanup: Automatic `cargo clean` for all projects
+- Cache management: Clean .cache, trash, and temp directories
+- System cleanup: APT, snap, journal logs integration
+- rclean integration: Suggests interactive cleanup targets
+
+## Known Issues and Solutions
+
+### Ruchy Compiler Status (v3.147.9) ✅ ALL ISSUES RESOLVED
+
+**✅ FIXED - Enum Field Cast via &self** (Issue #79)
+- **Status**: ✅ **FULLY FIXED in v3.147.6** (verified across v3.147.6/7/8/9)
+- **Coverage**: 15/15 enum cast variants pass (100%)
+- **Testing**: Comprehensive schema-based testing with ruchydbg v1.6.1
+- **Details**: See [RUCHY-V3.147.9-TEST-RESULTS.md](RUCHY-V3.147.9-TEST-RESULTS.md)
+
+**✅ FIXED - chrono::Utc Support** (Issue #82)
+- **Status**: ✅ **FIXED in v3.147.9**
+- **Available**: `use chrono::Utc;`, `Utc::now()`, debug formatting
+- **Minor Limitation**: `.to_rfc3339()` method not yet implemented (can work around)
+
+**✅ FIXED - format! Macro** (Issue #83)
+- **Status**: ✅ **FIXED in v3.147.9**
+- **Available**: `format!("text: {}", value)`, `{:?}` debug formatting, multiple args
+
+**Other Known Issues**:
+- **Issue #75**: Command.output() hang (still present)
+- **Minor**: chrono `.to_rfc3339()` method not implemented (non-blocking)
+
+**Status**: ✅ **Development UNBLOCKED** - All blocking issues resolved!
+
+**Testing for Bugs**:
+```bash
+# Use ruchydbg run for proper timeout detection
+ruchydbg run your_script.ruchy --timeout 5000
+
+# Exit codes:
+# 0 = Success
+# 124 = Timeout (potential hang/infinite loop)
+# 1+ = Runtime error or crash
+```
+
+**Bug Reporting**: File detailed issues at https://github.com/paiml/ruchy/issues with:
+1. Minimal reproduction case (< 20 lines)
+2. Ruchy version (`ruchy --version`)
+3. RuchyRuchy version (`ruchydbg --version`)
+4. Expected vs. actual behavior
+5. Test results from `ruchydbg run` showing exit code
+
+### DaVinci Resolve Audio on Linux
+- DaVinci on Linux has issues with AAC audio codec
+- Solution: Use WAV, AIFF, or MOV files with PCM audio
+- For OBS recordings: Set format to MOV with pcm_s24le audio encoder
+- Convert existing files: `ffmpeg -i input.mp4 -c:v copy -c:a pcm_s24le output.mov`
+- Ensure system uses NVIDIA GPU: `sudo prime-select nvidia`
+
+### OBS Black Screen on Ubuntu
+- PipeWire capture may fail on X11 systems
+- Solution: Use "Screen Capture (XSHM)" instead of PipeWire
+- Run `make system-obs-launch` for proper environment setup
+
+### Audio Issues After Reboot
+- PipeWire audio nodes may enter error state after system restart
+- Symptoms: Audio sinks show "(null)" status, "Broken pipe" errors in logs
+- Quick fix: Restart PipeWire services with `systemctl --user restart pipewire pipewire-pulse`
+- Permanent solution: Run `make system-pipewire-monitor` to install auto-recovery service
+  - Creates systemd service that monitors and fixes audio automatically
+  - Applies PipeWire configuration to prevent "Broken pipe" errors
+  - Service persists across reboots and auto-starts on login
+
+### Audio/Video Playback Testing
+- Comprehensive diagnostic tool available: `make system-av-diagnose`
+- Real playback testing: `make system-av-test-playback`
+- Automatic fix application: `make system-av-fix`
+- Handles suspended audio sinks, wrong default devices, and hardware issues
+
+## Future Enhancements
+
+- [ ] Network configuration scripts
+- [ ] System monitoring scripts
+- [ ] Package installation automation
+- [ ] Configuration templating
+- [ ] Remote execution capabilities
+- [ ] Automated backup scripts
+- [ ] Docker/Podman integration
+- never "workaround" toyota way.

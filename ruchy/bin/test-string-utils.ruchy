@@ -1,0 +1,91 @@
+// RUC-014: String Utilities Library - RED PHASE TEST
+//
+// Test for string utility functions
+// Will FAIL until string_utils module is implemented
+
+use string_utils;
+
+fun main() {
+    println!("=== RUC-014 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: Capitalize
+    println!("TEST 1: Capitalize");
+    let result = string_utils::capitalize("hello");
+    println!("  Input: 'hello'");
+    println!("  Result: '{}'", result);
+    if result == "Hello" {
+        println!("✓ Capitalize works");
+    } else {
+        println!("✗ Capitalize failed (expected 'Hello')");
+    }
+
+    // Test 2: Title case
+    println!("");
+    println!("TEST 2: Title case");
+    let result = string_utils::to_title_case("hello world");
+    println!("  Input: 'hello world'");
+    println!("  Result: '{}'", result);
+    if result == "Hello World" {
+        println!("✓ Title case works");
+    } else {
+        println!("✗ Title case failed (expected 'Hello World')");
+    }
+
+    // Test 3: Is numeric
+    println!("");
+    println!("TEST 3: Is numeric");
+    let is_num = string_utils::is_numeric("123");
+    let is_not_num = string_utils::is_numeric("abc");
+    println!("  '123' is numeric: {}", is_num);
+    println!("  'abc' is numeric: {}", is_not_num);
+    if is_num && !is_not_num {
+        println!("✓ Is numeric works");
+    } else {
+        println!("✗ Is numeric failed");
+    }
+
+    // Test 4: Is empty or whitespace
+    println!("");
+    println!("TEST 4: Is empty or whitespace");
+    let is_empty1 = string_utils::is_empty_or_whitespace("");
+    let is_empty2 = string_utils::is_empty_or_whitespace("   ");
+    let is_not_empty = string_utils::is_empty_or_whitespace("hello");
+    println!("  '' is empty: {}", is_empty1);
+    println!("  '   ' is empty: {}", is_empty2);
+    println!("  'hello' is empty: {}", is_not_empty);
+    if is_empty1 && is_empty2 && !is_not_empty {
+        println!("✓ Is empty or whitespace works");
+    } else {
+        println!("✗ Is empty or whitespace failed");
+    }
+
+    // Test 5: Truncate
+    println!("");
+    println!("TEST 5: Truncate");
+    let result = string_utils::truncate("hello world", 5);
+    println!("  Input: 'hello world', max: 5");
+    println!("  Result: '{}'", result);
+    if result == "hello" {
+        println!("✓ Truncate works");
+    } else {
+        println!("✗ Truncate failed (expected 'hello')");
+    }
+
+    // Test 6: Word count
+    println!("");
+    println!("TEST 6: Word count");
+    let count = string_utils::word_count("The quick brown fox");
+    println!("  Input: 'The quick brown fox'");
+    println!("  Count: {}", count);
+    if count == 4 {
+        println!("✓ Word count works");
+    } else {
+        println!("✗ Word count failed (expected 4)");
+    }
+
+    println!("");
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this, the test structure is correct!");
+    println!("Next: Implement string_utils module (GREEN phase)");
+}

@@ -1,0 +1,66 @@
+// RUC-007: Test file for ubuntu-diag CLI
+// Phase: RED - These tests will fail until CLI is implemented
+// Created: 2025-10-31
+
+// This file demonstrates expected behavior for the ubuntu-diag CLI tool
+// Manual test execution:
+//   ruchy bin/ubuntu-diag.ruchy              # Test 1: Default (all diagnostics)
+//   ruchy bin/ubuntu-diag.ruchy all          # Test 2: Explicit all
+//   ruchy bin/ubuntu-diag.ruchy audio        # Test 3: Audio only
+//   ruchy bin/ubuntu-diag.ruchy video        # Test 4: Video only
+//   ruchy bin/ubuntu-diag.ruchy services     # Test 5: Services only
+//   ruchy bin/ubuntu-diag.ruchy help         # Test 6: Help text
+//   ruchy bin/ubuntu-diag.ruchy --help       # Test 7: Help text (alt)
+//   ruchy bin/ubuntu-diag.ruchy invalid      # Test 8: Unknown command
+
+fun main() {
+    println!("=== RUC-007 Test Suite ===");
+    println!("");
+
+    println!("Expected behavior:");
+    println!("");
+    println!("TEST 1: ubuntu-diag (no args)");
+    println!("  → Should run all diagnostics");
+    println!("  → Should show audio, video, services sections");
+    println!("");
+
+    println!("TEST 2: ubuntu-diag all");
+    println!("  → Should run all diagnostics");
+    println!("  → Same as test 1");
+    println!("");
+
+    println!("TEST 3: ubuntu-diag audio");
+    println!("  → Should run ONLY audio diagnostics");
+    println!("  → Should show PipeWire, sinks, sources");
+    println!("");
+
+    println!("TEST 4: ubuntu-diag video");
+    println!("  → Should run ONLY video diagnostics");
+    println!("  → Should show GPU info");
+    println!("");
+
+    println!("TEST 5: ubuntu-diag services");
+    println!("  → Should run ONLY services diagnostics");
+    println!("  → Should show systemd service status");
+    println!("");
+
+    println!("TEST 6: ubuntu-diag help");
+    println!("  → Should show help/usage information");
+    println!("  → Should list all available commands");
+    println!("");
+
+    println!("TEST 7: ubuntu-diag --help");
+    println!("  → Should show help/usage information");
+    println!("  → Same as test 6");
+    println!("");
+
+    println!("TEST 8: ubuntu-diag invalid");
+    println!("  → Should show error message");
+    println!("  → Should show help text");
+    println!("");
+
+    println!("=== END TEST SUITE ===");
+    println!("");
+    println!("Run these tests manually with the commands above");
+    println!("Expected: CLI should be implemented and all tests should pass");
+}

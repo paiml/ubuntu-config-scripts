@@ -1,0 +1,169 @@
+// RUC-005 Production Logger Tests
+// Extreme TDD - RED Phase
+// Ruchy v3.158.0+
+
+use std::fs;
+
+// Test 1: Timestamps - Log entries should have timestamps
+fun test_log_with_timestamp() {
+    println!("\n=== TEST 1: Timestamp Formatting ===");
+
+    let log_file = "/tmp/ruchy_test_timestamp.log";
+
+    // This should create a log entry with timestamp
+    // Format: [2025-10-31 12:34:56] [INFO] Test message
+    match log_with_timestamp(log_file, "INFO", "Test message") {
+        Ok(_) => {
+            match fs::read_to_string(log_file) {
+                Ok(content) => {
+                    println!("Log content: {}", content);
+
+                    // Should contain timestamp pattern [YYYY-MM-DD HH:MM:SS]
+                    if content.contains("[202") && content.contains("] [INFO]") {
+                        println!("✅ PASS: Timestamp format detected");
+                    } else {
+                        println!("❌ FAIL: No timestamp found");
+                    }
+                },
+                Err(e) => println!("❌ FAIL: Cannot read log file"),
+            }
+        },
+        Err(e) => println!("❌ FAIL: Log function failed"),
+    }
+
+    // Cleanup
+    match fs::remove_file(log_file) {
+        Ok(_) => {},
+        Err(e) => {},
+    }
+}
+
+// Test 2: Log Level Filtering - Only log messages >= threshold
+fun test_log_level_filtering() {
+    println!("\n=== TEST 2: Log Level Filtering ===");
+
+    let log_file = "/tmp/ruchy_test_filtering.log";
+
+    // Set minimum level to WARN
+    // DEBUG and INFO should be ignored
+    // WARN and ERROR should be logged
+
+    match log_with_min_level(log_file, "DEBUG", "This should not appear", "WARN") {
+        Ok(_) => {},
+        Err(e) => {},
+    }
+
+    match log_with_min_level(log_file, "INFO", "This should not appear", "WARN") {
+        Ok(_) => {},
+        Err(e) => {},
+    }
+
+    match log_with_min_level(log_file, "WARN", "This should appear", "WARN") {
+        Ok(_) => {},
+        Err(e) => {},
+    }
+
+    match log_with_min_level(log_file, "ERROR", "This should also appear", "WARN") {
+        Ok(_) => {},
+        Err(e) => {},
+    }
+
+    // Read file and verify only WARN and ERROR are present
+    match fs::read_to_string(log_file) {
+        Ok(content) => {
+            println!("Filtered log:\n{}", content);
+
+            let has_debug = content.contains("DEBUG");
+            let has_info = content.contains("INFO");
+            let has_warn = content.contains("WARN");
+            let has_error = content.contains("ERROR");
+
+            if !has_debug && !has_info && has_warn && has_error {
+                println!("✅ PASS: Filtering works (only WARN+ logged)");
+            } else {
+                println!("❌ FAIL: Filtering incorrect");
+            }
+        },
+        Err(e) => println!("❌ FAIL: Cannot read log file"),
+    }
+
+    // Cleanup
+    match fs::remove_file(log_file) {
+        Ok(_) => {},
+        Err(e) => {},
+    }
+}
+
+// Test 3: Log Rotation - File should rotate when size limit reached
+fun test_log_rotation() {
+    println!("\n=== TEST 3: Log Rotation ===");
+
+    let log_file = "/tmp/ruchy_test_rotation.log";
+    let max_size = 100; // bytes
+
+    // Write multiple entries that exceed max_size
+    let message_1 = "First log entry with some content";
+    let message_2 = "Second log entry with more content";
+    let message_3 = "Third log entry that triggers rotation";
+
+    match log_with_rotation(log_file, "INFO", message_1, max_size) {
+        Ok(_) => {},
+        Err(e) => {},
+    }
+
+    match log_with_rotation(log_file, "INFO", message_2, max_size) {
+        Ok(_) => {},
+        Err(e) => {},
+    }
+
+    match log_with_rotation(log_file, "INFO", message_3, max_size) {
+        Ok(_) => {},
+        Err(e) => {},
+    }
+
+    // Check if rotation occurred (file size < max_size + message_length)
+    match fs::read_to_string(log_file) {
+        Ok(content) => {
+            let size = content.len();
+            println!("Current log size: {} bytes (max: {})", size, max_size);
+
+            // After rotation, should only have latest entry
+            if content.contains(message_3) && !content.contains(message_1) {
+                println!("✅ PASS: Log rotation working (old entries removed)");
+            } else if size < max_size * 2 {
+                println!("✅ PASS: Log size under control");
+            } else {
+                println!("❌ FAIL: Log rotation not working");
+            }
+        },
+        Err(e) => println!("❌ FAIL: Cannot read log file"),
+    }
+
+    // Cleanup
+    match fs::remove_file(log_file) {
+        Ok(_) => {},
+        Err(e) => {},
+    }
+
+    // Clean up backup file if rotation created it
+    match fs::remove_file(log_file + ".old") {
+        Ok(_) => {},
+        Err(e) => {},
+    }
+}
+
+// Main test runner
+fun main() {
+    println!("==========================================");
+    println!("RUC-005 Production Logger Tests - RED Phase");
+    println!("==========================================");
+
+    // Run all tests - these should FAIL because functions don't exist yet
+    test_log_with_timestamp();
+    test_log_level_filtering();
+    test_log_rotation();
+
+    println!("\n==========================================");
+    println!("RED Phase Complete - All tests should FAIL");
+    println!("==========================================");
+}

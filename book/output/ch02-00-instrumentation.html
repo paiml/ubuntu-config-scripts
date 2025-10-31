@@ -1,0 +1,554 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Instrumenting Ruchy Development - Ubuntu Config Scripts: The Ruchy Migration Guide</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Complete guide to migrating system configuration from TypeScript/Deno to Ruchy">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "rust";
+            const default_dark_theme = "coal";
+            window.path_to_searchindex_js = "searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Ubuntu Config Scripts: The Ruchy Migration Guide</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/paiml/ubuntu-config-scripts" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/paiml/ubuntu-config-scripts/edit/main/book/src/book/src/ch02-00-instrumentation.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="instrumenting-ruchy-development"><a class="header" href="#instrumenting-ruchy-development">Instrumenting Ruchy Development</a></h1>
+<p>One of the most valuable aspects of our migration is the <strong>comprehensive instrumentation</strong> we’ve built to feed data back to upstream Ruchy development. This chapter details our instrumentation strategy and the insights it provides.</p>
+<h2 id="instrumentation-philosophy"><a class="header" href="#instrumentation-philosophy">Instrumentation Philosophy</a></h2>
+<p>Every Ruchy script we write serves a <strong>dual purpose</strong>:</p>
+<ol>
+<li><strong>Primary</strong>: Accomplish system configuration tasks</li>
+<li><strong>Secondary</strong>: Stress-test Ruchy and collect performance data</li>
+</ol>
+<p>This creates a <strong>virtuous cycle</strong> where our production usage directly improves the language.</p>
+<h2 id="the-instrumentation-suite"><a class="header" href="#the-instrumentation-suite">The Instrumentation Suite</a></h2>
+<p>Our instrumentation system consists of several components:</p>
+<h3 id="1-performance-profiler-run_instrumentation_suitesh"><a class="header" href="#1-performance-profiler-run_instrumentation_suitesh">1. Performance Profiler (<code>run_instrumentation_suite.sh</code>)</a></h3>
+<p>Automatically measures key performance metrics:</p>
+<pre><code class="language-bash"># Compilation time measurement
+start_time=$(date +%s%3N)
+if ruchy check script.ruchy; then
+    end_time=$(date +%s%3N)
+    check_time=$((end_time - start_time))
+fi
+
+# Execution time measurement  
+start_time=$(date +%s%3N)
+if ruchy run script.ruchy; then
+    end_time=$(date +%s%3N)
+    exec_time=$((end_time - start_time))
+fi
+</code></pre>
+<p><strong>Metrics Collected:</strong></p>
+<ul>
+<li>Compilation time (check command): 2-4ms consistently</li>
+<li>Execution time (run command): 2-4ms across all test types</li>
+<li>Memory peak usage: ~6MB stable footprint</li>
+<li>Feature coverage: Now includes pattern matching, arrays, enhanced functions</li>
+<li>Exit codes and error patterns</li>
+<li>New command testing: lint, ast, doc generation</li>
+</ul>
+<h3 id="2-stress-test-generator"><a class="header" href="#2-stress-test-generator">2. Stress Test Generator</a></h3>
+<p>Creates specific workloads to test Ruchy features:</p>
+<pre><code class="language-ruchy">// Function call intensity test
+let generate_function_call_test = fn(call_count: i32) {
+    let add = fn(a: i32, b: i32) { a + b } in
+    let multiply = fn(a: i32, b: i32) { a * b } in
+    let compose = fn(f: fn(i32) -&gt; i32, g: fn(i32) -&gt; i32, x: i32) {
+        f(g(x))
+    } in
+    
+    let chain_calls = fn(n: i32, acc: i32) {
+        if n &lt;= 0 {
+            acc
+        } else {
+            let result = compose(
+                fn(x) { add(x, 1) },
+                fn(x) { multiply(x, 2) },
+                acc
+            ) in
+            chain_calls(n - 1, result)
+        }
+    } in
+    chain_calls(call_count, 1)
+} in
+</code></pre>
+<p><strong>Test Categories:</strong></p>
+<ul>
+<li>Deep recursion (stack usage)</li>
+<li>Large data structures (memory allocation)</li>
+<li>Complex pattern matching (compiler stress)</li>
+<li>High function call volume (call overhead)</li>
+<li>String manipulation (GC pressure)</li>
+</ul>
+<h3 id="3-real-world-workload-simulation"><a class="header" href="#3-real-world-workload-simulation">3. Real-World Workload Simulation</a></h3>
+<p>Uses actual system configuration patterns:</p>
+<pre><code class="language-ruchy">// Real audio configuration logic
+let analyze_audio_hardware = fn(devices: [AudioDevice]) {
+    let classify_device = fn(device: AudioDevice) {
+        match device {
+            {type: "USB", vendor: v, sample_rates: rates} =&gt; 
+                USBDevice { vendor: v, max_rate: max(rates) },
+            {type: "PCI", chipset: c, channels: ch} =&gt;
+                PCIDevice { chipset: c, channels: ch },
+            {type: "Bluetooth", codec: co, latency: l} =&gt;
+                BluetoothDevice { codec: co, latency: l },
+            _ =&gt; UnknownDevice { raw: device },
+        }
+    } in
+    
+    let process_devices = fn(devices: [AudioDevice]) {
+        match devices {
+            [] =&gt; [],
+            [head, ...tail] =&gt; classify_device(head) :: process_devices(tail),
+        }
+    } in
+    
+    process_devices(devices)
+} in
+</code></pre>
+<p>This tests:</p>
+<ul>
+<li>Pattern matching with real-world complexity</li>
+<li>Recursive data processing</li>
+<li>Type system usage patterns</li>
+<li>Error handling scenarios</li>
+</ul>
+<h2 id="metric-collection-and-analysis"><a class="header" href="#metric-collection-and-analysis">Metric Collection and Analysis</a></h2>
+<h3 id="automated-report-generation"><a class="header" href="#automated-report-generation">Automated Report Generation</a></h3>
+<p>Our instrumentation generates detailed reports in JSON and Markdown:</p>
+<pre><code class="language-json">{
+  "timestamp": "2025-08-21T21:40:41",
+  "test_name": "PatternMatching",
+  "script_file": "/tmp/pattern_test.ruchy",
+  "file_size_bytes": 1247,
+  "line_count": 42,
+  "check_time_ms": 4,
+  "execution_time_ms": 5,
+  "peak_memory_kb": 8192,
+  "ast_node_count": 156,
+  "exit_code": 0,
+  "error_patterns": "",
+  "ruchy_version": "ruchy 0.9.6"
+}
+</code></pre>
+<h3 id="performance-trends"><a class="header" href="#performance-trends">Performance Trends</a></h3>
+<p>We track performance over time to detect regressions:</p>
+<div class="table-wrapper"><table><thead><tr><th>Date</th><th>Test</th><th>Check Time</th><th>Exec Time</th><th>Memory</th><th>Status</th></tr></thead><tbody>
+<tr><td>2025-08-22</td><td>BasicOperations</td><td>3ms</td><td>4ms</td><td>6MB</td><td>✅</td></tr>
+<tr><td>2025-08-22</td><td>PatternMatching</td><td>3ms</td><td>2ms</td><td>6MB</td><td>✅ NEW!</td></tr>
+<tr><td>2025-08-22</td><td>ArrayOperations</td><td>2ms</td><td>3ms</td><td>6MB</td><td>✅ NEW!</td></tr>
+<tr><td>2025-08-22</td><td>EnhancedFunctions</td><td>3ms</td><td>3ms</td><td>6MB</td><td>✅</td></tr>
+<tr><td>2025-08-22</td><td>AdvancedControlFlow</td><td>3ms</td><td>4ms</td><td>6MB</td><td>✅</td></tr>
+<tr><td>2025-08-22</td><td>StringOperations</td><td>3ms</td><td>3ms</td><td>6MB</td><td>✅</td></tr>
+<tr><td>2025-08-22</td><td>CompilationTools</td><td>3ms</td><td>3ms</td><td>6MB</td><td>✅</td></tr>
+</tbody></table>
+</div>
+<h3 id="success-rate-analysis"><a class="header" href="#success-rate-analysis">Success Rate Analysis</a></h3>
+<p>We track what works vs. what fails:</p>
+<pre><code class="language-markdown">## Test Results Summary (Updated 2025-08-22)
+- **Total Tests**: 7
+- **Successful**: 7  
+- **Success Rate**: 100%
+- **New Features**: Pattern matching, arrays, enhanced tooling
+
+## Working Features ✅
+- Basic expression evaluation and arithmetic
+- String concatenation and manipulation
+- Function definition and application  
+- Conditional expressions (if/else)
+- **NEW: Pattern matching with guards** - `match x { 42 =&gt; "answer", x if x &gt; 10 =&gt; "large", _ =&gt; "other" }`
+- **NEW: Array literals and indexing** - `[1, 2, 3][0]`, mixed-type arrays
+- **NEW: Enhanced println function** - console output capabilities
+- **NEW: Recursive functions** - factorial, fibonacci patterns working
+- Compilation tooling (check, lint, ast, doc)
+
+## High Priority Gaps ⚠️
+- Standard library functions (map, filter, reduce, len, str)
+- Error handling and Result types (Option, Result)
+- System operations (file I/O, process execution)
+- Advanced string manipulation (split, join, trim)
+- Package management and module system
+</code></pre>
+<h2 id="real-time-performance-monitoring"><a class="header" href="#real-time-performance-monitoring">Real-Time Performance Monitoring</a></h2>
+<h3 id="memory-usage-tracking"><a class="header" href="#memory-usage-tracking">Memory Usage Tracking</a></h3>
+<p>We monitor memory consumption during script execution:</p>
+<pre><code class="language-bash"># Background memory monitoring
+(
+    while true; do
+        ps -o pid,vsz,rss,comm | grep ruchy &gt;&gt; "$memory_log"
+        sleep 0.1
+    done
+) &amp;
+memory_pid=$!
+
+# Run test
+ruchy run test_script.ruchy
+
+# Stop monitoring and analyze
+kill $memory_pid
+peak_memory=$(awk '{if($2&gt;max) max=$2} END {print max+0}' "$memory_log")
+</code></pre>
+<h3 id="compilation-performance"><a class="header" href="#compilation-performance">Compilation Performance</a></h3>
+<p>We measure different aspects of compilation:</p>
+<pre><code class="language-bash"># Syntax checking speed
+time ruchy check large_script.ruchy
+
+# AST generation performance  
+time ruchy ast complex_script.ruchy
+
+# Lint analysis speed
+time ruchy lint script_with_issues.ruchy
+</code></pre>
+<h2 id="feature-gap-detection"><a class="header" href="#feature-gap-detection">Feature Gap Detection</a></h2>
+<h3 id="systematic-feature-testing"><a class="header" href="#systematic-feature-testing">Systematic Feature Testing</a></h3>
+<p>We test each language feature systematically:</p>
+<pre><code class="language-ruchy">// Pattern matching test
+let test_patterns = fn() {
+    let test_data = [42, "hello", [1, 2], {name: "test"}] in
+    let classify = fn(item) {
+        match item {
+            42 =&gt; "answer",
+            "hello" =&gt; "greeting", 
+            [x, y] =&gt; "pair",
+            {name: n} =&gt; "named",
+            _ =&gt; "unknown",
+        }
+    } in
+    // Test each pattern type
+    map(classify, test_data)
+} in
+</code></pre>
+<p>When features don’t work, we document:</p>
+<ul>
+<li><strong>Expected behavior</strong></li>
+<li><strong>Actual behavior</strong></li>
+<li><strong>Error messages</strong></li>
+<li><strong>Workarounds</strong></li>
+<li><strong>Impact on real scripts</strong></li>
+</ul>
+<h3 id="error-pattern-analysis"><a class="header" href="#error-pattern-analysis">Error Pattern Analysis</a></h3>
+<p>We collect and categorize all errors:</p>
+<pre><code class="language-json">{
+  "error_categories": {
+    "parse_errors": {
+      "count": 0,
+      "examples": []
+    },
+    "type_errors": {
+      "count": 0, 
+      "examples": []
+    },
+    "runtime_errors": {
+      "count": 2,
+      "examples": [
+        "Unknown function: map",
+        "Pattern match not exhaustive"
+      ]
+    }
+  }
+}
+</code></pre>
+<h2 id="upstream-impact"><a class="header" href="#upstream-impact">Upstream Impact</a></h2>
+<p>Our instrumentation has already influenced Ruchy development:</p>
+<h3 id="performance-insights"><a class="header" href="#performance-insights">Performance Insights</a></h3>
+<p><strong>Finding</strong>: Basic operations are very fast (4-5ms), suggesting excellent core performance.</p>
+<p><strong>Impact</strong>: Validates current compiler architecture for system scripting use cases.</p>
+<h3 id="feature-prioritization"><a class="header" href="#feature-prioritization">Feature Prioritization</a></h3>
+<p><strong>Finding</strong>: Pattern matching syntax exists but runtime support needs work.</p>
+<p><strong>Impact</strong>: Identified as high-priority implementation target.</p>
+<p><strong>Finding</strong>: Missing standard library functions (map, filter, string operations).</p>
+<p><strong>Impact</strong>: Created specification for essential standard library.</p>
+<h3 id="quality-validation"><a class="header" href="#quality-validation">Quality Validation</a></h3>
+<p><strong>Finding</strong>: 100% success rate on basic features shows solid foundation.</p>
+<p><strong>Impact</strong>: Confidence in using Ruchy for production system scripts.</p>
+<h2 id="instrumentation-best-practices"><a class="header" href="#instrumentation-best-practices">Instrumentation Best Practices</a></h2>
+<h3 id="1-automate-everything"><a class="header" href="#1-automate-everything">1. Automate Everything</a></h3>
+<pre><code class="language-bash"># Daily automated instrumentation run
+0 6 * * * /home/noah/src/ubuntu-config-scripts/run_instrumentation_suite.sh
+</code></pre>
+<h3 id="2-preserve-historical-data"><a class="header" href="#2-preserve-historical-data">2. Preserve Historical Data</a></h3>
+<pre><code class="language-bash"># Archive metrics with timestamps
+cp metrics.json "archive/metrics_$(date +%Y%m%d).json"
+</code></pre>
+<h3 id="3-multiple-test-categories"><a class="header" href="#3-multiple-test-categories">3. Multiple Test Categories</a></h3>
+<ul>
+<li><strong>Micro-benchmarks</strong>: Test individual features</li>
+<li><strong>Macro-benchmarks</strong>: Test realistic workloads</li>
+<li><strong>Stress tests</strong>: Test resource limits</li>
+<li><strong>Edge cases</strong>: Test error conditions</li>
+</ul>
+<h3 id="4-clear-reporting"><a class="header" href="#4-clear-reporting">4. Clear Reporting</a></h3>
+<p>Generate reports that non-Ruchy developers can understand:</p>
+<pre><code class="language-markdown">## Summary for Upstream Team
+
+**What's Working Great:**
+- Core language features perform excellently
+- Compilation is fast and reliable
+- No memory leaks detected
+
+**What Needs Attention:**
+- Standard library is minimal
+- Pattern matching runtime incomplete
+- No system operations support
+
+**Recommended Next Steps:**
+1. Implement basic standard library (map, filter, etc.)
+2. Complete pattern matching runtime
+3. Add file I/O operations
+</code></pre>
+<h2 id="future-instrumentation"><a class="header" href="#future-instrumentation">Future Instrumentation</a></h2>
+<p>As Ruchy develops, we plan to add:</p>
+<h3 id="advanced-performance-analysis"><a class="header" href="#advanced-performance-analysis">Advanced Performance Analysis</a></h3>
+<ul>
+<li><strong>JIT compilation metrics</strong> when available</li>
+<li><strong>GC pressure analysis</strong> for memory-intensive workloads</li>
+<li><strong>Concurrency performance</strong> when async/await is implemented</li>
+</ul>
+<h3 id="real-world-integration-testing"><a class="header" href="#real-world-integration-testing">Real-World Integration Testing</a></h3>
+<ul>
+<li><strong>Full script migrations</strong> with before/after performance comparisons</li>
+<li><strong>System integration tests</strong> using actual Ubuntu machines</li>
+<li><strong>Production deployment metrics</strong> for compiled binaries</li>
+</ul>
+<h3 id="developer-experience-metrics"><a class="header" href="#developer-experience-metrics">Developer Experience Metrics</a></h3>
+<ul>
+<li><strong>Compilation error quality</strong> (how helpful are error messages?)</li>
+<li><strong>IDE integration performance</strong> (language server responsiveness)</li>
+<li><strong>Learning curve analysis</strong> (how quickly can new developers be productive?)</li>
+</ul>
+<h2 id="conclusion"><a class="header" href="#conclusion">Conclusion</a></h2>
+<p>Our instrumentation system provides <strong>unprecedented visibility</strong> into Ruchy’s real-world performance and capabilities. This data-driven approach ensures that Ruchy development is guided by actual usage patterns rather than theoretical concerns.</p>
+<p>The next chapter dives into the technical details of our <strong>performance profiling</strong> implementation.</p>
+<hr />
+<p><strong>Next</strong>: <a href="ch02-01-performance-profiling.html">Performance Profiling</a></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="ch01-03-quality-gates.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="ch02-01-performance-profiling.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="ch01-03-quality-gates.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="ch02-01-performance-profiling.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="ace.js"></script>
+        <script src="mode-rust.js"></script>
+        <script src="editor.js"></script>
+        <script src="theme-dawn.js"></script>
+        <script src="theme-tomorrow_night.js"></script>
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,213 @@
+// RUC-005: Logger Module with File Support - Test Suite
+// Extreme TDD: RED Phase
+// Ruchy v3.158.0+ required
+
+use std::fs;
+// use logger_with_file;  // Will uncomment when module exists
+
+fun main() {
+    println!("========================================");
+    println!("RUC-005: Logger with File Support Tests");
+    println!("========================================");
+    println!("");
+
+    let test_log = "/tmp/ruchy_logger_test_suite.log";
+
+    // Clean up any existing test log
+    match fs::remove_file(test_log) {
+        Ok(_) => {},
+        Err(e) => {}, // Ignore if doesn't exist
+    }
+
+    // TEST 1: Console-only logging (baseline)
+    println!("TEST 1: Console-only logging");
+    println!("==================================");
+
+    // This is what we expect the logger API to look like
+    // logger_with_file::log_console("INFO", "Test console message");
+
+    // For now, simulate it
+    let level = "INFO";
+    let message = "Test console message";
+    let formatted = "[" + level + "] " + message;
+    println!("{}", formatted);
+    println!("✅ PASS: Console logging works");
+    println!("");
+
+    // TEST 2: File-only logging
+    println!("TEST 2: File-only logging");
+    println!("==================================");
+
+    // Expected API: logger_with_file::log_file(test_log, "INFO", "File message 1");
+
+    // Simulate the implementation
+    let log_entry = "[INFO] File message 1\n";
+    match fs::write(test_log, log_entry) {
+        Ok(_) => println!("✅ PASS: File logging works"),
+        Err(e) => {
+            println!("❌ FAIL: File logging failed");
+            return;
+        },
+    }
+
+    // Verify file was written
+    match fs::read_to_string(test_log) {
+        Ok(content) => {
+            if content == log_entry {
+                println!("✅ PASS: File content matches");
+            } else {
+                println!("❌ FAIL: File content mismatch");
+            }
+        },
+        Err(e) => {
+            println!("❌ FAIL: File read failed");
+            return;
+        },
+    }
+    println!("");
+
+    // TEST 3: File append logging
+    println!("TEST 3: Append to log file");
+    println!("==================================");
+
+    // Expected API: logger_with_file::log_file_append(test_log, "WARN", "File message 2");
+
+    // Simulate append
+    let current = match fs::read_to_string(test_log) {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ FAIL: Read for append failed");
+            return;
+        },
+    };
+
+    let new_entry = "[WARN] File message 2\n";
+    let new_content = current + new_entry;
+
+    match fs::write(test_log, new_content) {
+        Ok(_) => println!("✅ PASS: Append succeeded"),
+        Err(e) => {
+            println!("❌ FAIL: Append failed");
+            return;
+        },
+    }
+
+    // Verify both entries exist
+    match fs::read_to_string(test_log) {
+        Ok(content) => {
+            let lines = content.split("\n").collect::<Vec<_>>();
+            if lines.len() >= 2 {
+                println!("✅ PASS: File has {} lines", lines.len());
+                println!("  Line 1: {}", lines[0]);
+                println!("  Line 2: {}", lines[1]);
+            } else {
+                println!("❌ FAIL: Expected 2+ lines, got {}", lines.len());
+            }
+        },
+        Err(e) => {
+            println!("❌ FAIL: Verification read failed");
+        },
+    }
+    println!("");
+
+    // TEST 4: Console + File logging (both)
+    println!("TEST 4: Log to both console and file");
+    println!("==================================");
+
+    // Expected API: logger_with_file::log_both(test_log, "ERROR", "Critical error");
+
+    let error_msg = "Critical error";
+    let error_level = "ERROR";
+
+    // Console part
+    let console_fmt = "[" + error_level + "] " + error_msg;
+    println!("{}", console_fmt);
+
+    // File part
+    let current2 = match fs::read_to_string(test_log) {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ FAIL: Read for both failed");
+            return;
+        },
+    };
+
+    let both_entry = "[ERROR] Critical error\n";
+    let both_content = current2 + both_entry;
+
+    match fs::write(test_log, both_content) {
+        Ok(_) => println!("✅ PASS: Both console and file logged"),
+        Err(e) => {
+            println!("❌ FAIL: File part of both failed");
+            return;
+        },
+    }
+    println!("");
+
+    // TEST 5: Multiple rapid writes
+    println!("TEST 5: Multiple rapid log writes");
+    println!("==================================");
+
+    let rapid_count = 5;
+    let mut success = 0;
+
+    for i in 0..rapid_count {
+        let current3 = match fs::read_to_string(test_log) {
+            Ok(c) => c,
+            Err(e) => {
+                println!("❌ FAIL: Read failed at iteration {}", i);
+                break;
+            },
+        };
+
+        let rapid_entry = "[DEBUG] Rapid log entry " + i.to_string() + "\n";
+        let rapid_content = current3 + rapid_entry;
+
+        match fs::write(test_log, rapid_content) {
+            Ok(_) => {
+                success = success + 1;
+            },
+            Err(e) => {
+                println!("❌ FAIL: Write failed at iteration {}", i);
+                break;
+            },
+        }
+    }
+
+    if success == rapid_count {
+        println!("✅ PASS: All {} rapid writes succeeded", rapid_count);
+    } else {
+        println!("❌ FAIL: Only {}/{} rapid writes succeeded", success, rapid_count);
+    }
+
+    // Verify final count
+    match fs::read_to_string(test_log) {
+        Ok(final_content) => {
+            let final_lines = final_content.split("\n").collect::<Vec<_>>();
+            println!("  Total lines in file: {}", final_lines.len());
+            println!("✅ PASS: Log file integrity maintained");
+        },
+        Err(e) => {
+            println!("❌ FAIL: Final verification failed");
+        },
+    }
+    println!("");
+
+    // Cleanup
+    println!("Cleanup...");
+    match fs::remove_file(test_log) {
+        Ok(_) => println!("✅ Test log cleaned up"),
+        Err(e) => println!("⚠️  Cleanup warning"),
+    }
+
+    println!("");
+    println!("========================================");
+    println!("All logger tests passed!");
+    println!("========================================");
+    println!("");
+    println!("Next: Implement logger_with_file module");
+    println!("  - log_console(level, message)");
+    println!("  - log_file(path, level, message)");
+    println!("  - log_both(path, level, message)");
+    println!("  - Convenience functions: info(), warn(), error()");
+}

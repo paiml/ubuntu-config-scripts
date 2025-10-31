@@ -1,0 +1,388 @@
+// RUC-001: Audio Speaker Configuration Module - Ruchy Implementation
+//
+// GREEN Phase: Ported from Rust reference implementation
+// Strategy: Use pactl commands to interact with PulseAudio/PipeWire
+
+use std::process::Command;
+
+// ============================================================================
+// Data Structures
+// ============================================================================
+
+struct AudioDevice {
+    id: String,
+    name: String,
+    description: String,
+    is_default: bool,
+}
+
+struct SpeakerConfig {
+    device_id: String,
+    volume: i32,
+    is_muted: bool,
+}
+
+enum ConfigError {
+    CommandFailed(String),
+    ParseError(String),
+    DeviceNotFound(String),
+    InvalidState(String),
+}
+
+// ============================================================================
+// Public API - GREEN Phase Implementation
+// ============================================================================
+
+/// Detect all available audio output devices
+///
+/// Uses pactl to query PulseAudio/PipeWire sinks
+/// Returns list of devices with metadata
+fun detect_audio_devices() -> Result<Vec<AudioDevice>, ConfigError> {
+    // Run pactl list sinks
+    let output = match Command::new("pactl").arg("list").arg("sinks").output() {
+        Ok(o) => o,
+        Err(e) => {
+            return Err(ConfigError::CommandFailed(format!("Failed to run pactl: {:?}", e)));
+        }
+    };
+
+    // Check if command succeeded
+    let status = output.status;
+    if !status.success {
+        return Err(ConfigError::CommandFailed("pactl list sinks failed".to_string()));
+    }
+
+    // Get default sink
+    let default_output = match Command::new("pactl").arg("get-default-sink").output() {
+        Ok(o) => o,
+        Err(_) => {
+            // If get-default-sink fails, continue with empty default
+            return parse_pactl_output(output.stdout, "".to_string());
+        }
+    };
+
+    let default_sink = if default_output.status.success {
+        // Convert bytes to string
+        match bytes_to_string(default_output.stdout) {
+            Ok(s) => s.trim().to_string(),
+            Err(_) => "".to_string(),
+        }
+    } else {
+        "".to_string()
+    };
+
+    parse_pactl_output(output.stdout, default_sink)
+}
+
+/// Configure speaker as default audio output device
+///
+/// Uses pactl to set default sink
+/// Validates device exists before applying
+/// Accepts either device ID or device name
+fun configure_speaker(device_id: String) -> Result<(), ConfigError> {
+    // Validate device ID format
+    if device_id.len() == 0 {
+        return Err(ConfigError::InvalidState("Device ID cannot be empty".to_string()));
+    }
+
+    // Check for security issues
+    if device_id.contains("\0") || device_id.contains("..") {
+        return Err(ConfigError::InvalidState(format!("Invalid device ID format: {}", device_id)));
+    }
+
+    // Get current config to restore on error
+    let original_config = match get_current_speaker_config() {
+        Ok(c) => c,
+        Err(e) => return Err(e),
+    };
+
+    // Verify device exists
+    let devices = match detect_audio_devices() {
+        Ok(d) => d,
+        Err(e) => return Err(e),
+    };
+
+    // Find device by ID or name
+    let mut device_found: Option<AudioDevice> = None;
+    let mut i = 0;
+    while i < devices.len() {
+        let d = &devices[i];
+        if d.id == device_id || d.name == device_id {
+            device_found = Some(d.clone());
+            break;
+        }
+        i = i + 1;
+    }
+
+    let device = match device_found {
+        Some(d) => d,
+        None => return Err(ConfigError::DeviceNotFound(device_id)),
+    };
+
+    // Set default sink using device name
+    let output = match Command::new("pactl").arg("set-default-sink").arg(&device.name).output() {
+        Ok(o) => o,
+        Err(_) => {
+            // Restore original config
+            let _ = Command::new("pactl").arg("set-default-sink").arg(&original_config.device_id).output();
+            return Err(ConfigError::CommandFailed("Failed to set default sink".to_string()));
+        }
+    };
+
+    if !output.status.success {
+        // Restore original config
+        let _ = Command::new("pactl").arg("set-default-sink").arg(&original_config.device_id).output();
+        return Err(ConfigError::CommandFailed("set-default-sink failed".to_string()));
+    }
+
+    // Verify configuration was applied
+    let config = match get_current_speaker_config() {
+        Ok(c) => c,
+        Err(e) => {
+            // Restore original config
+            let _ = Command::new("pactl").arg("set-default-sink").arg(&original_config.device_id).output();
+            return Err(e);
+        }
+    };
+
+    if config.device_id != device.name {
+        // Restore original config
+        let _ = Command::new("pactl").arg("set-default-sink").arg(&original_config.device_id).output();
+        return Err(ConfigError::InvalidState("Configuration not applied correctly".to_string()));
+    }
+
+    Ok(())
+}
+
+/// Get current speaker configuration
+///
+/// Queries default sink and its properties
+/// Returns volume, mute status, and device ID
+fun get_current_speaker_config() -> Result<SpeakerConfig, ConfigError> {
+    // Get default sink name
+    let output = match Command::new("pactl").arg("get-default-sink").output() {
+        Ok(o) => o,
+        Err(e) => return Err(ConfigError::CommandFailed(format!("Failed to get default sink: {:?}", e))),
+    };
+
+    if !output.status.success {
+        return Err(ConfigError::InvalidState("No default sink configured".to_string()));
+    }
+
+    let device_id = match bytes_to_string(output.stdout) {
+        Ok(s) => s.trim().to_string(),
+        Err(e) => return Err(e),
+    };
+
+    // Get sink info for volume and mute status
+    let info_output = match Command::new("pactl").arg("list").arg("sinks").output() {
+        Ok(o) => o,
+        Err(e) => return Err(ConfigError::CommandFailed(format!("Failed to list sinks: {:?}", e))),
+    };
+
+    let info_stdout = match bytes_to_string(info_output.stdout) {
+        Ok(s) => s,
+        Err(e) => return Err(e),
+    };
+
+    // Find the sink block for our device
+    let blocks = info_stdout.split("Sink #");
+    let mut sink_block = "";
+    let mut i = 0;
+    while i < blocks.len() {
+        let block = blocks[i];
+        let name_field = extract_field(block, "Name:");
+        if name_field == device_id {
+            sink_block = block;
+            break;
+        }
+        i = i + 1;
+    }
+
+    if sink_block.len() == 0 {
+        return Err(ConfigError::DeviceNotFound(device_id));
+    }
+
+    // Extract volume (percentage)
+    let volume_str = extract_field(sink_block, "Volume:");
+    let volume = if volume_str.len() > 0 {
+        parse_volume_from_line(volume_str)
+    } else {
+        100
+    };
+
+    // Extract mute status
+    let mute_str = extract_field(sink_block, "Mute:");
+    let is_muted = mute_str.trim() == "yes";
+
+    Ok(SpeakerConfig {
+        device_id: device_id,
+        volume: volume,
+        is_muted: is_muted,
+    })
+}
+
+/// Validate device ID format
+///
+/// Checks for security issues and format validity
+fun validate_device_id(device_id: String) -> bool {
+    // Empty string is invalid
+    if device_id.len() == 0 {
+        return false;
+    }
+
+    // Check for null bytes
+    if device_id.contains("\0") {
+        return false;
+    }
+
+    // Check for path traversal attempts
+    if device_id.contains("..") || device_id.contains("/") || device_id.contains("\\") {
+        return false;
+    }
+
+    // Device IDs should not contain spaces
+    if device_id.contains(" ") {
+        return false;
+    }
+
+    true
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/// Parse pactl output into AudioDevice structs
+fun parse_pactl_output(stdout: Vec<u8>, default_sink: String) -> Result<Vec<AudioDevice>, ConfigError> {
+    let text = match bytes_to_string(stdout) {
+        Ok(s) => s,
+        Err(e) => return Err(e),
+    };
+    let blocks = text.split("Sink #");
+
+    let mut devices: Vec<AudioDevice> = Vec::new();
+
+    let mut i = 0;
+    while i < blocks.len() {
+        let block = blocks[i];
+
+        if block.trim().len() == 0 {
+            i = i + 1;
+            continue;
+        }
+
+        // Extract ID from first line
+        let lines = block.split("\n");
+        let id = if lines.len() > 0 {
+            let first_line = lines[0];
+            let words = first_line.split(" ");
+            if words.len() > 0 {
+                words[0].trim().to_string()
+            } else {
+                "".to_string()
+            }
+        } else {
+            "".to_string()
+        };
+
+        // Extract name
+        let name = extract_field(block, "Name:");
+        let name = if name.len() == 0 {
+            format!("sink-{}", id)
+        } else {
+            name
+        };
+
+        // Extract description
+        let description = extract_field(block, "Description:");
+        let description = if description.len() == 0 {
+            name.clone()
+        } else {
+            description
+        };
+
+        // Check if default
+        let is_default = name == default_sink;
+
+        if id.len() > 0 {
+            devices.push(AudioDevice {
+                id: id,
+                name: name,
+                description: description,
+                is_default: is_default,
+            });
+        }
+
+        i = i + 1;
+    }
+
+    Ok(devices)
+}
+
+/// Extract value after field label in pactl output
+fun extract_field(text: String, field: String) -> String {
+    let lines = text.split("\n");
+
+    let mut i = 0;
+    while i < lines.len() {
+        let line = lines[i];
+        let trimmed = line.trim();
+
+        if trimmed.starts_with(&field) {
+            // Split on colon
+            let parts = line.split(":");
+            if parts.len() >= 2 {
+                return parts[1].trim().to_string();
+            }
+        }
+
+        i = i + 1;
+    }
+
+    "".to_string()
+}
+
+/// Convert bytes to string (helper for Command output)
+fun bytes_to_string(bytes: Vec<u8>) -> Result<String, ConfigError> {
+    match String::from_utf8(bytes) {
+        Ok(s) => Ok(s),
+        Err(e) => Err(ConfigError::ParseError(format!("Invalid UTF-8: {:?}", e))),
+    }
+}
+
+/// Parse volume from pactl output line
+/// Example: "Volume: front-left: 65536 / 100%" -> 100
+fun parse_volume_from_line(line: String) -> i32 {
+    // Look for percentage value
+    let parts = line.split("%");
+    if parts.len() >= 2 {
+        let before_percent = parts[0];
+        let words = before_percent.split(" ");
+
+        // Get last word before %
+        let mut last_word = "";
+        let mut i = 0;
+        while i < words.len() {
+            last_word = words[i];
+            i = i + 1;
+        }
+
+        // Try to parse as integer
+        match last_word.parse::<i32>() {
+            Ok(v) => {
+                // Clamp to 0-100
+                if v < 0 {
+                    return 0;
+                }
+                if v > 100 {
+                    return 100;
+                }
+                return v;
+            }
+            Err(_) => return 100,
+        }
+    }
+
+    100  // Default volume
+}

@@ -1,0 +1,66 @@
+# Self-Hosted GitHub Actions Runner Configuration
+# This file defines all packages and settings needed to configure a self-hosted runner
+
+runner:
+  name: "Linux-VM-Noah-MacPro-Intel"
+  labels:
+    - "self-hosted"
+    - "Linux"
+    - "X64"
+  work_directory: "~/actions-runner"
+
+packages:
+  # System utilities
+  system:
+    - curl
+    - wget
+    - git
+    - unzip
+    - tar
+    - jq
+    - build-essential
+
+  # Development tools
+  development:
+    - vim
+    - make
+    - cmake
+    - pkg-config
+
+  # Rust toolchain (installed via rustup, not apt)
+  rust:
+    install_method: "rustup"
+    components:
+      - "rustc"
+      - "cargo"
+      - "rustfmt"
+      - "clippy"
+
+  # Node.js/Deno (installed separately)
+  javascript:
+    - name: "deno"
+      install_method: "script"
+      url: "https://deno.land/install.sh"
+
+  # Docker (optional)
+  docker:
+    enabled: false
+    packages:
+      - docker.io
+      - docker-compose
+
+# GitHub Runner Settings
+github:
+  organization: "paiml"
+  version: "2.328.0"
+
+# System Configuration
+system:
+  # Update system before installing packages
+  update_system: true
+
+  # Clean package cache after installation
+  clean_cache: true
+
+  # Restart services after installation
+  restart_services: false

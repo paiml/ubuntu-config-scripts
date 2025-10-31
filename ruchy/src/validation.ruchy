@@ -1,0 +1,71 @@
+// RUC-016: Validation Utilities Library
+//
+// Pure validation logic under 100 LOC (Issue #92 constraint)
+// Builds on string_utils (RUC-014)
+
+use string_utils;
+
+// Check if value is in range [min, max]
+fun in_range(value: i32, min: i32, max: i32) -> bool {
+    value >= min && value <= max
+}
+
+// Check if valid percentage (0-100)
+fun is_valid_percentage(value: i32) -> bool {
+    in_range(value, 0, 100)
+}
+
+// Check if value is positive (> 0)
+fun is_positive(value: i32) -> bool {
+    value > 0
+}
+
+// Check if value is non-negative (>= 0)
+fun is_non_negative(value: i32) -> bool {
+    value >= 0
+}
+
+// Check if string length is in range
+fun is_valid_length(s: String, min_len: i32, max_len: i32) -> bool {
+    let len = s.len() as i32;
+    in_range(len, min_len, max_len)
+}
+
+// Check if string has minimum length
+fun has_min_length(s: String, min_len: i32) -> bool {
+    s.len() as i32 >= min_len
+}
+
+// Check if string has maximum length
+fun has_max_length(s: String, max_len: i32) -> bool {
+    s.len() as i32 <= max_len
+}
+
+// Check if string is not empty (uses string_utils)
+fun is_not_empty(s: String) -> bool {
+    !string_utils::is_empty_or_whitespace(s)
+}
+
+// Check if valid port number (1-65535)
+fun is_valid_port(port: i32) -> bool {
+    in_range(port, 1, 65535)
+}
+
+// Check if valid UID (0-65535)
+fun is_valid_uid(uid: i32) -> bool {
+    in_range(uid, 0, 65535)
+}
+
+// Check if valid username (3-20 chars, not empty)
+fun is_valid_username(name: String) -> bool {
+    if !is_valid_length(name, 3, 20) {
+        return false;
+    }
+
+    is_not_empty(name)
+}
+
+// Check if valid count with max limit
+fun is_valid_count(count: i32, max: i32) -> bool {
+    is_positive(count) && count <= max
+}

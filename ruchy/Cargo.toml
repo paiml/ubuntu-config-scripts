@@ -1,0 +1,49 @@
+[package]
+name = "ubuntu-config-scripts"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ubuntu Config Scripts Contributors"]
+description = "Ubuntu system configuration and management scripts in Ruchy"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+regex = "1.10"
+libc = "0.2"
+lazy_static = "1.4"
+chrono = "0.4"
+clap = { version = "4.4", features = ["derive"] }
+tokio = { version = "1.35", features = ["full"] }
+anyhow = "1.0"
+thiserror = "1.0"
+dirs = "5.0"
+which = "6.0"
+tempfile = "3.8"
+
+[dev-dependencies]
+proptest = "1.4"
+quickcheck = "1.0"
+criterion = "0.5"
+mockall = "0.12"
+
+[lib]
+name = "ubuntu_config_scripts"
+path = "src/lib.rs"
+
+[workspace]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+# [[bin]]
+# name = "ubuntu-config"
+# path = "src/main.ruchy"
+
+# Criterion benchmarks (TODO: implement after GREEN phase)
+# [[bench]]
+# name = "logger_bench"
+# harness = false

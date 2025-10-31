@@ -1,0 +1,95 @@
+// RUC-015: Math Utilities Library - RED PHASE TEST
+//
+// Test for mathematical utility functions
+// Will FAIL until math_utils module is implemented
+
+use math_utils;
+
+fun main() {
+    println!("=== RUC-015 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: Min/Max
+    println!("TEST 1: Min/Max");
+    let min_val = math_utils::min(5, 10);
+    let max_val = math_utils::max(5, 10);
+    println!("  min(5, 10) = {}", min_val);
+    println!("  max(5, 10) = {}", max_val);
+    if min_val == 5 && max_val == 10 {
+        println!("✓ Min/Max works");
+    } else {
+        println!("✗ Min/Max failed");
+    }
+
+    // Test 2: Absolute value
+    println!("");
+    println!("TEST 2: Absolute value");
+    let abs_pos = math_utils::abs(42);
+    let abs_neg = math_utils::abs(-42);
+    let abs_zero = math_utils::abs(0);
+    println!("  abs(42) = {}", abs_pos);
+    println!("  abs(-42) = {}", abs_neg);
+    println!("  abs(0) = {}", abs_zero);
+    if abs_pos == 42 && abs_neg == 42 && abs_zero == 0 {
+        println!("✓ Abs works");
+    } else {
+        println!("✗ Abs failed");
+    }
+
+    // Test 3: Clamp
+    println!("");
+    println!("TEST 3: Clamp");
+    let clamped_high = math_utils::clamp(150, 0, 100);
+    let clamped_low = math_utils::clamp(-10, 0, 100);
+    let clamped_mid = math_utils::clamp(50, 0, 100);
+    println!("  clamp(150, 0, 100) = {}", clamped_high);
+    println!("  clamp(-10, 0, 100) = {}", clamped_low);
+    println!("  clamp(50, 0, 100) = {}", clamped_mid);
+    if clamped_high == 100 && clamped_low == 0 && clamped_mid == 50 {
+        println!("✓ Clamp works");
+    } else {
+        println!("✗ Clamp failed");
+    }
+
+    // Test 4: Powers
+    println!("");
+    println!("TEST 4: Powers");
+    let sq = math_utils::square(5);
+    let cb = math_utils::cube(3);
+    println!("  square(5) = {}", sq);
+    println!("  cube(3) = {}", cb);
+    if sq == 25 && cb == 27 {
+        println!("✓ Powers work");
+    } else {
+        println!("✗ Powers failed");
+    }
+
+    // Test 5: Sum
+    println!("");
+    println!("TEST 5: Sum");
+    let nums = vec![1, 2, 3, 4, 5];
+    let total = math_utils::sum(nums);
+    println!("  sum([1,2,3,4,5]) = {}", total);
+    if total == 15 {
+        println!("✓ Sum works");
+    } else {
+        println!("✗ Sum failed");
+    }
+
+    // Test 6: Average
+    println!("");
+    println!("TEST 6: Average");
+    let nums = vec![1, 2, 3, 4, 5];
+    let avg = math_utils::average(nums);
+    println!("  average([1,2,3,4,5]) = {}", avg);
+    if avg == 3 {
+        println!("✓ Average works");
+    } else {
+        println!("✗ Average failed");
+    }
+
+    println!("");
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this, the test structure is correct!");
+    println!("Next: Implement math_utils module (GREEN phase)");
+}

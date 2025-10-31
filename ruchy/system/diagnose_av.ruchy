@@ -1,0 +1,454 @@
+// Diagnose audio/video issues on Ubuntu
+use crate::lib::common::{run_command, file_exists, write_file}
+use crate::lib::logger::{info, warn, error, success}
+use std::collections::HashMap
+use serde::{Serialize, Deserialize}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AVDiagnostic {
+    pub category: String,
+    pub status: String,
+    pub details: String,
+    pub fix_available: bool,
+    pub fix_command: Option<String>,
+}
+
+pub fun check_audio_services() -> Vec<AVDiagnostic> {
+    let mut diagnostics = Vec::new();
+    
+    // Check PipeWire
+    let pipewire_result = run_command(vec![
+        "systemctl".to_string(),
+        "--user".to_string(),
+        "is-active".to_string(),
+        "pipewire".to_string()
+    ], None);
+    
+    if pipewire_result.stdout.trim() == "active" {
+        diagnostics.push(AVDiagnostic {
+            category: "Audio Service".to_string(),
+            status: "OK".to_string(),
+            details: "PipeWire is running".to_string(),
+            fix_available: false,
+            fix_command: None,
+        });
+    } else {
+        // Check PulseAudio
+        let pulse_result = run_command(vec![
+            "systemctl".to_string(),
+            "--user".to_string(),
+            "is-active".to_string(),
+            "pulseaudio".to_string()
+        ], None);
+        
+        if pulse_result.stdout.trim() == "active" {
+            diagnostics.push(AVDiagnostic {
+                category: "Audio Service".to_string(),
+                status: "OK".to_string(),
+                details: "PulseAudio is running".to_string(),
+                fix_available: false,
+                fix_command: None,
+            });
+        } else {
+            diagnostics.push(AVDiagnostic {
+                category: "Audio Service".to_string(),
+                status: "ERROR".to_string(),
+                details: "No audio service is running".to_string(),
+                fix_available: true,
+                fix_command: Some("systemctl --user start pipewire pipewire-pulse".to_string()),
+            });
+        }
+    }
+    
+    // Check audio sinks
+    let sinks_result = run_command(vec!["pactl".to_string(), "list".to_string(), "short".to_string(), "sinks".to_string()], None);
+    
+    if sinks_result.success && !sinks_result.stdout.trim().is_empty() {
+        let sink_count = sinks_result.stdout.lines().count();
+        diagnostics.push(AVDiagnostic {
+            category: "Audio Outputs".to_string(),
+            status: "OK".to_string(),
+            details: format!("{} audio output device(s) found", sink_count),
+            fix_available: false,
+            fix_command: None,
+        });
+    } else {
+        diagnostics.push(AVDiagnostic {
+            category: "Audio Outputs".to_string(),
+            status: "WARNING".to_string(),
+            details: "No audio output devices found".to_string(),
+            fix_available: true,
+            fix_command: Some("pactl load-module module-detect".to_string()),
+        });
+    }
+    
+    diagnostics
+}
+
+pub fun check_video_drivers() -> Vec<AVDiagnostic> {
+    let mut diagnostics = Vec::new();
+    
+    // Check for NVIDIA drivers
+    let nvidia_result = run_command(vec!["nvidia-smi".to_string()], None);
+    
+    if nvidia_result.success {
+        diagnostics.push(AVDiagnostic {
+            category: "GPU Driver".to_string(),
+            status: "OK".to_string(),
+            details: "NVIDIA driver is installed and working".to_string(),
+            fix_available: false,
+            fix_command: None,
+        });
+        
+        // Check NVENC support
+        if nvidia_result.stdout.contains("NVENC") || nvidia_result.stdout.contains("Video Encode") {
+            diagnostics.push(AVDiagnostic {
+                category: "Hardware Encoding".to_string(),
+                status: "OK".to_string(),
+                details: "NVIDIA NVENC hardware encoding available".to_string(),
+                fix_available: false,
+                fix_command: None,
+            });
+        }
+    } else {
+        // Check for AMD drivers
+        let amd_result = run_command(vec!["lspci".to_string()], None);
+        
+        if amd_result.success && amd_result.stdout.contains("AMD") && amd_result.stdout.contains("VGA") {
+            diagnostics.push(AVDiagnostic {
+                category: "GPU Driver".to_string(),
+                status: "OK".to_string(),
+                details: "AMD GPU detected".to_string(),
+                fix_available: false,
+                fix_command: None,
+            });
+        } else if amd_result.success && amd_result.stdout.contains("Intel") && amd_result.stdout.contains("VGA") {
+            diagnostics.push(AVDiagnostic {
+                category: "GPU Driver".to_string(),
+                status: "OK".to_string(),
+                details: "Intel GPU detected".to_string(),
+                fix_available: false,
+                fix_command: None,
+            });
+        }
+    }
+    
+    // Check VA-API support
+    let vainfo_result = run_command(vec!["vainfo".to_string()], None);
+    
+    if vainfo_result.success && !vainfo_result.stderr.contains("error") {
+        diagnostics.push(AVDiagnostic {
+            category: "Video Acceleration".to_string(),
+            status: "OK".to_string(),
+            details: "VA-API hardware acceleration available".to_string(),
+            fix_available: false,
+            fix_command: None,
+        });
+    } else {
+        diagnostics.push(AVDiagnostic {
+            category: "Video Acceleration".to_string(),
+            status: "WARNING".to_string(),
+            details: "VA-API not available or not configured".to_string(),
+            fix_available: true,
+            fix_command: Some("sudo apt install vainfo intel-media-va-driver".to_string()),
+        });
+    }
+    
+    diagnostics
+}
+
+pub fun check_codec_support() -> Vec<AVDiagnostic> {
+    let mut diagnostics = Vec::new();
+    
+    // Check for FFmpeg
+    let ffmpeg_result = run_command(vec!["ffmpeg".to_string(), "-version".to_string()], None);
+    
+    if ffmpeg_result.success {
+        diagnostics.push(AVDiagnostic {
+            category: "Media Codecs".to_string(),
+            status: "OK".to_string(),
+            details: "FFmpeg is installed".to_string(),
+            fix_available: false,
+            fix_command: None,
+        });
+        
+        // Check for common codecs
+        let codecs_to_check = vec!["h264", "h265", "vp9", "av1", "aac", "opus"];
+        let mut supported_codecs = Vec::new();
+        
+        for codec in codecs_to_check {
+            if ffmpeg_result.stdout.contains(codec) {
+                supported_codecs.push(codec);
+            }
+        }
+        
+        if !supported_codecs.is_empty() {
+            diagnostics.push(AVDiagnostic {
+                category: "Codec Support".to_string(),
+                status: "OK".to_string(),
+                details: format!("Supported codecs: {}", supported_codecs.join(", ")),
+                fix_available: false,
+                fix_command: None,
+            });
+        }
+    } else {
+        diagnostics.push(AVDiagnostic {
+            category: "Media Codecs".to_string(),
+            status: "ERROR".to_string(),
+            details: "FFmpeg not installed".to_string(),
+            fix_available: true,
+            fix_command: Some("sudo apt install ffmpeg".to_string()),
+        });
+    }
+    
+    // Check GStreamer plugins
+    let gst_result = run_command(vec!["gst-inspect-1.0".to_string()], None);
+    
+    if gst_result.success {
+        let plugin_count = gst_result.stdout.lines().count();
+        diagnostics.push(AVDiagnostic {
+            category: "GStreamer".to_string(),
+            status: "OK".to_string(),
+            details: format!("{} GStreamer plugins available", plugin_count),
+            fix_available: false,
+            fix_command: None,
+        });
+    } else {
+        diagnostics.push(AVDiagnostic {
+            category: "GStreamer".to_string(),
+            status: "WARNING".to_string(),
+            details: "GStreamer not installed or not configured".to_string(),
+            fix_available: true,
+            fix_command: Some("sudo apt install gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly".to_string()),
+        });
+    }
+    
+    diagnostics
+}
+
+pub fun test_audio_playback() -> Result<AVDiagnostic, String> {
+    info("Testing audio playback");
+    
+    // Generate a test tone using FFmpeg
+    let test_file = "/tmp/av_test_audio.wav";
+    let generate_result = run_command(vec![
+        "ffmpeg".to_string(),
+        "-y".to_string(),
+        "-f".to_string(),
+        "lavfi".to_string(),
+        "-i".to_string(),
+        "sine=frequency=440:duration=2".to_string(),
+        "-ac".to_string(),
+        "2".to_string(),
+        test_file.to_string()
+    ], None);
+    
+    if !generate_result.success {
+        return Ok(AVDiagnostic {
+            category: "Audio Playback Test".to_string(),
+            status: "ERROR".to_string(),
+            details: "Failed to generate test audio".to_string(),
+            fix_available: false,
+            fix_command: None,
+        });
+    }
+    
+    // Try to play the test file
+    let play_result = run_command(vec![
+        "paplay".to_string(),
+        test_file.to_string()
+    ], None);
+    
+    // Clean up
+    let _ = run_command(vec!["rm".to_string(), test_file.to_string()], None);
+    
+    if play_result.success {
+        Ok(AVDiagnostic {
+            category: "Audio Playback Test".to_string(),
+            status: "OK".to_string(),
+            details: "Audio playback is working".to_string(),
+            fix_available: false,
+            fix_command: None,
+        })
+    } else {
+        Ok(AVDiagnostic {
+            category: "Audio Playback Test".to_string(),
+            status: "ERROR".to_string(),
+            details: format!("Audio playback failed: {}", play_result.stderr),
+            fix_available: true,
+            fix_command: Some("systemctl --user restart pipewire pipewire-pulse".to_string()),
+        })
+    }
+}
+
+pub fun test_video_playback() -> Result<AVDiagnostic, String> {
+    info("Testing video playback capabilities");
+    
+    // Generate a test video using FFmpeg
+    let test_file = "/tmp/av_test_video.mp4";
+    let generate_result = run_command(vec![
+        "ffmpeg".to_string(),
+        "-y".to_string(),
+        "-f".to_string(),
+        "lavfi".to_string(),
+        "-i".to_string(),
+        "testsrc=duration=2:size=320x240:rate=30".to_string(),
+        "-c:v".to_string(),
+        "libx264".to_string(),
+        "-preset".to_string(),
+        "ultrafast".to_string(),
+        test_file.to_string()
+    ], None);
+    
+    if !generate_result.success {
+        return Ok(AVDiagnostic {
+            category: "Video Playback Test".to_string(),
+            status: "ERROR".to_string(),
+            details: "Failed to generate test video".to_string(),
+            fix_available: false,
+            fix_command: None,
+        });
+    }
+    
+    // Try to decode the test file
+    let decode_result = run_command(vec![
+        "ffmpeg".to_string(),
+        "-i".to_string(),
+        test_file.to_string(),
+        "-f".to_string(),
+        "null".to_string(),
+        "-".to_string()
+    ], None);
+    
+    // Clean up
+    let _ = run_command(vec!["rm".to_string(), test_file.to_string()], None);
+    
+    if decode_result.success {
+        Ok(AVDiagnostic {
+            category: "Video Playback Test".to_string(),
+            status: "OK".to_string(),
+            details: "Video decoding is working".to_string(),
+            fix_available: false,
+            fix_command: None,
+        })
+    } else {
+        Ok(AVDiagnostic {
+            category: "Video Playback Test".to_string(),
+            status: "ERROR".to_string(),
+            details: "Video decoding failed".to_string(),
+            fix_available: true,
+            fix_command: Some("sudo apt install ffmpeg libavcodec-extra".to_string()),
+        })
+    }
+}
+
+pub fun generate_report(diagnostics: Vec<AVDiagnostic>) -> String {
+    let mut report = String::from("=== Audio/Video Diagnostics Report ===\n\n");
+    
+    let mut issues_found = false;
+    let mut fixes_available = Vec::new();
+    
+    for diag in &diagnostics {
+        let status_icon = match diag.status.as_str() {
+            "OK" => "✓",
+            "WARNING" => "⚠",
+            "ERROR" => "✗",
+            _ => "?",
+        };
+        
+        report.push_str(&format!("{} {} - {}: {}\n", 
+                                status_icon, 
+                                diag.category, 
+                                diag.status, 
+                                diag.details));
+        
+        if diag.status != "OK" {
+            issues_found = true;
+            if let Some(ref fix) = diag.fix_command {
+                fixes_available.push(fix.clone());
+            }
+        }
+    }
+    
+    if !fixes_available.is_empty() {
+        report.push_str("\n=== Available Fixes ===\n");
+        for (i, fix) in fixes_available.iter().enumerate() {
+            report.push_str(&format!("{}. {}\n", i + 1, fix));
+        }
+    }
+    
+    if !issues_found {
+        report.push_str("\n✓ All audio/video systems are functioning correctly!");
+    }
+    
+    report
+}
+
+pub fun apply_fixes(diagnostics: Vec<AVDiagnostic>) -> Result<(), String> {
+    info("Applying available fixes");
+    
+    let fixes: Vec<String> = diagnostics.iter()
+        .filter(|d| d.fix_available && d.fix_command.is_some())
+        .filter_map(|d| d.fix_command.clone())
+        .collect();
+    
+    if fixes.is_empty() {
+        info("No automatic fixes available");
+        return Ok(());
+    }
+    
+    for fix in fixes {
+        info(&format!("Running: {}", fix));
+        let parts: Vec<String> = fix.split_whitespace().map(|s| s.to_string()).collect();
+        if !parts.is_empty() {
+            let result = run_command(parts, None);
+            if !result.success {
+                warn(&format!("Fix failed: {}", result.stderr));
+            }
+        }
+    }
+    
+    success("Fixes applied");
+    Ok(())
+}
+
+pub fun run() -> Result<(), String> {
+    info("Diagnosing audio/video issues");
+    
+    let mut all_diagnostics = Vec::new();
+    
+    // Run all diagnostic checks
+    all_diagnostics.extend(check_audio_services());
+    all_diagnostics.extend(check_video_drivers());
+    all_diagnostics.extend(check_codec_support());
+    
+    // Run playback tests if FFmpeg is available
+    if run_command(vec!["which".to_string(), "ffmpeg".to_string()], None).success {
+        if let Ok(audio_test) = test_audio_playback() {
+            all_diagnostics.push(audio_test);
+        }
+        if let Ok(video_test) = test_video_playback() {
+            all_diagnostics.push(video_test);
+        }
+    }
+    
+    // Generate and display report
+    let report = generate_report(all_diagnostics.clone());
+    println!("\n{}", report);
+    
+    // Save report to file
+    let report_file = "/tmp/av_diagnostic_report.txt";
+    write_file(report_file, &report)?;
+    info(&format!("Report saved to {}", report_file));
+    
+    // Ask to apply fixes
+    println!("\nWould you like to apply available fixes? [y/N]: ");
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
+    
+    if input.trim().to_lowercase().starts_with('y') {
+        apply_fixes(all_diagnostics)?;
+    }
+    
+    Ok(())
+}

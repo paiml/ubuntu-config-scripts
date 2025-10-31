@@ -1,0 +1,78 @@
+// RUC-005: Simple File Logging Test
+// Ruchy v3.158.0+ required
+
+use std::fs;
+
+fun main() {
+    println!("Testing logger file I/O...");
+    println!("");
+
+    let log_file = "/tmp/ruchy_logger_test.log";
+
+    // Test 1: Write log entry
+    println!("Test 1: Write log entry");
+    let entry1 = "[2025-10-31] [INFO] Application started\n";
+    match fs::write(log_file, entry1) {
+        Ok(_) => println!("✅ PASS: Write succeeded"),
+        Err(e) => {
+            println!("❌ FAIL: Write failed");
+            return;
+        },
+    }
+
+    // Test 2: Read log entry
+    println!("Test 2: Read log entry");
+    match fs::read_to_string(log_file) {
+        Ok(content) => {
+            println!("✅ PASS: Read succeeded");
+            println!("  Content: {}", content);
+        },
+        Err(e) => {
+            println!("❌ FAIL: Read failed");
+            return;
+        },
+    }
+
+    // Test 3: Append log entry
+    println!("Test 3: Append log entry");
+    let current = match fs::read_to_string(log_file) {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ FAIL: Read for append failed");
+            return;
+        },
+    };
+
+    let entry2 = "[2025-10-31] [WARN] Low disk space\n";
+    let new_content = current + entry2;
+    match fs::write(log_file, new_content) {
+        Ok(_) => println!("✅ PASS: Append succeeded"),
+        Err(e) => {
+            println!("❌ FAIL: Append failed");
+            return;
+        },
+    }
+
+    // Test 4: Verify both entries
+    println!("Test 4: Verify both entries");
+    match fs::read_to_string(log_file) {
+        Ok(final_content) => {
+            println!("✅ PASS: Final read succeeded");
+            println!("  Content:");
+            println!("{}", final_content);
+        },
+        Err(e) => {
+            println!("❌ FAIL: Final read failed");
+        },
+    }
+
+    // Test 5: Cleanup
+    println!("Test 5: Cleanup");
+    match fs::remove_file(log_file) {
+        Ok(_) => println!("✅ PASS: Cleanup succeeded"),
+        Err(e) => println!("⚠️  WARN: Cleanup failed"),
+    }
+
+    println!("");
+    println!("All tests passed! std::fs works for logging.");
+}

@@ -1,0 +1,353 @@
+// Monitor Ruchy version and update automatically
+use crate::lib::common::{run_command, write_file}
+use crate::lib::logger::{info, warn, error, success}
+use serde::{Serialize, Deserialize}
+use std::time::{SystemTime, Duration}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VersionInfo {
+    current: String,
+    latest: String,
+    update_available: bool,
+    last_checked: u64,
+}
+
+pub fun get_current_version() -> Result<String, String> {
+    let result = run_command(vec!["ruchy".to_string(), "--version".to_string()], None);
+    
+    if result.success {
+        // Extract version number from output like "ruchy 1.89.0"
+        let version_line = result.stdout.trim();
+        if let Some(version) = version_line.split_whitespace().nth(1) {
+            Ok(version.to_string())
+        } else {
+            Ok(version_line.to_string())
+        }
+    } else {
+        Err("Failed to get current Ruchy version".to_string())
+    }
+}
+
+pub fun get_latest_version() -> Result<String, String> {
+    info("Checking for latest Ruchy version from registry");
+    
+    // Check cargo registry for latest ruchy version
+    let result = run_command(vec![
+        "cargo".to_string(),
+        "search".to_string(),
+        "ruchy".to_string(),
+        "--limit".to_string(),
+        "1".to_string()
+    ], None);
+    
+    if result.success {
+        // Parse output like "ruchy = \"1.89.0\"    # Description"
+        for line in result.stdout.lines() {
+            if line.starts_with("ruchy = ") {
+                if let Some(version_part) = line.split('\"').nth(1) {
+                    return Ok(version_part.to_string());
+                }
+            }
+        }
+    }
+    
+    // Fallback: try GitHub API
+    let gh_result = run_command(vec![
+        "curl".to_string(),
+        "-s".to_string(),
+        "https://api.github.com/repos/ruchy-lang/ruchy/releases/latest".to_string()
+    ], None);
+    
+    if gh_result.success {
+        // Parse JSON for tag_name
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&gh_result.stdout) {
+            if let Some(tag_name) = json["tag_name"].as_str() {
+                // Remove 'v' prefix if present
+                let version = tag_name.strip_prefix('v').unwrap_or(tag_name);
+                return Ok(version.to_string());
+            }
+        }
+    }
+    
+    Err("Failed to get latest Ruchy version".to_string())
+}
+
+pub fun compare_versions(current: &str, latest: &str) -> std::cmp::Ordering {
+    use std::cmp::Ordering;
+    
+    let parse_version = |v: &str| -> Vec<u32> {
+        v.split('.')
+            .map(|s| s.parse::<u32>().unwrap_or(0))
+            .collect()
+    };
+    
+    let current_parts = parse_version(current);
+    let latest_parts = parse_version(latest);
+    
+    for (c, l) in current_parts.iter().zip(latest_parts.iter()) {
+        match c.cmp(l) {
+            Ordering::Less => return Ordering::Less,
+            Ordering::Greater => return Ordering::Greater,
+            Ordering::Equal => continue,
+        }
+    }
+    
+    current_parts.len().cmp(&latest_parts.len())
+}
+
+pub fun update_ruchy() -> Result<(), String> {
+    info("Updating Ruchy to latest version");
+    
+    let result = run_command(vec![
+        "cargo".to_string(),
+        "install".to_string(),
+        "ruchy".to_string(),
+        "--force".to_string()
+    ], None);
+    
+    if !result.success {
+        return Err(format!("Failed to update Ruchy: {}", result.stderr));
+    }
+    
+    // Verify update
+    let new_version = get_current_version()?;
+    success(&format!("Ruchy updated to version {}", new_version));
+    
+    Ok(())
+}
+
+pub fun create_update_service() -> Result<(), String> {
+    info("Creating automatic Ruchy update service");
+    
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/home/user".to_string());
+    
+    // Create update script
+    let script_content = r#"#!/bin/bash
+# Ruchy Version Monitor and Auto-Update
+
+LOGFILE="$HOME/.local/share/ruchy-monitor.log"
+CACHE_FILE="$HOME/.cache/ruchy-version-cache.json"
+UPDATE_INTERVAL=86400  # 24 hours
+
+log_message() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOGFILE"
+    echo "$1"
+}
+
+check_for_updates() {
+    log_message "Checking for Ruchy updates..."
+    
+    # Run the Ruchy monitor command
+    if command -v ubuntu-config &>/dev/null; then
+        ubuntu-config dev ruchy-monitor --check-only
+    else
+        log_message "ubuntu-config not found - skipping update check"
+        return 1
+    fi
+}
+
+# Create cache directory if it doesn't exist
+mkdir -p "$(dirname "$CACHE_FILE")"
+mkdir -p "$(dirname "$LOGFILE")"
+
+log_message "Ruchy monitor started"
+
+# Check immediately on first run
+check_for_updates
+
+# Then check periodically
+while true; do
+    sleep $UPDATE_INTERVAL
+    check_for_updates
+done
+"#;
+    
+    let script_path = format!("{}/.local/bin/ruchy-monitor", home);
+    crate::lib::common::ensure_dir(&format!("{}/.local/bin", home))?;
+    write_file(&script_path, script_content)?;
+    
+    // Make executable
+    run_command(vec![
+        "chmod".to_string(),
+        "+x".to_string(),
+        script_path.clone()
+    ], None);
+    
+    // Create systemd service
+    let service_content = format!(r#"[Unit]
+Description=Ruchy Version Monitor and Auto-Update
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart={}
+Restart=always
+RestartSec=300
+StandardOutput=journal
+StandardError=journal
+Environment=HOME={}
+
+[Install]
+WantedBy=default.target
+"#, script_path, home);
+    
+    let service_dir = format!("{}/.config/systemd/user", home);
+    let service_path = format!("{}/ruchy-monitor.service", service_dir);
+    
+    crate::lib::common::ensure_dir(&service_dir)?;
+    write_file(&service_path, &service_content)?;
+    
+    // Reload and enable service
+    let reload = run_command(vec![
+        "systemctl".to_string(),
+        "--user".to_string(),
+        "daemon-reload".to_string()
+    ], None);
+    
+    if !reload.success {
+        warn("Failed to reload systemd");
+    }
+    
+    let enable = run_command(vec![
+        "systemctl".to_string(),
+        "--user".to_string(),
+        "enable".to_string(),
+        "ruchy-monitor.service".to_string()
+    ], None);
+    
+    if !enable.success {
+        warn("Failed to enable Ruchy monitor service");
+    }
+    
+    success("Ruchy monitor service created and enabled");
+    Ok(())
+}
+
+pub fun save_version_cache(version_info: &VersionInfo) -> Result<(), String> {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/home/user".to_string());
+    let cache_dir = format!("{}/.cache", home);
+    let cache_file = format!("{}/ruchy-version-cache.json", cache_dir);
+    
+    crate::lib::common::ensure_dir(&cache_dir)?;
+    
+    let json = serde_json::to_string_pretty(version_info)
+        .map_err(|e| format!("Failed to serialize version info: {}", e))?;
+    
+    write_file(&cache_file, &json)?;
+    Ok(())
+}
+
+pub fun load_version_cache() -> Option<VersionInfo> {
+    let home = std::env::var("HOME").ok()?;
+    let cache_file = format!("{}/.cache/ruchy-version-cache.json", home);
+    
+    if let Ok(content) = std::fs::read_to_string(&cache_file) {
+        serde_json::from_str(&content).ok()
+    } else {
+        None
+    }
+}
+
+pub fun should_check_for_updates() -> bool {
+    if let Some(cache) = load_version_cache() {
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        
+        // Check every 24 hours
+        now - cache.last_checked > 86400
+    } else {
+        true
+    }
+}
+
+pub fun run() -> Result<(), String> {
+    info("Monitoring Ruchy version");
+    
+    // Get current version
+    let current_version = get_current_version().unwrap_or_else(|_| "unknown".to_string());
+    info(&format!("Current Ruchy version: {}", current_version));
+    
+    // Check if we should look for updates
+    let force_check = std::env::args().any(|arg| arg == "--force" || arg == "--check");
+    
+    if !should_check_for_updates() && !force_check {
+        if let Some(cache) = load_version_cache() {
+            if cache.update_available {
+                println!("Update available: {} -> {}", cache.current, cache.latest);
+                println!("Run with --force to check again or update");
+            } else {
+                info("Ruchy is up to date (cached)");
+            }
+            return Ok(());
+        }
+    }
+    
+    // Get latest version
+    let latest_version = match get_latest_version() {
+        Ok(version) => version,
+        Err(e) => {
+            warn(&format!("Failed to check for updates: {}", e));
+            return Ok(());
+        }
+    };
+    
+    info(&format!("Latest Ruchy version: {}", latest_version));
+    
+    // Compare versions
+    let update_available = compare_versions(&current_version, &latest_version) == std::cmp::Ordering::Less;
+    
+    let version_info = VersionInfo {
+        current: current_version.clone(),
+        latest: latest_version.clone(),
+        update_available,
+        last_checked: SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    };
+    
+    // Save cache
+    save_version_cache(&version_info)?;
+    
+    if update_available {
+        success(&format!("Update available: {} -> {}", current_version, latest_version));
+        
+        // Check if this is just a check
+        if std::env::args().any(|arg| arg == "--check-only") {
+            return Ok(());
+        }
+        
+        println!("\nWould you like to update now? [Y/n]: ");
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();
+        
+        if input.trim().is_empty() || input.trim().to_lowercase().starts_with('y') {
+            update_ruchy()?;
+        } else {
+            info("Update skipped. Run again with --force to update later.");
+        }
+    } else {
+        success("Ruchy is up to date");
+    }
+    
+    // Create monitor service if it doesn't exist
+    if !std::env::args().any(|arg| arg == "--no-service") {
+        let home = std::env::var("HOME").unwrap_or_default();
+        let service_file = format!("{}/.config/systemd/user/ruchy-monitor.service", home);
+        
+        if !crate::lib::common::file_exists(&service_file) {
+            println!("\nWould you like to set up automatic update monitoring? [Y/n]: ");
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).unwrap();
+            
+            if input.trim().is_empty() || input.trim().to_lowercase().starts_with('y') {
+                create_update_service()?;
+            }
+        }
+    }
+    
+    Ok(())
+}

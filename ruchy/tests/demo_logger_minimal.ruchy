@@ -1,0 +1,35 @@
+// Minimal Logger Demo
+mod logger_file;
+use std::fs;
+
+fun main() {
+    println!("Testing logger...");
+
+    // Test 1: Console logging
+    logger_file::info(String::from("Test message"));
+
+    // Test 2: File logging
+    let log_file = "/tmp/test_minimal.log";
+    let result = logger_file::log_file_new(String::from(log_file), String::from("INFO"), String::from("File test"));
+
+    match result {
+        Ok(_) => println!("File write OK"),
+        Err(e) => println!("File write failed"),
+    }
+
+    // Test 3: Read back
+    let read_result = fs::read_to_string(log_file);
+    match read_result {
+        Ok(content) => println!("Read: {}", content),
+        Err(e) => println!("Read failed"),
+    }
+
+    // Cleanup
+    let remove_result = fs::remove_file(log_file);
+    match remove_result {
+        Ok(_) => println!("Cleanup OK"),
+        Err(e) => println!("Cleanup failed"),
+    }
+
+    println!("Done!");
+}

@@ -1,0 +1,332 @@
+// Create PipeWire monitor service for auto-recovery
+use crate::lib::common::{write_file, ensure_dir, run_command}
+use crate::lib::logger::{info, warn, error, success}
+use std::env;
+
+pub fun create_monitor_script() -> Result<String, String> {
+    let script_content = r#"#!/bin/bash
+# PipeWire Monitor Service
+# Auto-recovers from audio errors
+
+LOGFILE="/tmp/pipewire-monitor.log"
+CHECK_INTERVAL=30
+
+log_message() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOGFILE"
+}
+
+check_pipewire_health() {
+    # Check if PipeWire is running
+    if ! systemctl --user is-active pipewire &>/dev/null; then
+        return 1
+    fi
+    
+    # Check for error states in PipeWire logs
+    if journalctl --user -u pipewire --since "30 seconds ago" | grep -q "Broken pipe\|error\|failed"; then
+        return 1
+    fi
+    
+    # Check if audio sinks are available
+    if ! pactl list short sinks &>/dev/null || [ -z "$(pactl list short sinks)" ]; then
+        return 1
+    fi
+    
+    # Check for suspended sinks
+    if pactl list sinks | grep -q "State: SUSPENDED"; then
+        return 1
+    fi
+    
+    return 0
+}
+
+restart_audio_services() {
+    log_message "Restarting audio services..."
+    
+    # Stop services
+    systemctl --user stop pipewire pipewire-pulse wireplumber
+    sleep 2
+    
+    # Clear any stale state
+    rm -rf /run/user/$(id -u)/pipewire-0*
+    
+    # Start services
+    systemctl --user start pipewire pipewire-pulse wireplumber
+    sleep 3
+    
+    # Reset default devices
+    pactl set-default-sink @DEFAULT_SINK@ &>/dev/null
+    pactl set-default-source @DEFAULT_SOURCE@ &>/dev/null
+    
+    log_message "Audio services restarted"
+}
+
+log_message "PipeWire monitor started"
+
+while true; do
+    if ! check_pipewire_health; then
+        log_message "Audio issue detected"
+        restart_audio_services
+        
+        # Verify fix
+        sleep 5
+        if check_pipewire_health; then
+            log_message "Audio services recovered successfully"
+        else
+            log_message "Recovery failed - manual intervention may be required"
+        fi
+    fi
+    
+    sleep $CHECK_INTERVAL
+done
+"#;
+    
+    let home = env::var("HOME").map_err(|e| format!("Failed to get HOME: {}", e))?;
+    let script_path = format!("{}/.local/bin/pipewire-monitor", home);
+    
+    ensure_dir(&format!("{}/.local/bin", home))?;
+    write_file(&script_path, script_content)?;
+    
+    // Make executable
+    run_command(vec![
+        "chmod".to_string(),
+        "+x".to_string(),
+        script_path.clone()
+    ], None);
+    
+    Ok(script_path)
+}
+
+pub fun create_systemd_service() -> Result<String, String> {
+    let home = env::var("HOME").map_err(|e| format!("Failed to get HOME: {}", e))?;
+    let script_path = format!("{}/.local/bin/pipewire-monitor", home);
+    
+    let service_content = format!(r#"[Unit]
+Description=PipeWire Audio Monitor and Recovery Service
+After=pipewire.service pipewire-pulse.service
+Wants=pipewire.service pipewire-pulse.service
+
+[Service]
+Type=simple
+ExecStart={}
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+"#, script_path);
+    
+    let service_dir = format!("{}/.config/systemd/user", home);
+    let service_path = format!("{}/pipewire-monitor.service", service_dir);
+    
+    ensure_dir(&service_dir)?;
+    write_file(&service_path, &service_content)?;
+    
+    Ok(service_path)
+}
+
+pub fun create_pipewire_config() -> Result<(), String> {
+    info("Creating PipeWire configuration for better stability");
+    
+    let home = env::var("HOME").map_err(|e| format!("Failed to get HOME: {}", e))?;
+    let config_dir = format!("{}/.config/pipewire", home);
+    ensure_dir(&config_dir)?;
+    
+    // Create main PipeWire config
+    let pipewire_conf = r#"# PipeWire Configuration
+# Optimized for stability and recovery
+
+context.properties = {
+    default.clock.rate = 48000
+    default.clock.allowed-rates = [ 44100 48000 96000 ]
+    default.clock.quantum = 1024
+    default.clock.min-quantum = 32
+    default.clock.max-quantum = 8192
+    
+    # Increase timeouts to prevent "Broken pipe" errors
+    link.max-buffers = 64
+    core.daemon = true
+    core.name = pipewire-0
+    
+    # Module loading timeout
+    module.x11.bell = false
+}
+
+context.spa-libs = {
+    audio.convert.* = audioconvert/libspa-audioconvert
+    avb.* = avb/libspa-avb
+    api.alsa.* = alsa/libspa-alsa
+    api.v4l2.* = v4l2/libspa-v4l2
+    api.libcamera.* = libcamera/libspa-libcamera
+    api.bluez5.* = bluez5/libspa-bluez5
+    api.vulkan.* = vulkan/libspa-vulkan
+    api.jack.* = jack/libspa-jack
+    support.* = support/libspa-support
+}
+
+context.modules = [
+    { name = libpipewire-module-rt
+        args = {
+            nice.level = -11
+            rt.prio = 88
+            rt.time.soft = 2000000
+            rt.time.hard = 2000000
+        }
+        flags = [ ifexists nofail ]
+    }
+    { name = libpipewire-module-protocol-native }
+    { name = libpipewire-module-profiler }
+    { name = libpipewire-module-metadata }
+    { name = libpipewire-module-spa-device-factory }
+    { name = libpipewire-module-spa-node-factory }
+    { name = libpipewire-module-client-node }
+    { name = libpipewire-module-client-device }
+    { name = libpipewire-module-portal
+        flags = [ ifexists nofail ]
+    }
+    { name = libpipewire-module-access
+        args = {}
+    }
+    { name = libpipewire-module-adapter }
+    { name = libpipewire-module-link-factory }
+    { name = libpipewire-module-session-manager }
+]
+"#;
+    
+    write_file(&format!("{}/pipewire.conf", config_dir), pipewire_conf)?;
+    
+    // Create PipeWire-Pulse config
+    let pulse_conf = r#"# PipeWire-Pulse Configuration
+# Enhanced stability settings
+
+context.properties = {
+    pulse.min.req = 32/48000
+    pulse.default.req = 960/48000
+    pulse.max.req = 1024/48000
+    pulse.min.quantum = 32/48000
+    pulse.max.quantum = 1024/48000
+    
+    # Prevent suspended state
+    pulse.idle.timeout = 0
+    
+    # Server settings
+    server.address = [ "unix:native" ]
+}
+
+context.exec = [
+    { path = "pactl" args = "load-module module-always-sink" }
+    { path = "pactl" args = "load-module module-rescue-streams" }
+]
+
+stream.properties = {
+    node.latency = 1024/48000
+    resample.quality = 4
+    channelmix.normalize = false
+    channelmix.mix-lfe = false
+    channelmix.upmix = false
+    channelmix.lfe-cutoff = 0
+}
+
+pulse.rules = [
+    {
+        matches = [ { application.process.binary = "firefox" } ]
+        actions = {
+            update-props = {
+                pulse.min.quantum = 1024/48000
+            }
+        }
+    }
+]
+"#;
+    
+    write_file(&format!("{}/pipewire-pulse.conf", config_dir), pulse_conf)?;
+    
+    Ok(())
+}
+
+pub fun enable_service() -> Result<(), String> {
+    info("Enabling PipeWire monitor service");
+    
+    // Reload systemd
+    let reload = run_command(vec![
+        "systemctl".to_string(),
+        "--user".to_string(),
+        "daemon-reload".to_string()
+    ], None);
+    
+    if !reload.success {
+        warn("Failed to reload systemd");
+    }
+    
+    // Enable service
+    let enable = run_command(vec![
+        "systemctl".to_string(),
+        "--user".to_string(),
+        "enable".to_string(),
+        "pipewire-monitor.service".to_string()
+    ], None);
+    
+    if !enable.success {
+        return Err("Failed to enable service".to_string());
+    }
+    
+    // Start service
+    let start = run_command(vec![
+        "systemctl".to_string(),
+        "--user".to_string(),
+        "start".to_string(),
+        "pipewire-monitor.service".to_string()
+    ], None);
+    
+    if !start.success {
+        return Err("Failed to start service".to_string());
+    }
+    
+    Ok(())
+}
+
+pub fun run() -> Result<(), String> {
+    info("Creating PipeWire monitor service for automatic audio recovery");
+    
+    // Create monitor script
+    let script_path = create_monitor_script()?;
+    success(&format!("Created monitor script: {}", script_path));
+    
+    // Create systemd service
+    let service_path = create_systemd_service()?;
+    success(&format!("Created systemd service: {}", service_path));
+    
+    // Create PipeWire configuration
+    create_pipewire_config()?;
+    success("Created PipeWire configuration");
+    
+    // Enable and start service
+    enable_service()?;
+    success("PipeWire monitor service enabled and started");
+    
+    // Check service status
+    let status = run_command(vec![
+        "systemctl".to_string(),
+        "--user".to_string(),
+        "status".to_string(),
+        "pipewire-monitor.service".to_string(),
+        "--no-pager".to_string()
+    ], None);
+    
+    println!("\n=== Service Status ===");
+    println!("{}", status.stdout);
+    
+    println!("\n=== Monitor Service Created ===");
+    println!("✓ Auto-recovery from audio errors");
+    println!("✓ Checks every 30 seconds");
+    println!("✓ Restarts audio services when issues detected");
+    println!("✓ Logs to /tmp/pipewire-monitor.log");
+    
+    println!("\nUseful commands:");
+    println!("  View logs: journalctl --user -u pipewire-monitor -f");
+    println!("  Stop service: systemctl --user stop pipewire-monitor");
+    println!("  Disable service: systemctl --user disable pipewire-monitor");
+    
+    Ok(())
+}

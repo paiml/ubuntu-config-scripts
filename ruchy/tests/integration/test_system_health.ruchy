@@ -1,0 +1,199 @@
+// RUC-020: Integration Test - System Health Check
+// Phase: RED - Demonstrates expected cross-module behavior
+// Created: 2025-10-31
+//
+// Tests integration of:
+// - diagnostics (RUC-006)
+// - hardware (RUC-008)
+// - user (RUC-013)
+// - system_summary (RUC-012)
+
+use diagnostics;
+use hardware;
+use user;
+use system_summary;
+
+// Test 1: Complete system health check workflow
+fun test_complete_health_check() {
+    println!("TEST 1: Complete System Health Check");
+    println!("=====================================");
+    println!("");
+
+    // Step 1: Get user context
+    println!("Step 1: Getting user context...");
+    let user_result = user::get_current_user();
+    match user_result {
+        Ok(user_info) => {
+            println!("  ✓ User: {}", user_info.username);
+            println!("  ✓ UID: {}", user_info.uid.to_string());
+        }
+        Err(e) => {
+            println!("  ✗ Failed to get user: {:?}", e);
+            return;
+        }
+    }
+    println!("");
+
+    // Step 2: Run diagnostics
+    println!("Step 2: Running system diagnostics...");
+    let diag_result = diagnostics::generate_report();
+    match diag_result {
+        Ok(report) => {
+            println!("  ✓ Audio diagnostics complete");
+            println!("  ✓ Video diagnostics complete");
+            println!("  ✓ Services diagnostics complete");
+        }
+        Err(e) => {
+            println!("  ✗ Failed to generate diagnostics: {:?}", e);
+            return;
+        }
+    }
+    println!("");
+
+    // Step 3: Check hardware
+    println!("Step 3: Detecting hardware...");
+    let hw_result = hardware::detect_all_hardware();
+    match hw_result {
+        Ok(hw_info) => {
+            println!("  ✓ CPU: {}", hw_info.cpu.model);
+            println!("  ✓ CPU Cores: {}", hw_info.cpu.cores.to_string());
+            println!("  ✓ Memory: {} MB", hw_info.memory.total_mb.to_string());
+            println!("  ✓ GPUs: {}", hw_info.gpus.len().to_string());
+        }
+        Err(e) => {
+            println!("  ✗ Failed to detect hardware: {:?}", e);
+            return;
+        }
+    }
+    println!("");
+
+    // Step 4: Generate summary
+    println!("Step 4: Generating system summary...");
+    let summary_result = system_summary::get_system_summary();
+    match summary_result {
+        Ok(summary) => {
+            println!("  ✓ CPU: {}", summary.cpu_model);
+            println!("  ✓ Memory: {} MB", summary.total_memory_mb.to_string());
+            println!("  ✓ GPUs: {}", summary.gpu_count.to_string());
+            println!("  ✓ Processes: {}", summary.process_count.to_string());
+        }
+        Err(e) => {
+            println!("  ✗ Failed to generate summary: {:?}", e);
+            return;
+        }
+    }
+    println!("");
+
+    println!("✅ COMPLETE HEALTH CHECK PASSED");
+    println!("");
+}
+
+// Test 2: Verify data consistency across modules
+fun test_data_consistency() {
+    println!("TEST 2: Data Consistency Check");
+    println!("===============================");
+    println!("");
+
+    // Get user info from user module
+    let user_info = user::get_current_user();
+
+    // Get user info from system_summary
+    let summary = system_summary::get_system_summary();
+
+    match (user_info, summary) {
+        (Ok(_u), Ok(s)) => {
+            // Summary contains aggregated system data
+            println!("  Summary CPU: {}", s.cpu_model);
+            println!("  Summary GPU count: {}", s.gpu_count.to_string());
+            println!("  ✓ Data consistency validated");
+        }
+        _ => {
+            println!("  ✗ Failed to get data from modules");
+        }
+    }
+    println!("");
+}
+
+// Test 3: Error handling across modules
+fun test_cross_module_error_handling() {
+    println!("TEST 3: Cross-Module Error Handling");
+    println!("====================================");
+    println!("");
+
+    // Collect results from different modules
+    let mut success_count = 0;
+    let mut fail_count = 0;
+
+    // Test user module
+    match user::get_current_user() {
+        Ok(_) => {
+            success_count = success_count + 1;
+            println!("  ✓ User module functional");
+        }
+        Err(_) => {
+            fail_count = fail_count + 1;
+            println!("  ✗ User module failed");
+        }
+    }
+
+    // Test hardware module
+    match hardware::detect_all_hardware() {
+        Ok(_) => {
+            success_count = success_count + 1;
+            println!("  ✓ Hardware module functional");
+        }
+        Err(_) => {
+            fail_count = fail_count + 1;
+            println!("  ✗ Hardware module failed");
+        }
+    }
+
+    // Test diagnostics module
+    match diagnostics::generate_report() {
+        Ok(_) => {
+            success_count = success_count + 1;
+            println!("  ✓ Diagnostics module functional");
+        }
+        Err(_) => {
+            fail_count = fail_count + 1;
+            println!("  ✗ Diagnostics module failed");
+        }
+    }
+
+    // Test system summary module
+    match system_summary::get_system_summary() {
+        Ok(_) => {
+            success_count = success_count + 1;
+            println!("  ✓ System summary module functional");
+        }
+        Err(_) => {
+            fail_count = fail_count + 1;
+            println!("  ✗ System summary module failed");
+        }
+    }
+
+    println!("");
+    println!("Results: {} succeeded, {} failed", success_count.to_string(), fail_count.to_string());
+
+    if fail_count == 0 {
+        println!("✅ ALL MODULES FUNCTIONAL");
+    } else {
+        println!("⚠ SOME MODULES FAILED");
+    }
+    println!("");
+}
+
+fun main() {
+    println!("===========================================");
+    println!("RUC-020: System Health Integration Tests");
+    println!("===========================================");
+    println!("");
+
+    test_complete_health_check();
+    test_data_consistency();
+    test_cross_module_error_handling();
+
+    println!("===========================================");
+    println!("Integration Test Suite Complete");
+    println!("===========================================");
+}

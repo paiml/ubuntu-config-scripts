@@ -1,0 +1,224 @@
+// Common utilities for Ubuntu Config Scripts
+use std::process::{Command, Stdio, Output}
+use std::env
+use std::path::{Path, PathBuf}
+use std::fs
+use std::io::{self, Read, Write}
+use std::collections::HashMap
+use crate::lib::logger::{debug, error}
+
+#[derive(Debug, Clone)]
+pub struct CommandResult {
+    pub success: bool,
+    pub stdout: String,
+    pub stderr: String,
+    pub code: i32,
+}
+
+pub fun run_command(cmd: Vec<String>, env_vars: Option<HashMap<String, String>>) -> CommandResult {
+    if cmd.is_empty() {
+        return CommandResult {
+            success: false,
+            stdout: String::new(),
+            stderr: "Empty command".to_string(),
+            code: -1,
+        };
+    }
+    
+    debug(&format!("Running command: {}", cmd.join(" ")));
+    
+    let mut command = Command::new(&cmd[0]);
+    
+    if cmd.len() > 1 {
+        command.args(&cmd[1..]);
+    }
+    
+    if let Some(vars) = env_vars {
+        for (key, value) in vars {
+            command.env(key, value);
+        }
+    }
+    
+    command.stdout(Stdio::piped())
+           .stderr(Stdio::piped());
+    
+    match command.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+            let code = output.status.code().unwrap_or(-1);
+            let success = output.status.success();
+            
+            if !success {
+                debug(&format!("Command failed with code {}: {}", code, stderr));
+            }
+            
+            CommandResult {
+                success,
+                stdout,
+                stderr,
+                code,
+            }
+        }
+        Err(e) => {
+            error(&format!("Failed to run command: {}", e));
+            CommandResult {
+                success: false,
+                stdout: String::new(),
+                stderr: format!("{}", e),
+                code: -1,
+            }
+        }
+    }
+}
+
+pub fun command_exists(command: &str) -> bool {
+    let result = run_command(vec!["which".to_string(), command.to_string()], None);
+    result.success
+}
+
+pub fun require_command(command: &str) -> Result<(), String> {
+    if !command_exists(command) {
+        Err(format!("Required command '{}' not found in PATH", command))
+    } else {
+        Ok(())
+    }
+}
+
+pub fun parse_args(args: Vec<String>) -> HashMap<String, String> {
+    let mut parsed = HashMap::new();
+    let mut i = 0;
+    
+    while i < args.len() {
+        let arg = &args[i];
+        
+        if arg.starts_with("--") {
+            let key = arg.trim_start_matches("--");
+            
+            if let Some(eq_pos) = key.find('=') {
+                let name = &key[..eq_pos];
+                let value = &key[eq_pos + 1..];
+                parsed.insert(name.to_string(), value.to_string());
+            } else if i + 1 < args.len() && !args[i + 1].starts_with("-") {
+                i += 1;
+                parsed.insert(key.to_string(), args[i].clone());
+            } else {
+                parsed.insert(key.to_string(), "true".to_string());
+            }
+        } else if arg.starts_with("-") && arg.len() == 2 {
+            let key = arg.trim_start_matches("-");
+            
+            if i + 1 < args.len() && !args[i + 1].starts_with("-") {
+                i += 1;
+                parsed.insert(key.to_string(), args[i].clone());
+            } else {
+                parsed.insert(key.to_string(), "true".to_string());
+            }
+        }
+        
+        i += 1;
+    }
+    
+    parsed
+}
+
+pub fun file_exists(path: &str) -> bool {
+    Path::new(path).exists()
+}
+
+pub fun ensure_dir(path: &str) -> Result<(), String> {
+    fs::create_dir_all(path)
+        .map_err(|e| format!("Failed to create directory: {}", e))
+}
+
+pub fun get_env_or_default(key: &str, default_value: &str) -> String {
+    env::var(key).unwrap_or_else(|_| default_value.to_string())
+}
+
+pub fun require_env(key: &str) -> Result<String, String> {
+    env::var(key)
+        .map_err(|_| format!("Required environment variable '{}' not set", key))
+}
+
+pub fun with_temp_dir<F, T>(f: F) -> Result<T, String>
+where
+    F: FnOnce(&Path) -> Result<T, String>,
+{
+    let temp_dir = env::temp_dir().join(format!("ubuntu-config-{}", 
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs()));
+    
+    fs::create_dir_all(&temp_dir)
+        .map_err(|e| format!("Failed to create temp dir: {}", e))?;
+    
+    let result = f(&temp_dir);
+    
+    // Clean up temp dir
+    let _ = fs::remove_dir_all(&temp_dir);
+    
+    result
+}
+
+pub fun is_root() -> bool {
+    unsafe { libc::getuid() == 0 }
+}
+
+pub fun require_root() -> Result<(), String> {
+    if !is_root() {
+        Err("This script must be run as root (use sudo)".to_string())
+    } else {
+        Ok(())
+    }
+}
+
+pub fun confirm(message: &str, default_value: bool) -> bool {
+    let default_text = if default_value { "[Y/n]" } else { "[y/N]" };
+    print!("{} {}: ", message, default_text);
+    io::stdout().flush().unwrap();
+    
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+    
+    let answer = input.trim().to_lowercase();
+    
+    if answer.is_empty() {
+        default_value
+    } else {
+        answer == "y" || answer == "yes"
+    }
+}
+
+// Additional utility functions
+pub fun read_file(path: &str) -> Result<String, String> {
+    fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read file '{}': {}", path, e))
+}
+
+pub fun write_file(path: &str, content: &str) -> Result<(), String> {
+    fs::write(path, content)
+        .map_err(|e| format!("Failed to write file '{}': {}", path, e))
+}
+
+pub fun copy_file(src: &str, dst: &str) -> Result<(), String> {
+    fs::copy(src, dst)
+        .map_err(|e| format!("Failed to copy '{}' to '{}': {}", src, dst, e))
+        .map(|_| ())
+}
+
+pub fun remove_file(path: &str) -> Result<(), String> {
+    fs::remove_file(path)
+        .map_err(|e| format!("Failed to remove file '{}': {}", path, e))
+}
+
+pub fun list_dir(path: &str) -> Result<Vec<String>, String> {
+    fs::read_dir(path)
+        .map_err(|e| format!("Failed to read directory '{}': {}", path, e))
+        .map(|entries| {
+            entries
+                .filter_map(|e| e.ok())
+                .filter_map(|e| e.file_name().to_str().map(|s| s.to_string()))
+                .collect()
+        })
+}

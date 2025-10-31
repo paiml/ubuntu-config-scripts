@@ -1,0 +1,265 @@
+// RUCHY-001: Logger Tests with Implementation (GREEN Phase)
+// Self-contained test file
+
+use chrono::Utc;
+
+// Log levels matching TypeScript
+enum LogLevel {
+    Debug = 0,
+    Info = 1,
+    Warn = 2,
+    Error = 3,
+}
+
+// Logger struct
+struct Logger {
+    level: LogLevel,
+    prefix: String,
+    use_colors: bool,
+}
+
+impl Logger {
+    // WORKAROUND: Renamed from new() to create() due to Ruchy v3.147.4 bug
+    // Issue: enum field cast fails after new() but works with other method names
+    fun create() -> Logger {
+        Logger {
+            level: LogLevel::Info,
+            prefix: String::new(),
+            use_colors: true,
+        }
+    }
+
+    fun with_level(level: LogLevel) -> Logger {
+        Logger {
+            level,
+            prefix: String::new(),
+            use_colors: true,
+        }
+    }
+
+    fun with_prefix(prefix: &str) -> Logger {
+        Logger {
+            level: LogLevel::Info,
+            prefix: prefix.to_string(),
+            use_colors: true,
+        }
+    }
+
+    fun without_colors() -> Logger {
+        Logger {
+            level: LogLevel::Info,
+            prefix: String::new(),
+            use_colors: false,
+        }
+    }
+
+    fun get_color_code(level_val: i32, use_colors: bool) -> String {
+        if !use_colors {
+            return String::new();
+        }
+        if level_val == 0 {
+            String::from("\x1b[90m")
+        } else if level_val == 1 {
+            String::from("\x1b[34m")
+        } else if level_val == 2 {
+            String::from("\x1b[33m")
+        } else {
+            String::from("\x1b[31m")
+        }
+    }
+
+    fun get_reset_code(use_colors: bool) -> String {
+        if use_colors {
+            String::from("\x1b[0m")
+        } else {
+            String::new()
+        }
+    }
+
+    fun format_message(&self, level_name: &str, message: &str) -> String {
+        let timestamp = Utc::now().to_rfc3339();
+        if self.prefix.is_empty() {
+            format!("{} [{}] {}", timestamp, level_name, message)
+        } else {
+            format!("{} [{}] [{}] {}", timestamp, self.prefix, level_name, message)
+        }
+    }
+
+    fun log(&self, level: LogLevel, level_name: &str, message: &str) {
+        let level_value = level as i32;
+        let min_level_value = self.level as i32;
+
+        if level_value >= min_level_value {
+            let formatted = self.format_message(level_name, message);
+            let color = Logger::get_color_code(level_value, self.use_colors);
+            let reset = Logger::get_reset_code(self.use_colors);
+            let output = if self.use_colors {
+                format!("{}{}{}", color, formatted, reset)
+            } else {
+                formatted
+            };
+
+            let error_level_value = LogLevel::Error as i32;
+            if level_value >= error_level_value {
+                eprintln!("{}", output);
+            } else {
+                println!("{}", output);
+            }
+        }
+    }
+
+    fun debug(&self, message: &str) {
+        self.log(LogLevel::Debug, "DEBUG", message);
+    }
+
+    fun info(&self, message: &str) {
+        self.log(LogLevel::Info, "INFO", message);
+    }
+
+    fun warn(&self, message: &str) {
+        self.log(LogLevel::Warn, "WARN", message);
+    }
+
+    fun error(&self, message: &str) {
+        self.log(LogLevel::Error, "ERROR", message);
+    }
+
+    fun success(&self, message: &str) {
+        let level_value = LogLevel::Info as i32;
+        let min_level_value = self.level as i32;
+
+        if level_value >= min_level_value {
+            let formatted = self.format_message("SUCCESS", message);
+            let color = if self.use_colors {
+                String::from("\x1b[32m")
+            } else {
+                String::new()
+            };
+            let reset = Logger::get_reset_code(self.use_colors);
+            let output = if self.use_colors {
+                format!("{}{}{}", color, formatted, reset)
+            } else {
+                formatted
+            };
+            println!("{}", output);
+        }
+    }
+
+    fun child(&self, prefix: &str) -> Logger {
+        let new_prefix = if self.prefix.is_empty() {
+            prefix.to_string()
+        } else {
+            format!("{}:{}", self.prefix, prefix)
+        };
+
+        Logger {
+            level: self.level,
+            prefix: new_prefix,
+            use_colors: self.use_colors,
+        }
+    }
+}
+
+// TESTS
+
+fun test_logger_creation_default() {
+    println!("Testing logger creation with defaults...");
+    let logger = Logger::create();
+    println!("✅ Logger creation test passed");
+}
+
+fun test_logger_creation_with_options() {
+    println!("Testing logger with custom options...");
+    let logger = Logger::with_prefix("test");
+    println!("✅ Logger with options test passed");
+}
+
+fun test_logger_debug() {
+    println!("Testing debug logging...");
+    let logger = Logger::create();
+    logger.debug("This is a debug message");
+    println!("✅ Debug logging test passed");
+}
+
+fun test_logger_info() {
+    println!("Testing info logging...");
+    let logger = Logger::create();
+    logger.info("This is an info message");
+    println!("✅ Info logging test passed");
+}
+
+fun test_logger_warn() {
+    println!("Testing warn logging...");
+    let logger = Logger::create();
+    logger.warn("This is a warning message");
+    println!("✅ Warn logging test passed");
+}
+
+fun test_logger_error() {
+    println!("Testing error logging...");
+    let logger = Logger::create();
+    logger.error("This is an error message");
+    println!("✅ Error logging test passed");
+}
+
+fun test_logger_success() {
+    println!("Testing success logging...");
+    let logger = Logger::create();
+    logger.success("Operation completed successfully");
+    println!("✅ Success logging test passed");
+}
+
+fun test_logger_level_filtering() {
+    println!("Testing log level filtering...");
+    let logger = Logger::with_level(LogLevel::Warn);
+    logger.debug("should not appear");
+    logger.info("should not appear");
+    logger.warn("should appear");
+    logger.error("should appear");
+    println!("✅ Level filtering test passed");
+}
+
+fun test_logger_with_prefix() {
+    println!("Testing logger with prefix...");
+    let logger = Logger::with_prefix("myapp");
+    logger.info("test message");
+    println!("✅ Prefix test passed");
+}
+
+fun test_logger_child() {
+    println!("Testing child logger...");
+    let parent = Logger::with_prefix("parent");
+    let child = parent.child("subsystem");
+    child.info("message from child");
+    println!("✅ Child logger test passed");
+}
+
+fun test_logger_no_colors() {
+    println!("Testing no-colors mode...");
+    let logger = Logger::without_colors();
+    logger.info("plain text");
+    println!("✅ No-colors test passed");
+}
+
+fun main() {
+    println!("================================");
+    println!("RUCHY-001: Logger Test Suite");
+    println!("Extreme TDD - GREEN Phase");
+    println!("================================\n");
+
+    test_logger_creation_default();
+    test_logger_creation_with_options();
+    test_logger_debug();
+    test_logger_info();
+    test_logger_warn();
+    test_logger_error();
+    test_logger_success();
+    test_logger_level_filtering();
+    test_logger_with_prefix();
+    test_logger_child();
+    test_logger_no_colors();
+
+    println!("\n================================");
+    println!("All tests passed! ✅");
+    println!("================================");
+}

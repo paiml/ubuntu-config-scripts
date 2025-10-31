@@ -1,0 +1,277 @@
+// RUC-020: Integration Test - Utility Chain
+// Phase: RED → GREEN - Test utility modules working together
+// Created: 2025-10-31
+//
+// Tests integration of:
+// - string_utils (RUC-014)
+// - validation (RUC-016)
+// - format_utils (RUC-018)
+// - result_utils (RUC-019)
+// - math_utils (RUC-015)
+// - collection_utils (RUC-017)
+
+use string_utils;
+use validation;
+use format_utils;
+use result_utils;
+use math_utils;
+use collection_utils;
+
+// Test 1: String processing pipeline
+fun test_string_pipeline() {
+    println!("TEST 1: String Processing Pipeline");
+    println!("===================================");
+    println!("");
+
+    // Step 1: Start with input
+    let input = "hello world";
+    println!("Input: '{}'", input);
+
+    // Step 2: String utils - check if empty
+    let not_empty = !string_utils::is_empty_or_whitespace(input);
+    println!("Not empty/whitespace: {}", not_empty.to_string());
+
+    // Step 3: String utils - count words
+    let word_cnt = string_utils::word_count(input);
+    println!("Word count: {}", word_cnt.to_string());
+
+    // Step 4: Format utils - pad to 20 chars
+    let formatted = format_utils::pad_right(input, 20, ".");
+    println!("After padding: '{}'", formatted);
+
+    // Step 5: Validation - check length
+    let length_ok = validation::is_valid_length(formatted, 15, 25);
+    println!("Length in range [15-25]: {}", length_ok.to_string());
+
+    if not_empty && length_ok {
+        println!("✅ String pipeline successful");
+    } else {
+        println!("✗ String pipeline failed");
+    }
+    println!("");
+}
+
+// Test 2: Numeric processing with utilities
+fun test_numeric_pipeline() {
+    println!("TEST 2: Numeric Processing Pipeline");
+    println!("====================================");
+    println!("");
+
+    // Step 1: Start with numbers
+    let numbers = vec![15, 42, 7, 23, 100];
+    println!("Input numbers: 15, 42, 7, 23, 100");
+
+    // Step 2: Collection utils - find max and min
+    let max_val = collection_utils::max_in_vec(numbers);
+    let min_val = collection_utils::min_in_vec(numbers);
+    println!("Max: {}", max_val.to_string());
+    println!("Min: {}", min_val.to_string());
+
+    // Step 3: Math utils - calculate range (max - min)
+    let range = max_val - min_val;
+    println!("Range: {}", range.to_string());
+
+    // Step 4: Math utils - calculate average
+    let avg = math_utils::average(numbers);
+    println!("Average: {}", avg.to_string());
+
+    // Step 5: Validation - check bounds
+    let avg_valid = validation::in_range(avg, 0, 100);
+    println!("Average in range [0-100]: {}", avg_valid.to_string());
+
+    // Step 6: Format utils - format as padded string
+    let avg_str = format_utils::pad_zeros(avg, 5);
+    println!("Formatted average: '{}'", avg_str);
+
+    println!("✅ Numeric pipeline successful");
+    println!("");
+}
+
+// Test 3: Result utilities for error handling
+fun test_result_pipeline() {
+    println!("TEST 3: Result Utilities Pipeline");
+    println!("==================================");
+    println!("");
+
+    // Step 1: Create some results (simulating operations)
+    let results: Vec<Result<i32, String>> = Vec::new();
+
+    // Simulate successful operations
+    let r1 = result_utils::make_ok_i32(42);
+    let r2 = result_utils::make_ok_i32(15);
+    let r3 = result_utils::make_ok_i32(23);
+
+    println!("Created 3 Ok results");
+
+    // Step 2: Check if all OK
+    let all_ok = result_utils::is_ok_value(r1)
+                && result_utils::is_ok_value(r2)
+                && result_utils::is_ok_value(r3);
+    println!("All OK: {}", all_ok.to_string());
+
+    // Step 3: Unwrap with defaults
+    let val1 = result_utils::unwrap_or(r1, 0);
+    let val2 = result_utils::unwrap_or(r2, 0);
+    let val3 = result_utils::unwrap_or(r3, 0);
+
+    println!("Unwrapped values: {}, {}, {}",
+             val1.to_string(),
+             val2.to_string(),
+             val3.to_string());
+
+    // Step 4: Use math utils on unwrapped values
+    let values = vec![val1, val2, val3];
+    let sum = math_utils::sum(values);
+    println!("Sum: {}", sum.to_string());
+
+    // Step 5: Wrap back in Result
+    let final_result = result_utils::make_ok_i32(sum);
+    let is_success = result_utils::is_ok_value(final_result);
+
+    if is_success {
+        println!("✅ Result pipeline successful");
+    } else {
+        println!("✗ Result pipeline failed");
+    }
+    println!("");
+}
+
+// Test 4: Complex integration - string + validation + format + collection
+fun test_complex_integration() {
+    println!("TEST 4: Complex Utility Integration");
+    println!("====================================");
+    println!("");
+
+    // Scenario: Process list of strings, validate, format, collect stats
+
+    // Step 1: Create data
+    let names = vec!["alice", "bob", "charlie", "dave"];
+    println!("Processing {} names", names.len().to_string());
+
+    // Step 2: Process each name
+    let mut valid_count = 0;
+    let mut total_length = 0;
+
+    let mut i = 0;
+    while i < names.len() {
+        let name = names[i];
+
+        // Validate
+        if validation::is_not_empty(name) {
+            valid_count = valid_count + 1;
+
+            // Track length
+            total_length = total_length + name.len();
+
+            // Format for display
+            let padded = format_utils::pad_right(name, 15, ".");
+            println!("  {}", padded);
+        }
+
+        i = i + 1;
+    }
+
+    // Step 3: Calculate statistics
+    let avg_length = if valid_count > 0 {
+        total_length / valid_count
+    } else {
+        0
+    };
+
+    println!("");
+    println!("Statistics:");
+    println!("  Valid names: {}", valid_count.to_string());
+    println!("  Total length: {}", total_length.to_string());
+    println!("  Average length: {}", avg_length.to_string());
+
+    // Step 4: Validate results
+    let all_valid = validation::is_positive(valid_count);
+    let avg_reasonable = validation::in_range(avg_length, 1, 20);
+
+    if all_valid && avg_reasonable {
+        println!("✅ Complex integration successful");
+    } else {
+        println!("✗ Complex integration failed");
+    }
+    println!("");
+}
+
+// Test 5: Data transformation pipeline
+fun test_data_transformation() {
+    println!("TEST 5: Data Transformation Pipeline");
+    println!("=====================================");
+    println!("");
+
+    // Scenario: Transform collection of numbers with validation at each step
+
+    let numbers = vec![5, 10, 15, 20, 25];
+    println!("Input: 5, 10, 15, 20, 25");
+
+    // Step 1: Validate all positive
+    let all_positive = collection_utils::all_positive(numbers);
+    println!("All positive: {}", all_positive.to_string());
+
+    if !all_positive {
+        println!("✗ Data transformation failed - negative numbers");
+        return;
+    }
+
+    // Step 2: Find statistics
+    let max_num = collection_utils::max_in_vec(numbers);
+    let min_num = collection_utils::min_in_vec(numbers);
+    let count = numbers.len();
+
+    println!("Max: {}", max_num.to_string());
+    println!("Min: {}", min_num.to_string());
+    println!("Count: {}", count.to_string());
+
+    // Step 3: Calculate percentage of max for each
+    println!("");
+    println!("Percentages of max:");
+
+    let mut i = 0;
+    while i < numbers.len() {
+        let num = numbers[i];
+        let percentage = math_utils::percentage(num, max_num);
+
+        // Format as string
+        let pct_str = format_utils::pad_zeros(percentage, 3);
+        let num_str = format_utils::pad_left(num.to_string(), 5, " ");
+
+        println!("  {} = {}%", num_str, pct_str);
+
+        i = i + 1;
+    }
+
+    // Step 4: Validate range
+    let range = max_num - min_num;
+    let range_valid = validation::in_range(range, 0, 100);
+
+    println!("");
+    println!("Range: {}", range.to_string());
+    println!("Range valid: {}", range_valid.to_string());
+
+    if range_valid {
+        println!("✅ Data transformation successful");
+    } else {
+        println!("⚠ Data transformation completed with warnings");
+    }
+    println!("");
+}
+
+fun main() {
+    println!("=============================================");
+    println!("RUC-020: Utility Chain Integration Tests");
+    println!("=============================================");
+    println!("");
+
+    test_string_pipeline();
+    test_numeric_pipeline();
+    test_result_pipeline();
+    test_complex_integration();
+    test_data_transformation();
+
+    println!("=============================================");
+    println!("Utility Integration Test Suite Complete");
+    println!("=============================================");
+}

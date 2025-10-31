@@ -1,0 +1,209 @@
+// RUC-005: Logger File I/O Test
+// Date: 2025-10-31
+// Requires: Ruchy v3.158.0+ (std::fs support)
+// Phase: Extreme TDD - RED → GREEN → REFACTOR
+
+use std::fs;
+
+fun main() {
+println!("========================================");
+println!("RUC-005: Logger File I/O Test");
+println!("========================================");
+println!("");
+
+// TEST 1: Basic file logging
+println!("TEST 1: Basic file write");
+println!("==================================");
+
+let log_file = "/tmp/ruchy_logger_basic.log";
+let log_line1 = "[2025-10-31T17:00:00.000000000Z]  [INFO] Application started\n";
+let log_line2 = "[2025-10-31T17:00:01.000000000Z]  [WARN] Configuration file not found\n";
+let log_line3 = "[2025-10-31T17:00:02.000000000Z]  [ERROR] Failed to connect to database\n";
+
+// Write first log line
+match fs::write(log_file, log_line1) {
+    Ok(_) => println!("✅ PASS: First log line written"),
+    Err(e) => {
+        println!("❌ FAIL: First write failed");
+        return;
+    },
+}
+
+// Read and append second line
+let current = match fs::read_to_string(log_file) {
+    Ok(c) => c,
+    Err(e) => {
+        println!("❌ FAIL: Read failed");
+        return;
+    },
+};
+
+let new_content = current + log_line2;
+match fs::write(log_file, new_content) {
+    Ok(_) => println!("✅ PASS: Second log line appended"),
+    Err(e) => {
+        println!("❌ FAIL: Append failed");
+        return;
+    },
+}
+
+// Read and append third line
+let current2 = match fs::read_to_string(log_file) {
+    Ok(c) => c,
+    Err(e) => {
+        println!("❌ FAIL: Second read failed");
+        return;
+    },
+};
+
+let new_content2 = current2 + log_line3;
+match fs::write(log_file, new_content2) {
+    Ok(_) => println!("✅ PASS: Third log line appended"),
+    Err(e) => {
+        println!("❌ FAIL: Second append failed");
+        return;
+    },
+}
+
+// Verify final content
+match fs::read_to_string(log_file) {
+    Ok(final_content) => {
+        let lines = final_content.split("\n").collect::<Vec<_>>();
+        if lines.len() >= 3 {
+            println!("✅ PASS: Log file has {} lines", lines.len());
+            println!("  Line 1: {}", lines[0]);
+            println!("  Line 2: {}", lines[1]);
+            println!("  Line 3: {}", lines[2]);
+        } else {
+            println!("❌ FAIL: Expected 3+ lines, got {}", lines.len());
+        }
+    },
+    Err(e) => {
+        println!("❌ FAIL: Final verification failed");
+    },
+}
+
+// Clean up
+match fs::remove_file(log_file) {
+    Ok(_) => println!("✅ PASS: Cleanup successful"),
+    Err(e) => println!("⚠️  WARN: Cleanup failed"),
+}
+
+println!("");
+
+// TEST 2: Concurrent file writes simulation
+println!("TEST 2: Multiple sequential writes");
+println!("==================================");
+
+let log_file2 = "/tmp/ruchy_logger_sequential.log";
+let mut success_count = 0;
+let total_writes = 10;
+
+// Write empty file first
+match fs::write(log_file2, "") {
+    Ok(_) => {},
+    Err(e) => {
+        println!("❌ FAIL: Initial write failed");
+        return;
+    },
+}
+
+// Write 10 log entries sequentially
+for i in 0..total_writes {
+    let timestamp = i.to_string();
+    let log_entry = "[" + timestamp + "] Log entry " + i.to_string() + "\n";
+
+    // Read current content
+    let current = match fs::read_to_string(log_file2) {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ FAIL: Read failed at iteration {}", i);
+            break;
+        },
+    };
+
+    // Append new entry
+    let new_content = current + log_entry;
+    match fs::write(log_file2, new_content) {
+        Ok(_) => {
+            success_count = success_count + 1;
+        },
+        Err(e) => {
+            println!("❌ FAIL: Write failed at iteration {}", i);
+            break;
+        },
+    }
+}
+
+if success_count == total_writes {
+    println!("✅ PASS: All {} writes succeeded", total_writes);
+} else {
+    println!("❌ FAIL: Only {}/{} writes succeeded", success_count, total_writes);
+}
+
+// Verify count
+match fs::read_to_string(log_file2) {
+    Ok(content) => {
+        let lines = content.split("\n").collect::<Vec<_>>();
+        let non_empty = lines.iter().filter(|l| !l.is_empty()).count();
+        println!("  Log file has {} non-empty lines", non_empty);
+        if non_empty == total_writes {
+            println!("✅ PASS: Line count matches writes");
+        } else {
+            println!("❌ FAIL: Expected {} lines, got {}", total_writes, non_empty);
+        }
+    },
+    Err(e) => {
+        println!("❌ FAIL: Verification read failed");
+    },
+}
+
+// Clean up
+match fs::remove_file(log_file2) {
+    Ok(_) => println!("✅ PASS: Cleanup successful"),
+    Err(e) => println!("⚠️  WARN: Cleanup failed"),
+}
+
+println!("");
+
+// TEST 3: Large log entries
+println!("TEST 3: Large log entries");
+println!("==================================");
+
+let log_file3 = "/tmp/ruchy_logger_large.log";
+let large_message = "x".repeat(1000);
+let large_log = "[INFO] " + large_message + "\n";
+
+match fs::write(log_file3, large_log) {
+    Ok(_) => println!("✅ PASS: Large log entry written"),
+    Err(e) => {
+        println!("❌ FAIL: Large write failed");
+        return;
+    },
+}
+
+match fs::read_to_string(log_file3) {
+    Ok(content) => {
+        if content.len() > 1000 {
+            println!("✅ PASS: Large log entry read back ({} bytes)", content.len());
+        } else {
+            println!("❌ FAIL: Content truncated, expected >1000 bytes, got {}", content.len());
+        }
+    },
+    Err(e) => {
+        println!("❌ FAIL: Large read failed");
+    },
+}
+
+// Clean up
+match fs::remove_file(log_file3) {
+    Ok(_) => println!("✅ PASS: Cleanup successful"),
+    Err(e) => println!("⚠️  WARN: Cleanup failed"),
+}
+
+println!("");
+println!("========================================");
+println!("File Logging Test Complete");
+println!("========================================");
+println!("std::fs is functional! Ready to implement file logging in logger module.");
+}

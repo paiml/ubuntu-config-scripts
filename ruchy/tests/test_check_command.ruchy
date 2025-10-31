@@ -1,0 +1,22 @@
+// REPRODUCTION CASE 3 for Issue #74
+// Command in function with match - from RUCHY-006
+// Status: Hangs at runtime in v3.146.0
+
+use std::process::Command;
+
+fun check_command(command: &str) -> bool {
+    let result = Command::new("which")
+        .arg(command)
+        .output();
+
+    match result {
+        Ok(output) => output.status.success(),
+        Err(_) => false,
+    }
+}
+
+fun main() {
+    println!("Testing check_command with 'ls'...");
+    let exists = check_command("ls");
+    println!("Result: {}", exists);  // Never reached
+}

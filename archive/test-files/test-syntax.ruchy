@@ -1,0 +1,7 @@
+fun test() {
+    let result = match 42 {
+        42 => "found",
+        _ => "not found"
+    }
+    println!("Test: {}", result)
+}

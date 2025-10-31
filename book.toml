@@ -1,0 +1,60 @@
+# Ubuntu Config Scripts Book Configuration
+# Private documentation for hybrid Ruchy development approach
+
+[book]
+title = "Ubuntu Config Scripts: The Ruchy Migration Guide"
+authors = ["PAIML Team", "Noah Gift"]
+description = "Complete guide to migrating system configuration from TypeScript/Deno to Ruchy"
+language = "en"
+multilingual = false
+src = "book/src"
+
+[build]
+build-dir = "book/output"
+create-missing = false
+
+[preprocessor.index]
+
+[preprocessor.links]
+
+# Custom Ubuntu config preprocessor for script validation
+# [preprocessor.ubuntu-config]
+# command = "./tools/config-preprocessor"
+# renderer = ["html"]
+
+[output.html]
+default-theme = "rust"
+preferred-dark-theme = "coal"
+smart-punctuation = true
+mathjax-support = false
+copy-fonts = true
+git-repository-url = "https://github.com/paiml/ubuntu-config-scripts"
+git-repository-icon = "fa-github"
+edit-url-template = "https://github.com/paiml/ubuntu-config-scripts/edit/main/book/src/{path}"
+
+[output.html.print]
+enable = true
+page-break = true
+
+[output.html.fold]
+enable = true
+level = 2
+
+[output.html.playground]
+editable = true
+copyable = true
+copy-js = true
+line-numbers = true
+runnable = false  # Scripts require system access
+
+[output.html.search]
+enable = true
+limit-results = 30
+teaser-word-count = 30
+use-boolean-and = true
+boost-title = 2
+boost-hierarchy = 1
+boost-paragraph = 1
+expand = true
+heading-split-level = 3
+copy-js = true

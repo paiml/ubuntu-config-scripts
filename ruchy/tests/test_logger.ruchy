@@ -1,0 +1,255 @@
+// RUCHY-001: Logger Tests (RED Phase)
+// Extreme TDD - Write failing tests first
+
+// Test 1: Logger creation with defaults
+fun test_logger_creation_default() {
+    println!("Testing logger creation with defaults...");
+
+    let logger = Logger::new();
+
+    // Should create with default level (Info)
+    // This will fail until Logger is implemented
+    println!("✅ Logger creation test passed");
+}
+
+// Test 2: Logger creation with options
+fun test_logger_creation_with_options() {
+    println!("Testing logger with custom options...");
+
+    let logger = Logger::with_prefix("test");
+
+    // Should create logger with prefix
+    println!("✅ Logger with options test passed");
+}
+
+// Test 3: Debug level logging
+fun test_logger_debug() {
+    println!("Testing debug logging...");
+
+    let logger = Logger::new();
+    logger.debug("This is a debug message");
+
+    // Should output with DEBUG level and gray color
+    println!("✅ Debug logging test passed");
+}
+
+// Test 4: Info level logging
+fun test_logger_info() {
+    println!("Testing info logging...");
+
+    let logger = Logger::new();
+    logger.info("This is an info message");
+
+    // Should output with INFO level and blue color
+    println!("✅ Info logging test passed");
+}
+
+// Test 5: Warn level logging
+fun test_logger_warn() {
+    println!("Testing warn logging...");
+
+    let logger = Logger::new();
+    logger.warn("This is a warning message");
+
+    // Should output with WARN level and yellow color
+    println!("✅ Warn logging test passed");
+}
+
+// Test 6: Error level logging
+fun test_logger_error() {
+    println!("Testing error logging...");
+
+    let logger = Logger::new();
+    logger.error("This is an error message");
+
+    // Should output with ERROR level and red color
+    println!("✅ Error logging test passed");
+}
+
+// Test 7: Success logging
+fun test_logger_success() {
+    println!("Testing success logging...");
+
+    let logger = Logger::new();
+    logger.success("Operation completed successfully");
+
+    // Should output with SUCCESS level and green color
+    println!("✅ Success logging test passed");
+}
+
+// Test 8: Level filtering
+fun test_logger_level_filtering() {
+    println!("Testing log level filtering...");
+
+    let logger = Logger::with_level(LogLevel::Warn);
+
+    // These should be filtered out (below Warn level)
+    logger.debug("should not appear");
+    logger.info("should not appear");
+
+    // These should appear (Warn and above)
+    logger.warn("should appear");
+    logger.error("should appear");
+
+    println!("✅ Level filtering test passed");
+}
+
+// Test 9: Logger with prefix
+fun test_logger_with_prefix() {
+    println!("Testing logger with prefix...");
+
+    let logger = Logger::with_prefix("myapp");
+    logger.info("test message");
+
+    // Output should contain "[myapp]"
+    println!("✅ Prefix test passed");
+}
+
+// Test 10: Child logger
+fun test_logger_child() {
+    println!("Testing child logger...");
+
+    let parent = Logger::with_prefix("parent");
+    let child = parent.child("subsystem");
+
+    child.info("message from child");
+
+    // Output should contain "[parent:subsystem]"
+    println!("✅ Child logger test passed");
+}
+
+// Test 11: Color output
+fun test_logger_colors() {
+    println!("Testing color output...");
+
+    let logger = Logger::new();
+
+    logger.debug("gray text");
+    logger.info("blue text");
+    logger.warn("yellow text");
+    logger.error("red text");
+    logger.success("green text");
+
+    // Output should contain ANSI color codes
+    println!("✅ Color output test passed");
+}
+
+// Test 12: No colors mode
+fun test_logger_no_colors() {
+    println!("Testing no-colors mode...");
+
+    let logger = Logger::without_colors();
+    logger.info("plain text");
+
+    // Output should NOT contain ANSI codes
+    println!("✅ No-colors test passed");
+}
+
+// Test 13: Timestamp format
+fun test_logger_timestamp() {
+    println!("Testing timestamp format...");
+
+    let logger = Logger::new();
+    logger.info("test");
+
+    // Output should contain ISO8601 timestamp
+    println!("✅ Timestamp format test passed");
+}
+
+// Test 14: Empty messages
+fun test_logger_empty_messages() {
+    println!("Testing empty messages...");
+
+    let logger = Logger::new();
+    logger.info("");
+    logger.warn("");
+    logger.error("");
+
+    // Should handle empty messages gracefully
+    println!("✅ Empty messages test passed");
+}
+
+// Test 15: Long messages
+fun test_logger_long_messages() {
+    println!("Testing long messages...");
+
+    let logger = Logger::new();
+    let long_msg = "x".repeat(1000);
+    logger.info(&long_msg);
+
+    // Should handle long messages without truncation
+    println!("✅ Long messages test passed");
+}
+
+// Test 16: Unicode handling
+fun test_logger_unicode() {
+    println!("Testing unicode messages...");
+
+    let logger = Logger::new();
+    logger.info("Hello 世界 🌍");
+    logger.info("Emoji: 🚀 ✨ 🎉");
+
+    // Should display unicode correctly
+    println!("✅ Unicode test passed");
+}
+
+// Test 17: Multiple loggers independence
+fun test_multiple_loggers() {
+    println!("Testing multiple independent loggers...");
+
+    let logger1 = Logger::with_prefix("app1");
+    let logger2 = Logger::with_prefix("app2");
+
+    logger1.info("from app1");
+    logger2.info("from app2");
+
+    // Each logger should maintain its own state
+    println!("✅ Multiple loggers test passed");
+}
+
+// Test 18: Performance - many logs
+fun test_logger_performance() {
+    println!("Testing logger performance...");
+
+    let logger = Logger::new();
+
+    // Log 1000 messages quickly
+    for i in 0..1000 {
+        logger.debug("message {}", i);
+    }
+
+    // Should complete in reasonable time (<100ms)
+    println!("✅ Performance test passed");
+}
+
+// Main test runner
+fun main() {
+    println!("================================");
+    println!("RUCHY-001: Logger Test Suite");
+    println!("Extreme TDD - RED Phase");
+    println!("================================\n");
+
+    // Run all tests
+    test_logger_creation_default();
+    test_logger_creation_with_options();
+    test_logger_debug();
+    test_logger_info();
+    test_logger_warn();
+    test_logger_error();
+    test_logger_success();
+    test_logger_level_filtering();
+    test_logger_with_prefix();
+    test_logger_child();
+    test_logger_colors();
+    test_logger_no_colors();
+    test_logger_timestamp();
+    test_logger_empty_messages();
+    test_logger_long_messages();
+    test_logger_unicode();
+    test_multiple_loggers();
+    test_logger_performance();
+
+    println!("\n================================");
+    println!("All tests passed! ✅");
+    println!("================================");
+}

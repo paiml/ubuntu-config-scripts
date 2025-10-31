@@ -1,0 +1,46 @@
+// RUCHY-001: Simplified Logger to test syntax
+
+use chrono::Utc;
+
+// Log levels
+enum LogLevel {
+    Debug = 0,
+    Info = 1,
+    Warn = 2,
+    Error = 3,
+}
+
+// Logger struct
+struct Logger {
+    level: LogLevel,
+    prefix: String,
+    use_colors: bool,
+}
+
+impl Logger {
+    // Create new logger
+    fun new() -> Logger {
+        Logger {
+            level: LogLevel::Info,
+            prefix: String::new(),
+            use_colors: true,
+        }
+    }
+
+    // Get color string
+    fun get_color_string() -> String {
+        String::from("\x1b[34m")  // Blue for info
+    }
+
+    // Log info message
+    fun info(&self, message: &str) {
+        let timestamp = Utc::now().to_rfc3339();
+        let prefix_part = if self.prefix.is_empty() {
+            String::new()
+        } else {
+            format!("[{}] ", self.prefix)
+        };
+        let formatted = format!("{} {}[INFO] {}", timestamp, prefix_part, message);
+        println!("{}", formatted);
+    }
+}

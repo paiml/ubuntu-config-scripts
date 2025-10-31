@@ -1,0 +1,101 @@
+// Example: Complete System Health Check
+//
+// This example demonstrates how to use multiple system modules together
+// to perform a comprehensive health check of your Ubuntu system.
+//
+// Usage:
+//   cd ~/.local/share/ruchy-ubuntu-scripts
+//   ruchy examples/system_health_check.ruchy
+
+use diagnostics;
+use hardware;
+use user;
+use system_summary;
+
+fun main() {
+    println!("==============================================");
+    println!("  Ubuntu System Health Check");
+    println!("==============================================");
+    println!("");
+
+    // Step 1: Get current user information
+    println!("1. User Information");
+    println!("-------------------");
+
+    match user::get_current_user() {
+        Ok(user_info) => {
+            println!("  Username: {}", user_info.username);
+            println!("  UID: {}", user_info.uid.to_string());
+            println!("  Home: {}", user_info.home_dir);
+            println!("  Shell: {}", user_info.shell);
+        }
+        Err(e) => {
+            println!("  Error getting user info: {}", e);
+        }
+    }
+
+    println!("");
+
+    // Step 2: Run system diagnostics
+    println!("2. System Diagnostics");
+    println!("---------------------");
+
+    match diagnostics::generate_report() {
+        Ok(report) => {
+            diagnostics::print_report(report);
+        }
+        Err(e) => {
+            println!("  Error generating diagnostics: {}", e);
+        }
+    }
+
+    println!("");
+
+    // Step 3: Check hardware
+    println!("3. Hardware Information");
+    println!("-----------------------");
+
+    match hardware::detect_all_hardware() {
+        Ok(hw) => {
+            println!("  CPU:");
+            println!("    Model: {}", hw.cpu.model);
+            println!("    Cores: {}", hw.cpu.cores.to_string());
+            println!("    Threads: {}", hw.cpu.threads.to_string());
+            println!("");
+            println!("  Memory:");
+            println!("    Total: {} MB", hw.memory.total_mb.to_string());
+            println!("    Available: {} MB", hw.memory.available_mb.to_string());
+            println!("    Used: {} MB", hw.memory.used_mb.to_string());
+            println!("");
+            println!("  GPUs: {} detected", hw.gpus.len().to_string());
+        }
+        Err(e) => {
+            println!("  Error detecting hardware: {}", e);
+        }
+    }
+
+    println!("");
+
+    // Step 4: Generate system summary
+    println!("4. System Summary");
+    println!("-----------------");
+
+    match system_summary::get_system_summary() {
+        Ok(summary) => {
+            println!("  CPU: {}", summary.cpu_model);
+            println!("  Memory: {} MB", summary.total_memory_mb.to_string());
+            println!("  GPUs: {}", summary.gpu_count.to_string());
+            println!("  Network Interfaces: {}", summary.network_interface_count.to_string());
+            println!("  Disk Usage: {}%", summary.disk_usage_percent.to_string());
+            println!("  Processes: {}", summary.process_count.to_string());
+        }
+        Err(e) => {
+            println!("  Error generating summary: {}", e);
+        }
+    }
+
+    println!("");
+    println!("==============================================");
+    println!("  Health Check Complete!");
+    println!("==============================================");
+}

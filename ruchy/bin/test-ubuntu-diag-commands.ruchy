@@ -1,0 +1,116 @@
+// Test file to verify all ubuntu-diag command functions work
+// Since we can't pass args via interpreter, we'll test functions directly
+
+use diagnostics;
+
+fun cmd_audio() {
+    match diagnostics::diagnose_audio() {
+        Ok(audio) => {
+            println!("=== Audio System Diagnostics ===");
+            println!("");
+
+            let pw_symbol = diagnostics::status_symbol(audio.pipewire_status);
+            println!("PipeWire:        {} {}", pw_symbol, audio.pipewire_version);
+
+            let sink_count = audio.sink_count.to_string();
+            let sink_symbol = if audio.sink_count > 0 {
+                diagnostics::status_symbol(0)
+            } else {
+                diagnostics::status_symbol(2)
+            };
+            println!("Audio Sinks:     {} {} found", sink_symbol, sink_count);
+
+            let source_count = audio.source_count.to_string();
+            let source_symbol = if audio.source_count > 0 {
+                diagnostics::status_symbol(0)
+            } else {
+                diagnostics::status_symbol(2)
+            };
+            println!("Audio Sources:   {} {} found", source_symbol, source_count);
+
+            println!("Default Sink:    {}", audio.default_sink);
+            println!("Default Source:  {}", audio.default_source);
+            println!("");
+        }
+        Err(e) => {
+            println!("Error diagnosing audio system:");
+            println!("{:?}", e);
+        }
+    }
+}
+
+fun cmd_video() {
+    match diagnostics::diagnose_video() {
+        Ok(video) => {
+            println!("=== Video/GPU Diagnostics ===");
+            println!("");
+
+            let gpu_symbol = if video.gpu_count > 0 {
+                diagnostics::status_symbol(0)
+            } else {
+                diagnostics::status_symbol(1)
+            };
+            println!("GPUs Found:      {} {}", gpu_symbol, video.gpu_count.to_string());
+
+            if video.gpu_names.len() > 0 {
+                println!("");
+                println!("Detected GPUs:");
+                let mut i = 0;
+                while i < video.gpu_names.len() {
+                    let gpu_num = (i + 1).to_string();
+                    println!("  GPU {}: {}", gpu_num, video.gpu_names[i]);
+                    i = i + 1;
+                }
+            }
+
+            println!("");
+        }
+        Err(e) => {
+            println!("Error diagnosing video system:");
+            println!("{:?}", e);
+        }
+    }
+}
+
+fun cmd_services() {
+    match diagnostics::diagnose_services() {
+        Ok(services) => {
+            println!("=== System Services Diagnostics ===");
+            println!("");
+
+            if services.len() == 0 {
+                println!("No services checked");
+            } else {
+                let mut i = 0;
+                while i < services.len() {
+                    let service = services[i];
+                    let symbol = diagnostics::status_symbol(service.status);
+                    println!("{} {} ({})", symbol, service.name, service.state);
+                    i = i + 1;
+                }
+            }
+
+            println!("");
+        }
+        Err(e) => {
+            println!("Error diagnosing services:");
+            println!("{:?}", e);
+        }
+    }
+}
+
+fun main() {
+    println!("=== Testing Individual Command Functions ===");
+    println!("");
+
+    println!("TEST 1: Audio Command");
+    cmd_audio();
+
+    println!("TEST 2: Video Command");
+    cmd_video();
+
+    println!("TEST 3: Services Command");
+    cmd_services();
+
+    println!("=== All Command Functions Tested ===");
+}

@@ -1,0 +1,152 @@
+# PMAT Configuration for Ubuntu Config Scripts
+# This file configures PMAT quality analysis and enforcement
+
+[project]
+name = "ubuntu-config-scripts"
+version = "1.0.0"
+description = "System configuration and management tools for Ubuntu"
+language = "typescript"  # Primary language (also supports Rust in ruchy/)
+
+[quality]
+# Quality gate thresholds
+min_coverage = 80.0              # Minimum test coverage percentage
+max_complexity = 10              # Maximum cyclomatic complexity per function
+max_cognitive_complexity = 15    # Maximum cognitive complexity
+max_function_length = 50         # Maximum lines per function
+max_file_length = 500           # Maximum lines per file
+
+# Code quality targets
+target_coverage = 85.0           # Target coverage for excellence
+target_complexity = 8            # Target complexity for clean code
+mutation_threshold = 90.0        # Minimum mutation test kill rate
+
+[analysis]
+# Enable specific analyses
+complexity = true
+dead_code = true
+satd = true                     # Self-admitted technical debt
+security = true
+entropy = true
+duplication = true
+coverage = true
+
+# Analysis paths
+source_paths = ["scripts/", "ruchy/"]
+test_paths = ["tests/", "ruchy/tests/"]
+exclude_paths = [
+    "node_modules/",
+    "dist/",
+    "coverage/",
+    ".deno_cache/",
+    "target/",
+    "book/output/",
+    "assetsearch/"
+]
+
+[gates]
+# Quality gate enforcement
+run_clippy = true               # Run Rust clippy linter
+clippy_strict = true            # Enforce strict clippy warnings
+run_tests = true                # Run test suite
+test_timeout = 300              # Test timeout in seconds
+check_coverage = true           # Enforce coverage threshold
+check_complexity = true         # Enforce complexity threshold
+fail_on_warnings = false        # Treat warnings as errors (gradual adoption)
+
+[hooks]
+# Git hooks configuration
+pre_commit = true               # Enable pre-commit hooks
+pre_push = true                 # Enable pre-push hooks
+commit_msg = false              # Disable commit message validation
+
+# Hook behavior
+allow_skip = false              # Prevent --no-verify bypass
+run_tests_on_commit = true     # Run tests before commit
+run_quality_gate = true        # Run quality gate before commit
+
+[reporting]
+# Report generation
+format = "summary"              # Output format: summary, detailed, json
+color = "auto"                  # Color output: auto, always, never
+verbose = false                 # Verbose output
+show_progress = true            # Show progress bars
+
+# Report output
+output_dir = "pmat-reports/"
+generate_html = true            # Generate HTML reports
+generate_json = true            # Generate JSON reports
+generate_markdown = false       # Generate Markdown reports
+
+[satd]
+# Technical debt detection
+keywords = [
+    "TODO", "FIXME", "HACK", "XXX", "BUG",
+    "DEPRECATED", "REFACTOR", "OPTIMIZE"
+]
+severity_levels = {
+    TODO = "low",
+    FIXME = "high",
+    HACK = "high",
+    XXX = "critical",
+    BUG = "critical",
+    DEPRECATED = "medium",
+    REFACTOR = "low",
+    OPTIMIZE = "low"
+}
+
+[complexity]
+# Complexity analysis settings
+warn_threshold = 8              # Warn at this complexity
+error_threshold = 10            # Error at this complexity
+cognitive_warn = 10             # Cognitive complexity warning
+cognitive_error = 15            # Cognitive complexity error
+
+[coverage]
+# Coverage settings
+line_coverage_min = 80.0
+branch_coverage_min = 75.0
+function_coverage_min = 85.0
+
+# Coverage reporting
+show_uncovered = true           # Show uncovered lines
+exclude_patterns = [
+    "*.test.ts",
+    "*.property.test.ts",
+    "tests/"
+]
+
+[security]
+# Security scanning
+scan_secrets = true             # Scan for hardcoded secrets
+scan_unsafe_patterns = true     # Scan for unsafe code patterns
+scan_dependencies = false       # Dependency vulnerability scanning (future)
+
+[ci]
+# CI/CD integration
+fail_on_quality_gate = false    # Non-blocking initially (gradual adoption)
+upload_reports = true           # Upload analysis reports
+cache_results = true            # Cache analysis results
+
+[ignore]
+# Ignore specific files or patterns
+files = [
+    "book/output/",
+    "assetsearch/",
+    "*.min.js",
+    "*.d.ts"
+]
+
+# Ignore specific rules
+rules = []
+
+[thresholds]
+# Custom thresholds for specific metrics
+tdg_max = 1.0                   # Technical Debt Grade maximum
+ruchy_score_min = 0.90          # Ruchy score minimum (for Ruchy files)
+
+[notifications]
+# Notification settings (future feature)
+enabled = false
+webhook_url = ""
+notify_on_failure = false
+notify_on_success = false

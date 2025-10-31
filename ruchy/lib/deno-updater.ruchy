@@ -1,0 +1,51 @@
+// RUCHY-005: Deno Updater Implementation (RED Phase)
+// Port of ubuntu-config-scripts/scripts/lib/deno-updater.ts to Ruchy
+// Implements version comparison, current/latest version detection, and auto-update
+
+// DenoVersion struct matching TypeScript interface
+struct DenoVersion {
+    current: String,
+    latest: String,
+    needs_update: bool,
+}
+
+// Compare two semver-style version strings
+// Returns: -1 if a < b, 0 if a == b, 1 if a > b
+fun compare_versions(a: &str, b: &str) -> i32 {
+    // RED: Stub implementation - tests should fail
+    0
+}
+
+// Get current installed Deno version by running `deno --version`
+// Returns: Some(version) if found, None if command fails or parse fails
+fun get_current_deno_version() -> Option<String> {
+    // RED: Stub implementation - tests should fail
+    None
+}
+
+// Get latest Deno version from GitHub API
+// Returns: Some(version) if fetch succeeds, None if fetch fails or parse fails
+fun get_latest_deno_version() -> Option<String> {
+    // RED: Stub implementation - tests should fail
+    None
+}
+
+// Check Deno version status
+// Returns: Some(DenoVersion) with current, latest, and needs_update fields
+fun check_deno_version() -> Option<DenoVersion> {
+    // RED: Stub implementation - tests should fail
+    None
+}
+
+// Update Deno to latest version
+// Returns: true if update successful, false otherwise
+fun update_deno() -> bool {
+    // RED: Stub implementation - tests should fail
+    false
+}
+
+// Ensure Deno is at latest version (checks and updates if needed)
+fun ensure_latest_deno() {
+    // RED: Stub implementation - tests should fail
+    println!("STUB: ensure_latest_deno not implemented");
+}

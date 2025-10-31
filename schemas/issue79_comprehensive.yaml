@@ -1,0 +1,361 @@
+# Issue #79 - Comprehensive Enum Cast Variant Testing
+# Purpose: Test ALL possible enum-to-integer cast patterns to end whack-a-mole cycle
+# Status: 4/15 variants verified in v3.147.6 (26.7%)
+# Goal: 15/15 variants passing (100%) before closing Issue #79
+
+name: "Issue #79 - Enum Cast Variants"
+description: "Comprehensive testing of all enum-to-integer cast patterns"
+issue_url: "https://github.com/paiml/ruchy/issues/79"
+ruchy_version: "v3.147.6"
+
+# Common definitions used across all variants
+enum_definition: |
+  enum LogLevel {
+      Debug = 0,
+      Info = 1,
+      Warn = 2,
+      Error = 3,
+  }
+
+struct_definition: |
+  struct Logger {
+      level: LogLevel,
+      prefix: String,
+  }
+
+# Test variants
+variants:
+  # ============================================================
+  # VERIFIED WORKING (v3.147.6)
+  # ============================================================
+
+  - id: variant_1
+    name: "Direct field cast via &self"
+    status: verified_pass
+    ruchy_version_fixed: "v3.147.5"
+    enabled: true
+    expected: pass
+    timeout_ms: 1000
+    impl_method: |
+      fun test(&self) {
+          let val = self.level as i32;
+          println!("Direct cast: {}", val);
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+
+  - id: variant_2
+    name: "Variable intermediate cast"
+    status: verified_pass
+    ruchy_version_fixed: "v3.147.4"
+    enabled: true
+    expected: pass
+    timeout_ms: 1000
+    impl_method: |
+      fun test(&self) {
+          let level = self.level;
+          let val = level as i32;
+          println!("Variable cast: {}", val);
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+
+  - id: variant_3
+    name: "Enum literal cast"
+    status: verified_pass
+    ruchy_version_fixed: "v3.147.3"  # Always worked
+    enabled: true
+    expected: pass
+    timeout_ms: 1000
+    impl_method: |
+      fun test(&self) {
+          let val = LogLevel::Debug as i32;
+          println!("Literal cast: {}", val);
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+
+  - id: variant_4
+    name: "Nested method call with enum parameter"
+    status: verified_pass
+    ruchy_version_fixed: "v3.147.6"
+    enabled: true
+    expected: pass
+    timeout_ms: 1000
+    impl_method: |
+      fun inner(&self, param: LogLevel) {
+          let val = param as i32;
+          println!("Nested param cast: {}", val);
+      }
+      fun outer(&self) {
+          self.inner(LogLevel::Debug);
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.outer();
+
+  # ============================================================
+  # VERIFIED BROKEN (v3.147.6)
+  # ============================================================
+
+  - id: variant_5
+    name: "Enum comparison + external crate call (chrono)"
+    status: verified_fail
+    ruchy_version_tested: "v3.147.6"
+    enabled: true
+    expected: timeout
+    timeout_ms: 5000
+    dependencies: ["use chrono::Utc;"]
+    impl_method: |
+      fun test(&self) {
+          let level_value = LogLevel::Info as i32;
+          let min_level_value = self.level as i32;
+          if level_value >= min_level_value {
+              let timestamp = Utc::now().to_rfc3339();
+              println!("Time: {}", timestamp);
+          }
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+    notes: |
+      Hangs specifically when:
+      1. If condition is TRUE
+      2. Calls external crate function inside if block
+      3. After enum comparison
+
+  # ============================================================
+  # UNTESTED (Need to verify)
+  # ============================================================
+
+  - id: variant_6
+    name: "Return enum cast value"
+    status: untested
+    enabled: true
+    expected: pass  # Hypothesis: should work
+    timeout_ms: 1000
+    impl_method: |
+      fun get_level_value(&self) -> i32 {
+          self.level as i32
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      let val = logger.get_level_value();
+      println!("Returned: {}", val);
+
+  - id: variant_7
+    name: "Match arm with enum cast"
+    status: untested
+    enabled: true
+    expected: unknown
+    timeout_ms: 1000
+    impl_method: |
+      fun test(&self) {
+          let val = match self.level {
+              LogLevel::Debug => self.level as i32,
+              LogLevel::Info => self.level as i32,
+              _ => 99
+          };
+          println!("Match cast: {}", val);
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+
+  - id: variant_8
+    name: "Closure capture and cast"
+    status: untested
+    enabled: true
+    expected: unknown
+    timeout_ms: 1000
+    impl_method: |
+      fun test(&self) {
+          let closure = || {
+              let val = self.level as i32;
+              println!("Closure cast: {}", val);
+          };
+          closure();
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+
+  - id: variant_9
+    name: "Tuple field enum cast"
+    status: untested
+    enabled: true
+    expected: unknown
+    timeout_ms: 1000
+    impl_method: |
+      fun test(&self) {
+          let tuple = (self.level, LogLevel::Warn);
+          let val1 = tuple.0 as i32;
+          let val2 = tuple.1 as i32;
+          println!("Tuple casts: {}, {}", val1, val2);
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+
+  - id: variant_10
+    name: "Array element enum cast"
+    status: untested
+    enabled: true
+    expected: unknown
+    timeout_ms: 1000
+    impl_method: |
+      fun test(&self) {
+          let arr = [self.level, LogLevel::Error];
+          let val = arr[0] as i32;
+          println!("Array cast: {}", val);
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+
+  - id: variant_11
+    name: "Reference enum cast"
+    status: untested
+    enabled: true
+    expected: unknown
+    timeout_ms: 1000
+    impl_method: |
+      fun test(&self) {
+          let level_ref = &self.level;
+          let val = *level_ref as i32;
+          println!("Reference cast: {}", val);
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+
+  - id: variant_12
+    name: "Double method indirection"
+    status: untested
+    enabled: true
+    expected: unknown
+    timeout_ms: 1000
+    impl_method: |
+      fun get_level(&self) -> LogLevel {
+          self.level
+      }
+      fun test(&self) {
+          let val = self.get_level() as i32;
+          println!("Double indirection: {}", val);
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+
+  - id: variant_13
+    name: "Enum cast in trait method"
+    status: untested
+    enabled: false  # Requires trait definition
+    expected: unknown
+    timeout_ms: 1000
+    notes: |
+      Would need trait definition in schema format.
+      Defer until core variants are tested.
+
+  - id: variant_14
+    name: "Recursive method with enum cast"
+    status: untested
+    enabled: true
+    expected: unknown
+    timeout_ms: 1000
+    impl_method: |
+      fun recursive(&self, count: i32) {
+          if count > 0 {
+              let val = self.level as i32;
+              println!("Recursive {}: {}", count, val);
+              self.recursive(count - 1);
+          }
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.recursive(3);
+
+  - id: variant_15
+    name: "Multiple enum casts in sequence"
+    status: untested
+    enabled: true
+    expected: unknown
+    timeout_ms: 1000
+    impl_method: |
+      fun test(&self) {
+          let val1 = self.level as i32;
+          let val2 = LogLevel::Debug as i32;
+          let val3 = LogLevel::Warn as i32;
+          println!("Multiple: {}, {}, {}", val1, val2, val3);
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+
+  # ============================================================
+  # EDGE CASES (Additional patterns to consider)
+  # ============================================================
+
+  - id: variant_16_edge
+    name: "Enum cast with arithmetic"
+    status: untested
+    enabled: true
+    expected: unknown
+    timeout_ms: 1000
+    impl_method: |
+      fun test(&self) {
+          let val = (self.level as i32) + 10;
+          println!("With arithmetic: {}", val);
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+
+  - id: variant_17_edge
+    name: "Enum cast in conditional"
+    status: untested
+    enabled: true
+    expected: unknown
+    timeout_ms: 1000
+    impl_method: |
+      fun test(&self, other: LogLevel) {
+          if (self.level as i32) >= (other as i32) {
+              println!("Condition met");
+          }
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test(LogLevel::Debug);
+
+  - id: variant_18_edge
+    name: "Enum cast in format macro"
+    status: untested
+    enabled: true
+    expected: unknown
+    timeout_ms: 1000
+    impl_method: |
+      fun test(&self) {
+          let msg = format!("Level: {}", self.level as i32);
+          println!("{}", msg);
+      }
+    test_code: |
+      let logger = Logger { level: LogLevel::Info, prefix: String::new() };
+      logger.test();
+
+# Summary statistics
+stats:
+  total_variants: 18
+  verified_pass: 4
+  verified_fail: 1
+  untested: 13
+  coverage_percent: 27.8
+
+# Test configuration
+test_config:
+  default_timeout_ms: 5000
+  parallel_execution: false
+  stop_on_first_failure: false
+  generate_minimal_reproductions: true

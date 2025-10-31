@@ -1,0 +1,67 @@
+// RUCHY-006: Dependency Checker Standalone (GREEN Phase)
+// Self-contained implementation + tests
+
+use std::process::Command;
+
+// Check if a command exists in PATH
+fun check_command(command: &str) -> bool {
+    let result = Command::new("which")
+        .arg(command)
+        .output();
+
+    match result {
+        Ok(output) => output.status.success(),
+        Err(_) => false,
+    }
+}
+
+// Validate multiple dependencies
+fun validate_dependencies(deps: Vec<String>) -> bool {
+    let mut all_present = true;
+
+    for dep in deps {
+        let exists = check_command(&dep);
+        if !exists {
+            println!("Missing dependency: {}", dep);
+            all_present = false;
+        } else {
+            println!("Found dependency: {}", dep);
+        }
+    }
+
+    all_present
+}
+
+// TESTS
+
+fun test_check_command_exists() {
+    println!("Testing check_command with existing command (ls)...");
+    let exists = check_command("ls");
+    if !exists {
+        panic!("Expected ls to exist");
+    }
+    println!("✅ check_command exists test passed");
+}
+
+fun test_check_command_missing() {
+    println!("Testing check_command with missing command...");
+    let exists = check_command("nonexistent_command_xyz123");
+    if exists {
+        panic!("Expected nonexistent command to not exist");
+    }
+    println!("✅ check_command missing test passed");
+}
+
+fun main() {
+    println!("========================================");
+    println!("RUCHY-006: Dependency Checker Test Suite");
+    println!("Extreme TDD - GREEN Phase");
+    println!("========================================\n");
+
+    test_check_command_exists();
+    test_check_command_missing();
+
+    println!("\n========================================");
+    println!("All 2 tests passed! ✅");
+    println!("========================================");
+}

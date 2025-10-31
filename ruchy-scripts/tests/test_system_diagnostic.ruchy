@@ -1,0 +1,286 @@
+// TDD Test Suite for System Diagnostic Tool
+// Following PMAT TDG guidelines and Ruchy best practices
+
+use std::collections::HashMap;
+use std::process::Command;
+
+// Test structure for system information
+struct SystemInfo {
+    hostname: String,
+    kernel: String,
+    uptime_seconds: u64,
+    cpu_count: u32,
+    memory_total_kb: u64,
+    memory_available_kb: u64,
+    disk_usage: Vec<DiskUsage>,
+    network_interfaces: Vec<NetworkInterface>,
+    services: Vec<ServiceStatus>,
+}
+
+struct DiskUsage {
+    mount_point: String,
+    total_bytes: u64,
+    used_bytes: u64,
+    available_bytes: u64,
+    usage_percent: f32,
+}
+
+struct NetworkInterface {
+    name: String,
+    ip_address: String,
+    is_up: bool,
+}
+
+struct ServiceStatus {
+    name: String,
+    is_active: bool,
+    is_enabled: bool,
+}
+
+// Test helper functions
+fun create_mock_system_info() -> SystemInfo {
+    let disk1 = DiskUsage {
+        mount_point: "/".to_string(),
+        total_bytes: 100_000_000_000,
+        used_bytes: 45_000_000_000,
+        available_bytes: 55_000_000_000,
+        usage_percent: 45.0,
+    };
+    
+    let disk2 = DiskUsage {
+        mount_point: "/home".to_string(),
+        total_bytes: 500_000_000_000,
+        used_bytes: 250_000_000_000,
+        available_bytes: 250_000_000_000,
+        usage_percent: 50.0,
+    };
+    
+    let eth0 = NetworkInterface {
+        name: "eth0".to_string(),
+        ip_address: "192.168.1.100".to_string(),
+        is_up: true,
+    };
+    
+    let lo = NetworkInterface {
+        name: "lo".to_string(),
+        ip_address: "127.0.0.1".to_string(),
+        is_up: true,
+    };
+    
+    let ssh_service = ServiceStatus {
+        name: "ssh".to_string(),
+        is_active: true,
+        is_enabled: true,
+    };
+    
+    let docker_service = ServiceStatus {
+        name: "docker".to_string(),
+        is_active: false,
+        is_enabled: false,
+    };
+    
+    SystemInfo {
+        hostname: "test-machine".to_string(),
+        kernel: "6.8.0-79-generic".to_string(),
+        uptime_seconds: 86400,
+        cpu_count: 8,
+        memory_total_kb: 16777216,
+        memory_available_kb: 8388608,
+        disk_usage: vec![disk1, disk2],
+        network_interfaces: vec![eth0, lo],
+        services: vec![ssh_service, docker_service],
+    }
+}
+
+// Test 1: CPU information collection
+#[test]
+fun test_collect_cpu_info() {
+    let cpu_count = get_cpu_count();
+    assert!(cpu_count > 0, "CPU count should be greater than 0");
+    assert!(cpu_count <= 256, "CPU count should be reasonable");
+}
+
+// Test 2: Memory information collection
+#[test]
+fun test_collect_memory_info() {
+    let (total, available) = get_memory_info();
+    assert!(total > 0, "Total memory should be greater than 0");
+    assert!(available > 0, "Available memory should be greater than 0");
+    assert!(available <= total, "Available memory should not exceed total");
+}
+
+// Test 3: Disk usage analysis
+#[test]
+fun test_analyze_disk_usage() {
+    let disks = get_disk_usage();
+    assert!(!disks.is_empty(), "Should detect at least one disk");
+    
+    for disk in &disks {
+        assert!(!disk.mount_point.is_empty(), "Mount point should not be empty");
+        assert!(disk.total_bytes > 0, "Total bytes should be greater than 0");
+        assert!(disk.used_bytes <= disk.total_bytes, "Used bytes should not exceed total");
+        assert!(disk.usage_percent >= 0.0 && disk.usage_percent <= 100.0, 
+                "Usage percent should be between 0 and 100");
+    }
+}
+
+// Test 4: Network interface detection
+#[test]
+fun test_detect_network_interfaces() {
+    let interfaces = get_network_interfaces();
+    assert!(!interfaces.is_empty(), "Should detect at least one interface");
+    
+    // Should always have loopback
+    let has_loopback = interfaces.iter().any(|i| i.name == "lo");
+    assert!(has_loopback, "Should have loopback interface");
+    
+    for iface in &interfaces {
+        assert!(!iface.name.is_empty(), "Interface name should not be empty");
+        if iface.is_up {
+            assert!(!iface.ip_address.is_empty(), "Active interface should have IP");
+        }
+    }
+}
+
+// Test 5: Service status checks
+#[test]
+fun test_check_service_status() {
+    let services = vec!["ssh", "systemd-resolved"];
+    let statuses = check_services(&services);
+    
+    assert_eq!(statuses.len(), services.len(), "Should check all requested services");
+    
+    for status in &statuses {
+        assert!(!status.name.is_empty(), "Service name should not be empty");
+    }
+}
+
+// Test 6: JSON serialization
+#[test]
+fun test_json_output() {
+    let info = create_mock_system_info();
+    let json = system_info_to_json(&info);
+    
+    assert!(json.contains("\"hostname\""), "JSON should contain hostname");
+    assert!(json.contains("\"cpu_count\""), "JSON should contain CPU count");
+    assert!(json.contains("\"memory_total_kb\""), "JSON should contain memory info");
+    assert!(json.contains("\"disk_usage\""), "JSON should contain disk usage");
+    assert!(json.contains("\"network_interfaces\""), "JSON should contain network info");
+}
+
+// Test 7: Human-readable formatting
+#[test]
+fun test_human_readable_output() {
+    let info = create_mock_system_info();
+    let output = format_human_readable(&info);
+    
+    assert!(output.contains("System Diagnostic Report"), "Should have header");
+    assert!(output.contains("test-machine"), "Should show hostname");
+    assert!(output.contains("8 CPUs"), "Should show CPU count");
+    assert!(output.contains("16.0 GB"), "Should format memory in GB");
+}
+
+// Test 8: Error handling
+#[test]
+fun test_error_handling() {
+    // Test with invalid service name
+    let result = check_service_safe("nonexistent-service-12345");
+    assert!(result.is_err() || !result.unwrap().is_active, 
+            "Should handle nonexistent service gracefully");
+}
+
+// Test 9: Performance requirements
+#[test]
+fun test_performance() {
+    let start = std::time::Instant::now();
+    let _info = collect_system_info();
+    let duration = start.elapsed();
+    
+    assert!(duration.as_secs() < 1, "Should complete in under 1 second");
+}
+
+// Test 10: Property-based test for data validation
+#[test]
+fun test_data_validation_properties() {
+    for _ in 0..100 {
+        let info = collect_system_info();
+        
+        // Property: All numeric values should be non-negative
+        assert!(info.cpu_count > 0);
+        assert!(info.memory_total_kb > 0);
+        assert!(info.uptime_seconds >= 0);
+        
+        // Property: Memory available <= total
+        assert!(info.memory_available_kb <= info.memory_total_kb);
+        
+        // Property: Disk usage percentages in valid range
+        for disk in &info.disk_usage {
+            assert!(disk.usage_percent >= 0.0);
+            assert!(disk.usage_percent <= 100.0);
+        }
+    }
+}
+
+// Integration test
+#[test]
+fun test_full_diagnostic_integration() {
+    let result = run_system_diagnostic();
+    assert!(result.is_ok(), "Full diagnostic should complete successfully");
+    
+    let info = result.unwrap();
+    assert!(!info.hostname.is_empty());
+    assert!(info.cpu_count > 0);
+    assert!(info.memory_total_kb > 0);
+    assert!(!info.disk_usage.is_empty());
+    assert!(!info.network_interfaces.is_empty());
+}
+
+// Benchmark test (for CI metrics)
+#[bench]
+fun bench_system_diagnostic(b: &mut Bencher) {
+    b.iter(|| {
+        collect_system_info()
+    });
+}
+
+// Main test runner
+fun main() {
+    println!("Running System Diagnostic Test Suite...");
+    
+    // Run all tests and report
+    let mut passed = 0;
+    let mut failed = 0;
+    let tests = vec![
+        ("CPU Info", test_collect_cpu_info),
+        ("Memory Info", test_collect_memory_info),
+        ("Disk Usage", test_analyze_disk_usage),
+        ("Network Interfaces", test_detect_network_interfaces),
+        ("Service Status", test_check_service_status),
+        ("JSON Output", test_json_output),
+        ("Human Readable", test_human_readable_output),
+        ("Error Handling", test_error_handling),
+        ("Performance", test_performance),
+        ("Data Validation", test_data_validation_properties),
+        ("Integration", test_full_diagnostic_integration),
+    ];
+    
+    for (name, test_fn) in tests {
+        print!("Testing {}... ", name);
+        match std::panic::catch_unwind(test_fn) {
+            Ok(_) => {
+                println!("✓ PASSED");
+                passed += 1;
+            }
+            Err(_) => {
+                println!("✗ FAILED");
+                failed += 1;
+            }
+        }
+    }
+    
+    println!("\nTest Results: {} passed, {} failed", passed, failed);
+    
+    if failed > 0 {
+        std::process::exit(1);
+    }
+}

@@ -1,0 +1,357 @@
+// Bridge validator for Ruchy integration
+use crate::lib::common::{run_command, file_exists}
+use crate::lib::logger::{info, warn, error, success}
+use serde::{Serialize, Deserialize}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidationResult {
+    pub category: String,
+    pub passed: bool,
+    pub message: String,
+    pub details: Option<String>,
+}
+
+pub fun validate_ruchy_installation() -> ValidationResult {
+    info("Validating Ruchy installation");
+    
+    if !crate::lib::common::command_exists("ruchy") {
+        return ValidationResult {
+            category: "Ruchy Installation".to_string(),
+            passed: false,
+            message: "Ruchy not found in PATH".to_string(),
+            details: Some("Run 'cargo install ruchy' to install".to_string()),
+        };
+    }
+    
+    let version_result = run_command(vec!["ruchy".to_string(), "--version".to_string()], None);
+    
+    if !version_result.success {
+        return ValidationResult {
+            category: "Ruchy Installation".to_string(),
+            passed: false,
+            message: "Ruchy version check failed".to_string(),
+            details: Some(version_result.stderr),
+        };
+    }
+    
+    ValidationResult {
+        category: "Ruchy Installation".to_string(),
+        passed: true,
+        message: format!("Ruchy installed: {}", version_result.stdout.trim()),
+        details: None,
+    }
+}
+
+pub fun validate_cargo_config() -> ValidationResult {
+    info("Validating Cargo configuration");
+    
+    if !file_exists("Cargo.toml") {
+        return ValidationResult {
+            category: "Cargo Configuration".to_string(),
+            passed: false,
+            message: "Cargo.toml not found".to_string(),
+            details: Some("This should be run from the project root".to_string()),
+        };
+    }
+    
+    // Check if Cargo.toml is valid
+    let check_result = run_command(vec![
+        "cargo".to_string(),
+        "check".to_string(),
+        "--quiet".to_string()
+    ], None);
+    
+    if !check_result.success {
+        return ValidationResult {
+            category: "Cargo Configuration".to_string(),
+            passed: false,
+            message: "Cargo configuration invalid".to_string(),
+            details: Some(check_result.stderr),
+        };
+    }
+    
+    ValidationResult {
+        category: "Cargo Configuration".to_string(),
+        passed: true,
+        message: "Cargo.toml is valid".to_string(),
+        details: None,
+    }
+}
+
+pub fun validate_dependencies() -> ValidationResult {
+    info("Validating dependencies");
+    
+    let deps_result = run_command(vec![
+        "cargo".to_string(),
+        "tree".to_string(),
+        "--quiet".to_string()
+    ], None);
+    
+    if !deps_result.success {
+        return ValidationResult {
+            category: "Dependencies".to_string(),
+            passed: false,
+            message: "Dependency resolution failed".to_string(),
+            details: Some(deps_result.stderr),
+        };
+    }
+    
+    // Check for common issues
+    let output = deps_result.stdout;
+    if output.contains("(*)") {
+        return ValidationResult {
+            category: "Dependencies".to_string(),
+            passed: false,
+            message: "Duplicate dependencies detected".to_string(),
+            details: Some("Run 'cargo tree --duplicates' for details".to_string()),
+        };
+    }
+    
+    ValidationResult {
+        category: "Dependencies".to_string(),
+        passed: true,
+        message: "All dependencies resolved correctly".to_string(),
+        details: None,
+    }
+}
+
+pub fun validate_module_structure() -> ValidationResult {
+    info("Validating module structure");
+    
+    let required_modules = vec![
+        "ruchy/lib/logger.ruchy",
+        "ruchy/lib/common.ruchy",
+        "ruchy/lib/schema.ruchy",
+        "ruchy/audio/mod.ruchy",
+        "ruchy/system/mod.ruchy", 
+        "ruchy/dev/mod.ruchy",
+        "ruchy/src/main.ruchy",
+    ];
+    
+    let mut missing_modules = Vec::new();
+    
+    for module in required_modules {
+        if !file_exists(module) {
+            missing_modules.push(module);
+        }
+    }
+    
+    if !missing_modules.is_empty() {
+        return ValidationResult {
+            category: "Module Structure".to_string(),
+            passed: false,
+            message: "Missing required modules".to_string(),
+            details: Some(format!("Missing: {}", missing_modules.join(", "))),
+        };
+    }
+    
+    ValidationResult {
+        category: "Module Structure".to_string(),
+        passed: true,
+        message: "All required modules present".to_string(),
+        details: None,
+    }
+}
+
+pub fun validate_syntax() -> ValidationResult {
+    info("Validating Ruchy syntax");
+    
+    // Find all .ruchy files
+    let find_result = run_command(vec![
+        "find".to_string(),
+        "ruchy".to_string(),
+        "-name".to_string(),
+        "*.ruchy".to_string()
+    ], None);
+    
+    if !find_result.success {
+        return ValidationResult {
+            category: "Syntax Validation".to_string(),
+            passed: false,
+            message: "Failed to find Ruchy files".to_string(),
+            details: Some(find_result.stderr),
+        };
+    }
+    
+    let ruchy_files: Vec<&str> = find_result.stdout.trim().lines().collect();
+    let mut syntax_errors = Vec::new();
+    
+    for file in ruchy_files {
+        if file.is_empty() {
+            continue;
+        }
+        
+        let check_result = run_command(vec![
+            "ruchy".to_string(),
+            "check".to_string(),
+            file.to_string()
+        ], None);
+        
+        if !check_result.success {
+            syntax_errors.push(format!("{}: {}", file, check_result.stderr));
+        }
+    }
+    
+    if !syntax_errors.is_empty() {
+        return ValidationResult {
+            category: "Syntax Validation".to_string(),
+            passed: false,
+            message: "Syntax errors found".to_string(),
+            details: Some(syntax_errors.join("\n")),
+        };
+    }
+    
+    ValidationResult {
+        category: "Syntax Validation".to_string(),
+        passed: true,
+        message: "All Ruchy files have valid syntax".to_string(),
+        details: None,
+    }
+}
+
+pub fun validate_tests() -> ValidationResult {
+    info("Validating test suite");
+    
+    if !file_exists("ruchy/tests") {
+        return ValidationResult {
+            category: "Test Suite".to_string(),
+            passed: false,
+            message: "Test directory not found".to_string(),
+            details: Some("Create ruchy/tests directory with test files".to_string()),
+        };
+    }
+    
+    // Check if tests compile
+    let test_check = run_command(vec![
+        "cargo".to_string(),
+        "test".to_string(),
+        "--no-run".to_string(),
+        "--quiet".to_string()
+    ], None);
+    
+    if !test_check.success {
+        return ValidationResult {
+            category: "Test Suite".to_string(),
+            passed: false,
+            message: "Tests do not compile".to_string(),
+            details: Some(test_check.stderr),
+        };
+    }
+    
+    ValidationResult {
+        category: "Test Suite".to_string(),
+        passed: true,
+        message: "Test suite compiles successfully".to_string(),
+        details: None,
+    }
+}
+
+pub fun validate_documentation() -> ValidationResult {
+    info("Validating documentation");
+    
+    let required_docs = vec![
+        "README.md",
+        "CLAUDE.md",
+        "ruchy/README.md",
+    ];
+    
+    let mut missing_docs = Vec::new();
+    
+    for doc in required_docs {
+        if !file_exists(doc) {
+            missing_docs.push(doc);
+        }
+    }
+    
+    if !missing_docs.is_empty() {
+        return ValidationResult {
+            category: "Documentation".to_string(),
+            passed: false,
+            message: "Missing documentation files".to_string(),
+            details: Some(format!("Missing: {}", missing_docs.join(", "))),
+        };
+    }
+    
+    ValidationResult {
+        category: "Documentation".to_string(),
+        passed: true,
+        message: "Required documentation files present".to_string(),
+        details: None,
+    }
+}
+
+pub fun run_all_validations() -> Vec<ValidationResult> {
+    let mut results = Vec::new();
+    
+    results.push(validate_ruchy_installation());
+    results.push(validate_cargo_config());
+    results.push(validate_dependencies());
+    results.push(validate_module_structure());
+    results.push(validate_syntax());
+    results.push(validate_tests());
+    results.push(validate_documentation());
+    
+    results
+}
+
+pub fun print_validation_report(results: &[ValidationResult]) {
+    println!("\n=== Bridge Validation Report ===\n");
+    
+    let mut passed = 0;
+    let mut total = 0;
+    
+    for result in results {
+        total += 1;
+        
+        let status = if result.passed {
+            passed += 1;
+            "✓"
+        } else {
+            "✗"
+        };
+        
+        println!("{} {}: {}", status, result.category, result.message);
+        
+        if let Some(ref details) = result.details {
+            println!("  Details: {}", details);
+        }
+        println!();
+    }
+    
+    println!("=== Summary ===");
+    println!("Passed: {}/{}", passed, total);
+    
+    if passed == total {
+        success("All validations passed!");
+    } else {
+        error(&format!("{} validation(s) failed", total - passed));
+    }
+}
+
+pub fun run() -> Result<(), String> {
+    info("Running bridge validation for Ruchy integration");
+    
+    let results = run_all_validations();
+    print_validation_report(&results);
+    
+    let all_passed = results.iter().all(|r| r.passed);
+    
+    if all_passed {
+        success("Bridge validation completed successfully");
+        println!("\nThe project is ready for:");
+        println!("- Building with Cargo");
+        println!("- Running with Ruchy");
+        println!("- Deployment and distribution");
+        println!("- CI/CD integration");
+    } else {
+        error("Bridge validation failed");
+        println!("\nPlease fix the issues above before proceeding with:");
+        println!("- Build and deployment");
+        println!("- CI/CD setup");
+        println!("- Production use");
+        
+        return Err("Validation failed".to_string());
+    }
+    
+    Ok(())
+}

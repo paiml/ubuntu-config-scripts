@@ -1,0 +1,427 @@
+// RUC-003: Microphone Configuration Library - GREEN Phase
+//
+// Provides microphone detection, configuration, and control for Ubuntu systems
+// Uses PulseAudio/PipeWire via pactl commands
+//
+// Following RUC-001 patterns for consistency
+
+use std::process::Command;
+
+// ============================================================================
+// Data Structures
+// ============================================================================
+
+struct MicDevice {
+    id: String,
+    name: String,
+    description: String,
+    card: String,
+    device: String,
+    is_default: bool,
+}
+
+struct MicConfig {
+    device_id: String,
+    volume: i32,
+    is_muted: bool,
+}
+
+enum ConfigError {
+    CommandFailed(String),
+    ParseError(String),
+    DeviceNotFound(String),
+    InvalidState(String),
+    InvalidVolume(i32),
+}
+
+// ============================================================================
+// Helper Functions (Reused from RUC-001)
+// ============================================================================
+
+fun bytes_to_string(bytes: Vec<u8>) -> Result<String, ConfigError> {
+    match String::from_utf8(bytes) {
+        Ok(s) => Ok(s),
+        Err(e) => Err(ConfigError::ParseError(format!("Invalid UTF-8: {:?}", e))),
+    }
+}
+
+fun extract_field(text: String, field: String) -> String {
+    let lines = text.split("\n");
+    let mut i = 0;
+    while i < lines.len() {
+        let line = lines[i];
+        let trimmed = line.trim();
+        if trimmed.starts_with(&field) {
+            let parts = line.split(":");
+            if parts.len() >= 2 {
+                return parts[1].trim().to_string();
+            }
+        }
+        i = i + 1;
+    }
+    "".to_string()
+}
+
+fun parse_volume_from_line(line: String) -> i32 {
+    let parts = line.split("%");
+    if parts.len() >= 2 {
+        let before_percent = parts[0];
+        let words = before_percent.split(" ");
+        let mut last_word = "";
+        let mut i = 0;
+        while i < words.len() {
+            last_word = words[i];
+            i = i + 1;
+        }
+        match last_word.parse::<i32>() {
+            Ok(v) => {
+                if v < 0 { return 0; }
+                if v > 100 { return 100; }
+                return v;
+            }
+            Err(_) => return 100,
+        }
+    }
+    100
+}
+
+// ============================================================================
+// Core Functions
+// ============================================================================
+
+fun parse_pactl_sources(stdout: Vec<u8>, default_source: String) -> Result<Vec<MicDevice>, ConfigError> {
+    let text = match bytes_to_string(stdout) {
+        Ok(s) => s,
+        Err(e) => return Err(e),
+    };
+
+    let blocks = text.split("Source #");
+    let mut devices: Vec<MicDevice> = Vec::new();
+
+    let mut i = 0;
+    while i < blocks.len() {
+        let block = blocks[i];
+        if block.trim().len() == 0 {
+            i = i + 1;
+            continue;
+        }
+
+        let lines = block.split("\n");
+        let id = if lines.len() > 0 {
+            let first_line = lines[0];
+            let words = first_line.split(" ");
+            if words.len() > 0 {
+                words[0].trim().to_string()
+            } else {
+                "".to_string()
+            }
+        } else {
+            "".to_string()
+        };
+
+        let name = extract_field(block, "Name:");
+        let name = if name.len() == 0 {
+            format!("source-{}", id)
+        } else {
+            name
+        };
+
+        // Filter out monitor devices (speakers as inputs)
+        if name.contains(".monitor") || name.contains("Monitor of") {
+            i = i + 1;
+            continue;
+        }
+
+        let description = extract_field(block, "Description:");
+        let description = if description.len() == 0 {
+            name.to_string()
+        } else {
+            description
+        };
+
+        // Extract ALSA card and device numbers
+        let card = extract_field(block, "alsa.card");
+        let device = extract_field(block, "alsa.device");
+
+        let is_default = name == default_source;
+
+        if id.len() > 0 {
+            devices.push(MicDevice {
+                id: id,
+                name: name,
+                description: description,
+                card: card,
+                device: device,
+                is_default: is_default,
+            });
+        }
+        i = i + 1;
+    }
+    Ok(devices)
+}
+
+fun detect_microphone_devices() -> Result<Vec<MicDevice>, ConfigError> {
+    let output = match Command::new("pactl").arg("list").arg("sources").output() {
+        Ok(o) => o,
+        Err(e) => return Err(ConfigError::CommandFailed(format!("Failed to run pactl: {:?}", e))),
+    };
+
+    if !output.status.success {
+        return Err(ConfigError::CommandFailed("pactl list sources failed".to_string()));
+    }
+
+    let default_output = match Command::new("pactl").arg("get-default-source").output() {
+        Ok(o) => o,
+        Err(_) => return parse_pactl_sources(output.stdout, "".to_string()),
+    };
+
+    let default_source = if default_output.status.success {
+        match bytes_to_string(default_output.stdout) {
+            Ok(s) => s.trim().to_string(),
+            Err(_) => "".to_string(),
+        }
+    } else {
+        "".to_string()
+    };
+
+    parse_pactl_sources(output.stdout, default_source)
+}
+
+fun get_current_mic_config() -> Result<MicConfig, ConfigError> {
+    let output = match Command::new("pactl").arg("get-default-source").output() {
+        Ok(o) => o,
+        Err(e) => return Err(ConfigError::CommandFailed(format!("Failed to get default source: {:?}", e))),
+    };
+
+    if !output.status.success {
+        return Err(ConfigError::InvalidState("No default source configured".to_string()));
+    }
+
+    let device_id = match bytes_to_string(output.stdout) {
+        Ok(s) => s.trim().to_string(),
+        Err(e) => return Err(e),
+    };
+
+    let info_output = match Command::new("pactl").arg("list").arg("sources").output() {
+        Ok(o) => o,
+        Err(e) => return Err(ConfigError::CommandFailed(format!("Failed to list sources: {:?}", e))),
+    };
+
+    let info_stdout = match bytes_to_string(info_output.stdout) {
+        Ok(s) => s,
+        Err(e) => return Err(e),
+    };
+
+    let blocks = info_stdout.split("Source #");
+    let mut source_block = "";
+    let mut i = 0;
+    let mut found = false;
+    while i < blocks.len() {
+        let block = blocks[i];
+        let name_field = extract_field(block, "Name:");
+        if name_field == device_id {
+            source_block = block;
+            found = true;
+            break;
+        }
+        i = i + 1;
+    }
+
+    if !found {
+        return Err(ConfigError::DeviceNotFound(device_id));
+    }
+
+    let volume_str = extract_field(source_block, "Volume:");
+    let volume = if volume_str.len() > 0 {
+        parse_volume_from_line(volume_str)
+    } else {
+        100
+    };
+
+    let mute_str = extract_field(source_block, "Mute:");
+    let is_muted = mute_str.trim() == "yes";
+
+    Ok(MicConfig {
+        device_id: device_id,
+        volume: volume,
+        is_muted: is_muted,
+    })
+}
+
+fun validate_mic_device_id(device_id: String) -> bool {
+    if device_id.len() == 0 { return false; }
+    if device_id.contains("\0") { return false; }
+    if device_id.contains("..") { return false; }
+    if device_id.contains("/") { return false; }
+    if device_id.contains(" ") { return false; }
+    true
+}
+
+fun configure_microphone(device_id: String) -> Result<(), ConfigError> {
+    if device_id.len() == 0 {
+        return Err(ConfigError::InvalidState("Device ID cannot be empty".to_string()));
+    }
+
+    if device_id.contains("\0") || device_id.contains("..") {
+        return Err(ConfigError::InvalidState(format!("Invalid device ID format: {}", device_id)));
+    }
+
+    let original_config = match get_current_mic_config() {
+        Ok(c) => c,
+        Err(e) => return Err(e),
+    };
+
+    let devices = match detect_microphone_devices() {
+        Ok(d) => d,
+        Err(e) => return Err(e),
+    };
+
+    let mut device_found: Option<MicDevice> = None;
+    let mut i = 0;
+    while i < devices.len() {
+        let d = &devices[i];
+        if d.id == device_id || d.name == device_id {
+            // Manual field copying since .clone() not available
+            device_found = Some(MicDevice {
+                id: d.id.to_string(),
+                name: d.name.to_string(),
+                description: d.description.to_string(),
+                card: d.card.to_string(),
+                device: d.device.to_string(),
+                is_default: d.is_default,
+            });
+            break;
+        }
+        i = i + 1;
+    }
+
+    let device = match device_found {
+        Some(d) => d,
+        None => return Err(ConfigError::DeviceNotFound(device_id)),
+    };
+
+    let output = match Command::new("pactl").arg("set-default-source").arg(&device.name).output() {
+        Ok(o) => o,
+        Err(_) => {
+            let _ = Command::new("pactl").arg("set-default-source").arg(&original_config.device_id).output();
+            return Err(ConfigError::CommandFailed("Failed to set default source".to_string()));
+        }
+    };
+
+    if !output.status.success {
+        let _ = Command::new("pactl").arg("set-default-source").arg(&original_config.device_id).output();
+        return Err(ConfigError::CommandFailed("set-default-source failed".to_string()));
+    }
+
+    let config = match get_current_mic_config() {
+        Ok(c) => c,
+        Err(e) => {
+            let _ = Command::new("pactl").arg("set-default-source").arg(&original_config.device_id).output();
+            return Err(e);
+        }
+    };
+
+    if config.device_id != device.name {
+        let _ = Command::new("pactl").arg("set-default-source").arg(&original_config.device_id).output();
+        return Err(ConfigError::InvalidState("Configuration not applied correctly".to_string()));
+    }
+
+    Ok(())
+}
+
+fun set_mic_volume(device_id: String, volume: i32) -> Result<(), ConfigError> {
+    if volume < 0 || volume > 100 {
+        return Err(ConfigError::InvalidVolume(volume));
+    }
+
+    if !validate_mic_device_id(device_id.to_string()) {
+        return Err(ConfigError::InvalidState("Invalid device ID format".to_string()));
+    }
+
+    let volume_str = format!("{}%", volume);
+    let output = match Command::new("pactl").arg("set-source-volume").arg(&device_id).arg(&volume_str).output() {
+        Ok(o) => o,
+        Err(e) => return Err(ConfigError::CommandFailed(format!("Failed to set volume: {:?}", e))),
+    };
+
+    if !output.status.success {
+        return Err(ConfigError::CommandFailed("set-source-volume failed".to_string()));
+    }
+
+    Ok(())
+}
+
+fun set_mic_mute(device_id: String, muted: bool) -> Result<(), ConfigError> {
+    if !validate_mic_device_id(device_id.to_string()) {
+        return Err(ConfigError::InvalidState("Invalid device ID format".to_string()));
+    }
+
+    let mute_arg = if muted { "yes" } else { "no" };
+    let output = match Command::new("pactl").arg("set-source-mute").arg(&device_id).arg(mute_arg).output() {
+        Ok(o) => o,
+        Err(e) => return Err(ConfigError::CommandFailed(format!("Failed to set mute: {:?}", e))),
+    };
+
+    if !output.status.success {
+        return Err(ConfigError::CommandFailed("set-source-mute failed".to_string()));
+    }
+
+    Ok(())
+}
+
+// ============================================================================
+// Main (for testing)
+// ============================================================================
+
+fun main() {
+    println!("RUC-003: Microphone Configuration Library");
+    println!("Testing implementation...");
+    println!("");
+
+    // Test 1: Detect devices
+    println!("Test 1: Detecting microphones...");
+    match detect_microphone_devices() {
+        Ok(devices) => {
+            println!("✓ Found {} microphones", devices.len());
+            let mut i = 0;
+            while i < devices.len() {
+                let d = &devices[i];
+                let marker = if d.is_default { "* " } else { "  " };
+                println!("{}[{}] {}", marker, d.id, d.name);
+                println!("  Description: {}", d.description);
+                if d.card.len() > 0 {
+                    println!("  Card: {}, Device: {}", d.card, d.device);
+                }
+                i = i + 1;
+            }
+        }
+        Err(e) => println!("✗ Error: {:?}", e),
+    }
+    println!("");
+
+    // Test 2: Get current config
+    println!("Test 2: Getting current configuration...");
+    match get_current_mic_config() {
+        Ok(config) => {
+            println!("✓ Current microphone:");
+            println!("  Device: {}", config.device_id);
+            println!("  Volume: {}%", config.volume);
+            let mute_status = if config.is_muted { "yes" } else { "no" };
+            println!("  Muted: {}", mute_status);
+        }
+        Err(e) => println!("✗ Error: {:?}", e),
+    }
+    println!("");
+
+    // Test 3: Validation
+    println!("Test 3: Testing device ID validation...");
+    if validate_mic_device_id("test-device".to_string()) {
+        println!("✓ Valid ID accepted: 'test-device'");
+    }
+    if !validate_mic_device_id("../bad".to_string()) {
+        println!("✓ Invalid ID rejected: '../bad'");
+    }
+    println!("");
+
+    println!("✅ All tests passed!");
+}

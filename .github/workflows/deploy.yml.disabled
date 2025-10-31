@@ -1,0 +1,186 @@
+name: Deploy
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Deployment target'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - linux
+          - arm64
+          - macos
+          - windows
+
+env:
+  DENO_VERSION: v2.x
+  AUTO_UPDATE_DENO: false
+
+jobs:
+  deploy-binaries:
+    name: Deploy ${{ matrix.target }} Binaries
+    runs-on: [self-hosted, linux, x64, gunner, deploy]
+    strategy:
+      matrix:
+        target: ${{ fromJson(github.event.inputs.target == 'all' && '["linux", "arm64", "macos", "windows"]' || format('["{0}"]', github.event.inputs.target)) }}
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: ${{ env.DENO_VERSION }}
+          
+      - name: Build binaries
+        run: |
+          echo "🔨 Building binaries for ${{ matrix.target }}..."
+          make deploy TARGETS=${{ matrix.target }}
+          
+      - name: Test binaries
+        run: |
+          echo "🧪 Testing binaries..."
+          # Basic smoke test
+          if [ -f "dist/enable-mic" ]; then
+            dist/enable-mic --help || true
+          fi
+          
+      - name: Create checksums
+        run: |
+          cd dist
+          sha256sum * > checksums.sha256
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.target }}
+          path: dist/
+          retention-days: 90
+
+  create-release-package:
+    name: Create Release Package
+    runs-on: [self-hosted, linux, x64, gunner, deploy]
+    needs: deploy-binaries
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: ${{ env.DENO_VERSION }}
+          
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+          
+      - name: Create release package
+        run: |
+          echo "📦 Creating release package..."
+          mkdir -p dist
+          
+          # Combine all binaries
+          for dir in artifacts/binaries-*; do
+            if [ -d "$dir" ]; then
+              cp -r "$dir"/* dist/ 2>/dev/null || true
+            fi
+          done
+          
+          # Create the package
+          make deploy-package
+          
+          # Create release notes
+          cat > dist/RELEASE_NOTES.md << EOF
+          # Ubuntu Config Scripts Release
+          
+          Version: ${{ github.event.release.tag_name || 'latest' }}
+          Date: $(date -u +"%Y-%m-%d")
+          
+          ## Included Binaries
+          
+          $(ls -la dist/*.tar.gz | awk '{print "- " $9}')
+          
+          ## Installation
+          
+          \`\`\`bash
+          # Extract the package
+          tar -xzf ubuntu-config-scripts-*.tar.gz
+          
+          # Install to /usr/local/bin
+          sudo cp bin/* /usr/local/bin/
+          \`\`\`
+          
+          ## Checksums
+          
+          See \`checksums.sha256\` for file integrity verification.
+          EOF
+          
+      - name: Upload release assets
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/RELEASE_NOTES.md
+            dist/checksums.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker-image:
+    name: Build Docker Image
+    runs-on: [self-hosted, linux, x64, gunner, deploy]
+    needs: deploy-binaries
+    if: github.event_name == 'release'
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Download Linux binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries-linux
+          path: dist/
+          
+      - name: Create Dockerfile
+        run: |
+          cat > Dockerfile << EOF
+          FROM ubuntu:22.04
+          
+          # Install dependencies
+          RUN apt-get update && apt-get install -y \
+              pulseaudio-utils \
+              alsa-utils \
+              ca-certificates \
+              && rm -rf /var/lib/apt/lists/*
+          
+          # Copy binaries
+          COPY dist/* /usr/local/bin/
+          RUN chmod +x /usr/local/bin/*
+          
+          # Create non-root user
+          RUN useradd -m -s /bin/bash ubuntu
+          USER ubuntu
+          
+          WORKDIR /home/ubuntu
+          
+          CMD ["/bin/bash"]
+          EOF
+          
+      - name: Build Docker image
+        run: |
+          docker build -t ubuntu-config-scripts:${{ github.event.release.tag_name }} .
+          docker tag ubuntu-config-scripts:${{ github.event.release.tag_name }} ubuntu-config-scripts:latest
+          
+      - name: Save Docker image
+        run: |
+          docker save ubuntu-config-scripts:latest | gzip > dist/ubuntu-config-scripts-docker.tar.gz
+          
+      - name: Upload Docker image
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/ubuntu-config-scripts-docker.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

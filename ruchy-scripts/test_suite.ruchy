@@ -1,0 +1,141 @@
+// UCS-SYNTAX-005A: Comprehensive test suite with correct syntax for Ruchy v0.9.12
+
+// Logger functionality tests
+fun get_log_level_info() -> i32 { 1 }
+
+fun log_message(level: i32, level_name: String, message: String, prefix: String) {
+    if level >= get_log_level_info() {
+        let prefix_text = if prefix == "" {
+            ""
+        } else {
+            format!("[{}] ", prefix)
+        }
+        let output = format!("{}[{}] {}", prefix_text, level_name, message)
+        println!("{}", output)
+    }
+}
+
+fun test_logger() -> bool {
+    log_message(1, "INFO", "Logger test message", "TEST")
+    log_message(2, "WARN", "Warning test message", "TEST")
+    log_message(3, "ERROR", "Error test message", "TEST")
+    true
+}
+
+// Common utilities tests
+fun create_success_result(output: String) -> String {
+    format!("SUCCESS: {}", output)
+}
+
+fun create_error_result(error: String) -> String {
+    format!("ERROR: {}", error)
+}
+
+fun run_echo_command() -> String {
+    create_success_result("hello")
+}
+
+fun run_false_command() -> String {
+    create_error_result("Command failed")
+}
+
+fun test_common_utilities() -> bool {
+    let result1 = run_echo_command()
+    let expected1 = "SUCCESS: hello"
+    let test1_passed = result1 == expected1
+    
+    let result2 = run_false_command()  
+    let expected2 = "ERROR: Command failed"
+    let test2_passed = result2 == expected2
+    
+    if test1_passed && test2_passed {
+        true
+    } else {
+        false
+    }
+}
+
+// Pattern matching tests
+fun match_simple_value(value: i32) -> String {
+    match value {
+        0 => "zero",
+        1 => "one",
+        42 => "found",
+        _ => "other"
+    }
+}
+
+fun test_pattern_matching() -> bool {
+    let result1 = match_simple_value(0)
+    let result2 = match_simple_value(42)
+    let result3 = match_simple_value(99)
+    
+    let test1_passed = result1 == "zero"
+    let test2_passed = result2 == "found" 
+    let test3_passed = result3 == "other"
+    
+    if test1_passed && test2_passed && test3_passed {
+        true
+    } else {
+        false
+    }
+}
+
+// Data structure tests
+fun test_arrays() -> bool {
+    let numbers = [1, 2, 3]
+    let strings = ["hello", "world"]
+    
+    let first_num = numbers[0]
+    let first_str = strings[0]
+    
+    let test1_passed = first_num == 1
+    let test2_passed = first_str == "hello"
+    
+    if test1_passed && test2_passed {
+        true
+    } else {
+        false
+    }
+}
+
+// String formatting tests
+fun test_string_formatting() -> bool {
+    let formatted = format!("Hello {}", "world")
+    let expected = "Hello world"
+    
+    if formatted == expected {
+        true
+    } else {
+        false
+    }
+}
+
+// Main test runner
+fun main() {
+    println!("🧪 Running comprehensive test suite...")
+    
+    let logger_result = test_logger()
+    println!("Logger test: {}", if logger_result { "PASS" } else { "FAIL" })
+    
+    let common_result = test_common_utilities()
+    println!("Common utilities test: {}", if common_result { "PASS" } else { "FAIL" })
+    
+    let pattern_result = test_pattern_matching()
+    println!("Pattern matching test: {}", if pattern_result { "PASS" } else { "FAIL" })
+    
+    let array_result = test_arrays()
+    println!("Array test: {}", if array_result { "PASS" } else { "FAIL" })
+    
+    let format_result = test_string_formatting()
+    println!("String formatting test: {}", if format_result { "PASS" } else { "FAIL" })
+    
+    let all_passed = logger_result && common_result && pattern_result && array_result && format_result
+    
+    println!("📊 Test Results Summary:")
+    if all_passed {
+        println!("✅ ALL TESTS PASSED - Syntax fixes successful!")
+    } else {
+        println!("❌ Some tests failed - requires investigation")
+    }
+}

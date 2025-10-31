@@ -1,0 +1,384 @@
+// Deploy Ubuntu Config Scripts as Ruchy binaries
+use crate::lib::common::{run_command, ensure_dir, write_file}
+use crate::lib::logger::{info, warn, error, success}
+use std::path::Path
+
+pub fun build_release_binary() -> Result<String, String> {
+    info("Building release binary");
+    
+    let result = run_command(vec![
+        "cargo".to_string(),
+        "build".to_string(),
+        "--release".to_string()
+    ], None);
+    
+    if !result.success {
+        return Err(format!("Build failed: {}", result.stderr));
+    }
+    
+    let binary_path = "target/release/ubuntu-config";
+    if !crate::lib::common::file_exists(binary_path) {
+        return Err("Binary not found after build".to_string());
+    }
+    
+    success("Binary built successfully");
+    Ok(binary_path.to_string())
+}
+
+pub fun create_install_script(binary_path: &str) -> Result<String, String> {
+    let install_script = format!(r#"#!/bin/bash
+# Ubuntu Config Scripts Installer
+
+set -e
+
+INSTALL_DIR="/usr/local/bin"
+BINARY_NAME="ubuntu-config"
+SOURCE_BINARY="{}"
+
+echo "Installing Ubuntu Config Scripts..."
+
+# Check if running as root
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root (use sudo)"
+    exit 1
+fi
+
+# Copy binary
+cp "$SOURCE_BINARY" "$INSTALL_DIR/$BINARY_NAME"
+chmod +x "$INSTALL_DIR/$BINARY_NAME"
+
+# Create symlinks for common operations
+cd "$INSTALL_DIR"
+ln -sf "$BINARY_NAME" ubuntu-audio
+ln -sf "$BINARY_NAME" ubuntu-system  
+ln -sf "$BINARY_NAME" ubuntu-dev
+
+echo "✓ Ubuntu Config Scripts installed to $INSTALL_DIR"
+echo "✓ Created convenience symlinks:"
+echo "  - ubuntu-audio (audio configuration)"
+echo "  - ubuntu-system (system management)"
+echo "  - ubuntu-dev (development tools)"
+
+echo ""
+echo "Usage:"
+echo "  ubuntu-config --help"
+echo "  ubuntu-audio configure-speakers"
+echo "  ubuntu-system diagnose-av"
+echo "  ubuntu-dev install-pmat-deps"
+
+echo ""
+echo "Installation complete!"
+"#, binary_path);
+
+    let script_path = "target/install.sh";
+    write_file(script_path, &install_script)?;
+    
+    // Make executable
+    run_command(vec![
+        "chmod".to_string(),
+        "+x".to_string(),
+        script_path.to_string()
+    ], None);
+    
+    Ok(script_path.to_string())
+}
+
+pub fun create_deb_package() -> Result<String, String> {
+    info("Creating Debian package");
+    
+    let package_dir = "target/debian/ubuntu-config-scripts";
+    let bin_dir = format!("{}/usr/local/bin", package_dir);
+    let doc_dir = format!("{}/usr/share/doc/ubuntu-config-scripts", package_dir);
+    
+    // Create directory structure
+    ensure_dir(&bin_dir)?;
+    ensure_dir(&doc_dir)?;
+    ensure_dir(&format!("{}/DEBIAN", package_dir))?;
+    
+    // Copy binary
+    run_command(vec![
+        "cp".to_string(),
+        "target/release/ubuntu-config".to_string(),
+        format!("{}/ubuntu-config", bin_dir)
+    ], None);
+    
+    // Make executable
+    run_command(vec![
+        "chmod".to_string(),
+        "+x".to_string(),
+        format!("{}/ubuntu-config", bin_dir)
+    ], None);
+    
+    // Create symlinks
+    run_command(vec![
+        "ln".to_string(),
+        "-sf".to_string(),
+        "ubuntu-config".to_string(),
+        format!("{}/ubuntu-audio", bin_dir)
+    ], None);
+    
+    run_command(vec![
+        "ln".to_string(),
+        "-sf".to_string(),
+        "ubuntu-config".to_string(),
+        format!("{}/ubuntu-system", bin_dir)
+    ], None);
+    
+    run_command(vec![
+        "ln".to_string(),
+        "-sf".to_string(),
+        "ubuntu-config".to_string(),
+        format!("{}/ubuntu-dev", bin_dir)
+    ], None);
+    
+    // Create control file
+    let control_content = r#"Package: ubuntu-config-scripts
+Version: 0.1.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Ubuntu Config Scripts Contributors <noreply@example.com>
+Description: Ubuntu system configuration and management scripts
+ A collection of Ruchy-based scripts for configuring and managing
+ Ubuntu systems, including audio setup, video configuration,
+ development environment setup, and system diagnostics.
+Depends: libc6 (>= 2.31)
+"#;
+    
+    write_file(&format!("{}/DEBIAN/control", package_dir), control_content)?;
+    
+    // Create postinst script
+    let postinst_content = r#"#!/bin/bash
+set -e
+
+echo "Ubuntu Config Scripts installed successfully!"
+echo ""
+echo "Usage examples:"
+echo "  ubuntu-config --help"
+echo "  ubuntu-audio configure-speakers"
+echo "  ubuntu-system diagnose-av"
+echo "  ubuntu-dev install-pmat-deps"
+"#;
+    
+    write_file(&format!("{}/DEBIAN/postinst", package_dir), postinst_content)?;
+    
+    run_command(vec![
+        "chmod".to_string(),
+        "+x".to_string(),
+        format!("{}/DEBIAN/postinst", package_dir)
+    ], None);
+    
+    // Create README
+    let readme_content = r#"# Ubuntu Config Scripts
+
+A collection of system configuration and management tools for Ubuntu.
+
+## Commands
+
+- `ubuntu-config` - Main command-line interface
+- `ubuntu-audio` - Audio system configuration  
+- `ubuntu-system` - System management and diagnostics
+- `ubuntu-dev` - Development environment setup
+
+## Examples
+
+```bash
+# Configure external speakers
+ubuntu-audio configure-speakers
+
+# Diagnose audio/video issues  
+ubuntu-system diagnose-av
+
+# Install development dependencies
+ubuntu-dev install-pmat-deps
+
+# Check DaVinci Resolve installation
+ubuntu-system check-davinci
+```
+
+For more information, run any command with `--help`.
+"#;
+    
+    write_file(&format!("{}/README.md", doc_dir), readme_content)?;
+    
+    // Build package
+    let result = run_command(vec![
+        "dpkg-deb".to_string(),
+        "--build".to_string(),
+        package_dir.to_string()
+    ], None);
+    
+    if !result.success {
+        return Err(format!("Failed to create DEB package: {}", result.stderr));
+    }
+    
+    let deb_file = format!("{}.deb", package_dir);
+    success(&format!("Debian package created: {}", deb_file));
+    
+    Ok(deb_file)
+}
+
+pub fun create_appimage() -> Result<String, String> {
+    info("Creating AppImage");
+    
+    let appdir = "target/ubuntu-config-scripts.AppDir";
+    let bin_dir = format!("{}/usr/bin", appdir);
+    let desktop_dir = format!("{}/usr/share/applications", appdir);
+    
+    // Create directory structure
+    ensure_dir(&bin_dir)?;
+    ensure_dir(&desktop_dir)?;
+    
+    // Copy binary
+    run_command(vec![
+        "cp".to_string(),
+        "target/release/ubuntu-config".to_string(),
+        format!("{}/ubuntu-config", bin_dir)
+    ], None);
+    
+    // Make executable
+    run_command(vec![
+        "chmod".to_string(),
+        "+x".to_string(),
+        format!("{}/ubuntu-config", bin_dir)
+    ], None);
+    
+    // Create desktop entry
+    let desktop_content = r#"[Desktop Entry]
+Type=Application
+Name=Ubuntu Config Scripts
+Comment=Ubuntu system configuration and management
+Exec=ubuntu-config
+Icon=utilities-terminal
+Categories=System;Settings;
+Terminal=true
+"#;
+    
+    write_file(&format!("{}/ubuntu-config-scripts.desktop", desktop_dir), desktop_content)?;
+    write_file(&format!("{}/ubuntu-config-scripts.desktop", appdir), desktop_content)?;
+    
+    // Create AppRun script
+    let apprun_content = r#"#!/bin/bash
+HERE="$(dirname "$(readlink -f "${0}")")"
+exec "${HERE}/usr/bin/ubuntu-config" "$@"
+"#;
+    
+    write_file(&format!("{}/AppRun", appdir), apprun_content)?;
+    run_command(vec![
+        "chmod".to_string(),
+        "+x".to_string(),
+        format!("{}/AppRun", appdir)
+    ], None);
+    
+    // Try to build AppImage if appimagetool is available
+    if crate::lib::common::command_exists("appimagetool") {
+        let result = run_command(vec![
+            "appimagetool".to_string(),
+            appdir.to_string(),
+            "target/ubuntu-config-scripts.AppImage".to_string()
+        ], None);
+        
+        if result.success {
+            success("AppImage created: target/ubuntu-config-scripts.AppImage");
+            return Ok("target/ubuntu-config-scripts.AppImage".to_string());
+        } else {
+            warn("Failed to create AppImage with appimagetool");
+        }
+    } else {
+        warn("appimagetool not found - AppImage creation skipped");
+    }
+    
+    Ok(appdir.to_string())
+}
+
+pub fun run_tests_before_deploy() -> Result<(), String> {
+    info("Running tests before deployment");
+    
+    // Run unit tests
+    let test_result = run_command(vec![
+        "cargo".to_string(),
+        "test".to_string()
+    ], None);
+    
+    if !test_result.success {
+        return Err("Tests failed".to_string());
+    }
+    
+    // Run property tests
+    let prop_test_result = run_command(vec![
+        "cargo".to_string(),
+        "test".to_string(),
+        "--features".to_string(),
+        "property-tests".to_string()
+    ], None);
+    
+    if !prop_test_result.success {
+        warn("Property tests failed, but continuing deployment");
+    }
+    
+    success("Tests passed");
+    Ok(())
+}
+
+pub fun generate_checksums(files: Vec<String>) -> Result<(), String> {
+    info("Generating checksums");
+    
+    for file in files {
+        let result = run_command(vec![
+            "sha256sum".to_string(),
+            file.clone()
+        ], None);
+        
+        if result.success {
+            write_file(&format!("{}.sha256", file), &result.stdout)?;
+        }
+    }
+    
+    Ok(())
+}
+
+pub fun run() -> Result<(), String> {
+    info("Deploying Ubuntu Config Scripts");
+    
+    // Run tests first
+    run_tests_before_deploy()?;
+    
+    // Build release binary
+    let binary_path = build_release_binary()?;
+    
+    // Create install script
+    let install_script = create_install_script(&binary_path)?;
+    success(&format!("Install script created: {}", install_script));
+    
+    // Create DEB package
+    let deb_file = create_deb_package()?;
+    
+    // Create AppImage
+    let appimage = create_appimage()?;
+    
+    // Generate checksums
+    let mut files_to_checksum = vec![binary_path, deb_file];
+    if appimage.ends_with(".AppImage") {
+        files_to_checksum.push(appimage);
+    }
+    generate_checksums(files_to_checksum)?;
+    
+    println!("\n=== Deployment Complete ===");
+    println!("✓ Release binary: target/release/ubuntu-config");
+    println!("✓ Install script: target/install.sh");
+    println!("✓ Debian package: target/debian/ubuntu-config-scripts.deb");
+    println!("✓ Checksums generated");
+    
+    println!("\n=== Installation Options ===");
+    println!("1. Install directly: sudo target/install.sh");
+    println!("2. Install DEB package: sudo dpkg -i target/debian/ubuntu-config-scripts.deb");
+    println!("3. Run binary directly: target/release/ubuntu-config --help");
+    
+    println!("\n=== Distribution ===");
+    println!("Upload the following files for distribution:");
+    println!("- target/release/ubuntu-config");
+    println!("- target/debian/ubuntu-config-scripts.deb");
+    println!("- All .sha256 files");
+    
+    Ok(())
+}

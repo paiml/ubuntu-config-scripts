@@ -1,0 +1,111 @@
+// RUC-019: Result Utilities Library
+//
+// Pure Result handling under 120 LOC (Issue #92 constraint)
+// Addresses Issue #93 (try operator not implemented) pain point
+// No I/O, commands, or external dependencies
+
+// Unwrap Result with default value
+fun unwrap_or(result: Result<i32, String>, default: i32) -> i32 {
+    match result {
+        Ok(value) => value,
+        Err(_) => default,
+    }
+}
+
+// Unwrap Result with zero as default
+fun unwrap_or_zero(result: Result<i32, String>) -> i32 {
+    unwrap_or(result, 0)
+}
+
+// Check if Result is Ok
+fun is_ok_value(result: Result<i32, String>) -> bool {
+    match result {
+        Ok(_) => true,
+        Err(_) => false,
+    }
+}
+
+// Check if Result is Err
+fun is_err_value(result: Result<i32, String>) -> bool {
+    match result {
+        Ok(_) => false,
+        Err(_) => true,
+    }
+}
+
+// Count Ok results in vector
+fun count_ok_i32(results: Vec<Result<i32, String>>) -> i32 {
+    let mut count = 0;
+    let mut i = 0;
+    while i < results.len() {
+        match results[i] {
+            Ok(_) => count = count + 1,
+            Err(_) => {},
+        }
+        i = i + 1;
+    }
+    count
+}
+
+// Check if all results are Ok
+fun all_ok_i32(results: Vec<Result<i32, String>>) -> bool {
+    let mut i = 0;
+    while i < results.len() {
+        match results[i] {
+            Ok(_) => {},
+            Err(_) => return false,
+        }
+        i = i + 1;
+    }
+    true
+}
+
+// Check if any result is Ok
+fun any_ok_i32(results: Vec<Result<i32, String>>) -> bool {
+    let mut i = 0;
+    while i < results.len() {
+        match results[i] {
+            Ok(_) => return true,
+            Err(_) => {},
+        }
+        i = i + 1;
+    }
+    false
+}
+
+// Find first Ok result in vector
+fun first_ok_i32(results: Vec<Result<i32, String>>) -> Result<i32, String> {
+    let mut i = 0;
+    while i < results.len() {
+        match results[i] {
+            Ok(v) => return Ok(v),
+            Err(_) => {},
+        }
+        i = i + 1;
+    }
+    Err("No Ok values found")
+}
+
+// Sum all Ok results (returns Err if any Err found)
+fun sum_results_i32(results: Vec<Result<i32, String>>) -> Result<i32, String> {
+    let mut sum = 0;
+    let mut i = 0;
+    while i < results.len() {
+        match results[i] {
+            Ok(v) => sum = sum + v,
+            Err(e) => return Err(e),
+        }
+        i = i + 1;
+    }
+    Ok(sum)
+}
+
+// Create Ok result
+fun make_ok_i32(value: i32) -> Result<i32, String> {
+    Ok(value)
+}
+
+// Create Err result
+fun make_error_i32(msg: String) -> Result<i32, String> {
+    Err(msg)
+}

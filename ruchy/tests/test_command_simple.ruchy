@@ -1,0 +1,17 @@
+use std::process::Command;
+
+fun test_command() -> bool {
+    let result = Command::new("which")
+        .arg("ls")
+        .output();
+
+    match result {
+        Ok(output) => output.status.success(),
+        Err(_) => false,
+    }
+}
+
+fun main() {
+    let result = test_command();
+    println!("Result: {}", result);
+}

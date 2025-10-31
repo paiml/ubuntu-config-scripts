@@ -1,0 +1,17 @@
+name: Test Runner
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test Runner
+    runs-on: [self-hosted, Linux, X64]
+    steps:
+      - name: Echo test
+        run: |
+          echo "Testing runner availability"
+          echo "Runner: $RUNNER_NAME"
+          echo "OS: $RUNNER_OS"

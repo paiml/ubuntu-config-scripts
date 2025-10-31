@@ -1,0 +1,28 @@
+// Minimal reproduction of "Expected RightBrace, found Let" error
+// Issue: While loop with HashMap insert fails to compile
+
+use std::collections::HashMap;
+
+fun parse_args(args: Vec<String>) -> HashMap<String, String> {
+    let mut parsed = HashMap::new();
+    let mut i = 0;
+
+    while i < args.len() {
+        let arg = &args[i];
+
+        if arg.starts_with("--") {
+            let key_part = &arg[2..];
+            parsed.insert(key_part.to_string(), String::from("value"));
+        }
+
+        i += 1;
+    }
+
+    parsed
+}
+
+fun main() {
+    let test = vec![String::from("--test")];
+    let result = parse_args(test);
+    println!("Done");
+}

@@ -1,0 +1,41 @@
+// RUCHY-007: System Command Implementation
+
+use std::process::Command;
+
+// Command execution result
+pub struct CommandResult {
+    pub stdout: String,
+    pub stderr: String,
+    pub code: i32,
+    pub success: bool,
+}
+
+// Execute command and capture output
+pub fun run_command(command: &str, args: Vec<String>) -> CommandResult {
+    let mut cmd = Command::new(command);
+
+    for arg in &args {
+        cmd.arg(arg);
+    }
+
+    let result = cmd.output();
+
+    match result {
+        Ok(output) => {
+            CommandResult {
+                stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+                stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+                code: output.status.code().unwrap_or(-1),
+                success: output.status.success(),
+            }
+        }
+        Err(_) => {
+            CommandResult {
+                stdout: String::new(),
+                stderr: String::from("Failed to execute command"),
+                code: -1,
+                success: false,
+            }
+        }
+    }
+}

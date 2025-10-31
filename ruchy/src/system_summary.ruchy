@@ -1,0 +1,68 @@
+// RUC-012: System Information Summary Library
+//
+// Integration module aggregating all system management modules
+// Minimal implementation under 100 LOC (Issue #92 constraint)
+
+use hardware;
+use disk;
+use process;
+use network;
+
+// System summary aggregating all modules
+struct SystemSummary {
+    cpu_model: String,
+    total_memory_mb: i32,
+    gpu_count: i32,
+    audio_sinks: i32,
+    pci_devices: i32,
+    filesystem_count: i32,
+    process_count: i32,
+    network_interfaces: i32,
+    timestamp: String,
+}
+
+enum SummaryError {
+    HardwareError(String),
+    DiskError(String),
+    ProcessError(String),
+    NetworkError(String),
+}
+
+// Get complete system summary
+fun get_system_summary() -> Result<SystemSummary, SummaryError> {
+    // Get hardware info
+    let hw = match hardware::detect_all_hardware() {
+        Ok(h) => h,
+        Err(e) => return Err(SummaryError::HardwareError(format!("{:?}", e))),
+    };
+
+    // Get disk info
+    let disk_usage = match disk::get_disk_usage() {
+        Ok(d) => d,
+        Err(e) => return Err(SummaryError::DiskError(format!("{:?}", e))),
+    };
+
+    // Get process count
+    let proc_count = match process::count_processes() {
+        Ok(p) => p,
+        Err(e) => return Err(SummaryError::ProcessError(format!("{:?}", e))),
+    };
+
+    // Get network interface count
+    let net_count = match network::count_interfaces() {
+        Ok(n) => n,
+        Err(e) => return Err(SummaryError::NetworkError(format!("{:?}", e))),
+    };
+
+    Ok(SystemSummary {
+        cpu_model: hw.cpu.model,
+        total_memory_mb: hw.memory.total_mb,
+        gpu_count: hw.gpus.len() as i32,
+        audio_sinks: hw.audio_devices.len() as i32,
+        pci_devices: hw.pci_devices.len() as i32,
+        filesystem_count: disk_usage.len() as i32,
+        process_count: proc_count,
+        network_interfaces: net_count,
+        timestamp: "2025-10-30 (chrono unavailable)".to_string(),
+    })
+}

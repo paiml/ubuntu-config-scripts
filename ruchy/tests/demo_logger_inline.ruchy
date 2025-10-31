@@ -1,0 +1,125 @@
+// Inline Logger Demo - Proof of Concept
+// RUC-005: Logger with File Support
+use std::fs;
+
+// Logger functions (inlined)
+fun log_console(level: String, message: String) {
+    let formatted = "[" + level + "] " + message;
+    println!("{}", formatted);
+}
+
+fun log_file_new(file_path: String, level: String, message: String) -> Result<(), String> {
+    let log_entry = "[" + level + "] " + message + "\n";
+
+    match fs::write(file_path, log_entry) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(String::from("Write failed")),
+    }
+}
+
+fun log_file_append(file_path: String, level: String, message: String) -> Result<(), String> {
+    let log_entry = "[" + level + "] " + message + "\n";
+
+    let current = match fs::read_to_string(file_path) {
+        Ok(content) => content,
+        Err(e) => String::from(""),
+    };
+
+    let new_content = current + log_entry;
+
+    match fs::write(file_path, new_content) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(String::from("Write failed")),
+    }
+}
+
+fun main() {
+    println!("========================================");
+    println!("RUC-005: Logger File Support Demo");
+    println!("========================================");
+    println!("");
+
+    let log_file = "/tmp/ruchy_logger_inline_demo.log";
+
+    // Clean up
+    match fs::remove_file(log_file) {
+        Ok(_) => {},
+        Err(e) => {},
+    }
+
+    // Demo 1: Console logging
+    println!("Demo 1: Console logging");
+    println!("-------------------------");
+    log_console(String::from("INFO"), String::from("Application started"));
+    log_console(String::from("WARN"), String::from("Configuration missing"));
+    log_console(String::from("ERROR"), String::from("Database connection failed"));
+    println!("");
+
+    // Demo 2: Create new log file
+    println!("Demo 2: Create log file");
+    println!("-------------------------");
+    match log_file_new(String::from(log_file), String::from("INFO"), String::from("Log file created")) {
+        Ok(_) => println!("✅ Log file created successfully"),
+        Err(e) => {
+            println!("❌ Failed: {}", e);
+            return;
+        },
+    }
+
+    match fs::read_to_string(log_file) {
+        Ok(content) => {
+            println!("✅ File contents:");
+            println!("{}", content);
+        },
+        Err(e) => {
+            println!("❌ Read failed");
+            return;
+        },
+    }
+
+    // Demo 3: Append to log file
+    println!("Demo 3: Append to log");
+    println!("-------------------------");
+    match log_file_append(String::from(log_file), String::from("WARN"), String::from("Low disk space")) {
+        Ok(_) => println!("✅ Log entry appended"),
+        Err(e) => {
+            println!("❌ Append failed: {}", e);
+            return;
+        },
+    }
+
+    match log_file_append(String::from(log_file), String::from("ERROR"), String::from("Critical system error")) {
+        Ok(_) => println!("✅ Log entry appended"),
+        Err(e) => {
+            println!("❌ Append failed: {}", e);
+            return;
+        },
+    }
+
+    println!("");
+    println!("Final log file:");
+    println!("===============");
+    match fs::read_to_string(log_file) {
+        Ok(content) => println!("{}", content),
+        Err(e) => println!("❌ Read failed"),
+    }
+
+    // Cleanup
+    match fs::remove_file(log_file) {
+        Ok(_) => println!("✅ Cleanup successful"),
+        Err(e) => println!("⚠️  Cleanup warning"),
+    }
+
+    println!("");
+    println!("========================================");
+    println!("✅ Logger Demo Complete!");
+    println!("========================================");
+    println!("");
+    println!("Verified functionality:");
+    println!("  ✅ Console logging");
+    println!("  ✅ File creation");
+    println!("  ✅ File append");
+    println!("  ✅ Error handling");
+    println!("");
+    println!("RUC-005: Logger Module - PROOF OF CONCEPT COMPLETE");
+}

@@ -1,0 +1,200 @@
+// Logger with File Support - Production Implementation
+// RUC-005: Logger Module (Production v1.0)
+// Ruchy v3.158.0+ (std::fs support required)
+// Note: chrono not available in interpreter mode, using placeholder timestamps
+
+use std::fs;
+
+// Log to console only
+pub fun log_console(level: String, message: String) {
+    let formatted = "[" + level + "] " + message;
+    println!("{}", formatted);
+}
+
+// Log to file (overwrites file)
+pub fun log_file_new(file_path: String, level: String, message: String) -> Result<(), String> {
+    let log_entry = "[" + level + "] " + message + "\n";
+
+    match fs::write(file_path, log_entry) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(String::from("File write failed")),
+    }
+}
+
+// Log to file (append mode - reads existing, appends, writes back)
+pub fun log_file_append(file_path: String, level: String, message: String) -> Result<(), String> {
+    let log_entry = "[" + level + "] " + message + "\n";
+
+    // Read current content (or start empty if file doesn't exist)
+    let current = match fs::read_to_string(file_path) {
+        Ok(content) => content,
+        Err(e) => String::from(""), // File doesn't exist, start with empty
+    };
+
+    // Append new entry
+    let new_content = current + log_entry;
+
+    // Write back
+    match fs::write(file_path, new_content) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(String::from("File write failed")),
+    }
+}
+
+// Log to both console and file
+pub fun log_both(file_path: String, level: String, message: String) {
+    // Always log to console
+    log_console(level, message);
+
+    // Try to log to file, ignore errors (fail gracefully)
+    match log_file_append(file_path, level, message) {
+        Ok(_) => {},
+        Err(e) => {}, // Silent failure for file logging
+    }
+}
+
+// Convenience functions for console logging
+pub fun debug(message: String) {
+    log_console(String::from("DEBUG"), message);
+}
+
+pub fun info(message: String) {
+    log_console(String::from("INFO"), message);
+}
+
+pub fun warn(message: String) {
+    log_console(String::from("WARN"), message);
+}
+
+pub fun error(message: String) {
+    log_console(String::from("ERROR"), message);
+}
+
+// Convenience functions for file + console logging
+pub fun debug_file(file_path: String, message: String) {
+    log_both(file_path, String::from("DEBUG"), message);
+}
+
+pub fun info_file(file_path: String, message: String) {
+    log_both(file_path, String::from("INFO"), message);
+}
+
+pub fun warn_file(file_path: String, message: String) {
+    log_both(file_path, String::from("WARN"), message);
+}
+
+pub fun error_file(file_path: String, message: String) {
+    log_both(file_path, String::from("ERROR"), message);
+}
+
+// ==========================================
+// PRODUCTION FEATURES (v1.0)
+// ==========================================
+
+// Get current timestamp as string
+// Note: Using placeholder until chrono available in interpreter mode
+fun get_timestamp() -> String {
+    // TODO: Replace with chrono::Utc::now() when available
+    // For now, use ISO 8601 placeholder format
+    String::from("2025-10-31T12:00:00Z")
+}
+
+// Compare log levels (returns true if level >= min_level)
+fun should_log(level: String, min_level: String) -> bool {
+    // Define level hierarchy: DEBUG < INFO < WARN < ERROR
+    let level_value = get_level_value(level);
+    let min_value = get_level_value(min_level);
+
+    level_value >= min_value
+}
+
+// Convert level string to numeric value
+fun get_level_value(level: String) -> i32 {
+    if level == "DEBUG" {
+        return 0;
+    }
+    if level == "INFO" {
+        return 1;
+    }
+    if level == "WARN" {
+        return 2;
+    }
+    if level == "ERROR" {
+        return 3;
+    }
+    // Default to INFO level
+    1
+}
+
+// Get file size (returns 0 if file doesn't exist)
+fun get_file_size(file_path: String) -> i32 {
+    match fs::read_to_string(file_path) {
+        Ok(content) => content.len() as i32,
+        Err(e) => 0,
+    }
+}
+
+// Production Feature 1: Log with timestamp
+pub fun log_with_timestamp(file_path: String, level: String, message: String) -> Result<(), String> {
+    let timestamp = get_timestamp();
+    let log_entry = "[" + timestamp + "] [" + level + "] " + message + "\n";
+
+    // Read current content
+    let current = match fs::read_to_string(file_path) {
+        Ok(content) => content,
+        Err(e) => String::from(""),
+    };
+
+    // Append new entry
+    let new_content = current + log_entry;
+
+    // Write back
+    match fs::write(file_path, new_content) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(String::from("File write failed")),
+    }
+}
+
+// Production Feature 2: Log with level filtering
+pub fun log_with_min_level(file_path: String, level: String, message: String, min_level: String) -> Result<(), String> {
+    // Check if this message should be logged
+    if !should_log(level, min_level) {
+        // Level too low, skip logging
+        return Ok(());
+    }
+
+    // Log with timestamp (passes filter)
+    log_with_timestamp(file_path, level, message)
+}
+
+// Production Feature 3: Log with rotation
+pub fun log_with_rotation(file_path: String, level: String, message: String, max_size: i32) -> Result<(), String> {
+    // Check current file size
+    let current_size = get_file_size(file_path);
+
+    // If file exists and is too large, rotate it
+    if current_size > max_size {
+        // Rotate: rename current file to .old (overwrites previous .old)
+        let backup_path = file_path + ".old";
+
+        match fs::read_to_string(file_path) {
+            Ok(old_content) => {
+                // Save old content to backup
+                match fs::write(backup_path, old_content) {
+                    Ok(_) => {},
+                    Err(e) => {}, // Ignore backup errors
+                }
+            },
+            Err(e) => {},
+        }
+
+        // Clear the main log file (start fresh)
+        match fs::write(file_path, String::from("")) {
+            Ok(_) => {},
+            Err(e) => {},
+        }
+    }
+
+    // Log the new entry with timestamp
+    log_with_timestamp(file_path, level, message)
+}

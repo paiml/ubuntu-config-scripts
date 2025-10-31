@@ -1,0 +1,157 @@
+// RUC-019: Result Utilities Library - RED PHASE TEST
+//
+// Test for Result utility functions
+// Will FAIL until result_utils module is implemented
+
+use result_utils;
+
+fun main() {
+    println!("=== RUC-019 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: unwrap_or with Ok
+    println!("TEST 1: unwrap_or with Ok");
+    let ok_result: Result<i32, String> = Ok(42);
+    let value = result_utils::unwrap_or(ok_result, 0);
+    println!("  unwrap_or(Ok(42), 0) = {}", value);
+    if value == 42 {
+        println!("✓ unwrap_or with Ok works");
+    } else {
+        println!("✗ unwrap_or with Ok failed: expected 42, got {}", value);
+    }
+
+    // Test 2: unwrap_or with Err
+    println!("");
+    println!("TEST 2: unwrap_or with Err");
+    let err_result: Result<i32, String> = Err("error");
+    let value = result_utils::unwrap_or(err_result, 99);
+    println!("  unwrap_or(Err('error'), 99) = {}", value);
+    if value == 99 {
+        println!("✓ unwrap_or with Err works");
+    } else {
+        println!("✗ unwrap_or with Err failed: expected 99, got {}", value);
+    }
+
+    // Test 3: unwrap_or_zero
+    println!("");
+    println!("TEST 3: unwrap_or_zero");
+    let err_result: Result<i32, String> = Err("fail");
+    let value = result_utils::unwrap_or_zero(err_result);
+    println!("  unwrap_or_zero(Err('fail')) = {}", value);
+    if value == 0 {
+        println!("✓ unwrap_or_zero works");
+    } else {
+        println!("✗ unwrap_or_zero failed");
+    }
+
+    // Test 4: is_ok_value and is_err_value
+    println!("");
+    println!("TEST 4: is_ok_value and is_err_value");
+    let ok_val: Result<i32, String> = Ok(10);
+    let err_val: Result<i32, String> = Err("fail");
+    let is_ok_correct = result_utils::is_ok_value(ok_val);
+    let is_err_correct = !result_utils::is_ok_value(err_val);
+    let is_err_check = result_utils::is_err_value(err_val);
+    println!("  is_ok_value(Ok(10)) = {}", is_ok_correct);
+    println!("  is_ok_value(Err('fail')) = {}", !is_err_correct);
+    println!("  is_err_value(Err('fail')) = {}", is_err_check);
+    if is_ok_correct && is_err_correct && is_err_check {
+        println!("✓ is_ok_value and is_err_value work");
+    } else {
+        println!("✗ is_ok_value and is_err_value failed");
+    }
+
+    // Test 5: count_ok_i32
+    println!("");
+    println!("TEST 5: count_ok_i32");
+    let results = vec![Ok(1), Err("e1"), Ok(2), Ok(3), Err("e2")];
+    let count = result_utils::count_ok_i32(results);
+    println!("  count_ok_i32([Ok(1), Err, Ok(2), Ok(3), Err]) = {}", count);
+    if count == 3 {
+        println!("✓ count_ok_i32 works");
+    } else {
+        println!("✗ count_ok_i32 failed: expected 3, got {}", count);
+    }
+
+    // Test 6: all_ok_i32
+    println!("");
+    println!("TEST 6: all_ok_i32");
+    let all_ok = vec![Ok(1), Ok(2), Ok(3)];
+    let has_err = vec![Ok(1), Err("e"), Ok(3)];
+    let all_ok_result = result_utils::all_ok_i32(all_ok);
+    let has_err_result = result_utils::all_ok_i32(has_err);
+    println!("  all_ok_i32([Ok(1), Ok(2), Ok(3)]) = {}", all_ok_result);
+    println!("  all_ok_i32([Ok(1), Err, Ok(3)]) = {}", has_err_result);
+    if all_ok_result && !has_err_result {
+        println!("✓ all_ok_i32 works");
+    } else {
+        println!("✗ all_ok_i32 failed");
+    }
+
+    // Test 7: any_ok_i32
+    println!("");
+    println!("TEST 7: any_ok_i32");
+    let some_ok = vec![Err("e1"), Ok(42), Err("e2")];
+    let all_err = vec![Err("e1"), Err("e2"), Err("e3")];
+    let some_ok_result = result_utils::any_ok_i32(some_ok);
+    let all_err_result = result_utils::any_ok_i32(all_err);
+    println!("  any_ok_i32([Err, Ok(42), Err]) = {}", some_ok_result);
+    println!("  any_ok_i32([Err, Err, Err]) = {}", all_err_result);
+    if some_ok_result && !all_err_result {
+        println!("✓ any_ok_i32 works");
+    } else {
+        println!("✗ any_ok_i32 failed");
+    }
+
+    // Test 8: first_ok_i32
+    println!("");
+    println!("TEST 8: first_ok_i32");
+    let mixed = vec![Err("e1"), Err("e2"), Ok(42), Ok(99)];
+    let first = result_utils::first_ok_i32(mixed);
+    match first {
+        Ok(v) => {
+            println!("  first_ok_i32([Err, Err, Ok(42), Ok(99)]) = Ok({})", v);
+            if v == 42 {
+                println!("✓ first_ok_i32 works");
+            } else {
+                println!("✗ first_ok_i32 failed: expected 42, got {}", v);
+            }
+        },
+        Err(e) => println!("✗ first_ok_i32 returned error: {}", e),
+    }
+
+    // Test 9: sum_results_i32
+    println!("");
+    println!("TEST 9: sum_results_i32");
+    let ok_results = vec![Ok(10), Ok(20), Ok(30)];
+    let sum = result_utils::sum_results_i32(ok_results);
+    match sum {
+        Ok(v) => {
+            println!("  sum_results_i32([Ok(10), Ok(20), Ok(30)]) = Ok({})", v);
+            if v == 60 {
+                println!("✓ sum_results_i32 works");
+            } else {
+                println!("✗ sum_results_i32 failed: expected 60, got {}", v);
+            }
+        },
+        Err(e) => println!("✗ sum_results_i32 returned error: {}", e),
+    }
+
+    // Test 10: make_ok_i32 and make_error_i32
+    println!("");
+    println!("TEST 10: make_ok_i32 and make_error_i32");
+    let ok_val = result_utils::make_ok_i32(123);
+    let err_val = result_utils::make_error_i32("test error");
+    let ok_check = result_utils::is_ok_value(ok_val);
+    let err_check = result_utils::is_err_value(err_val);
+    if ok_check && err_check {
+        println!("✓ make_ok_i32 and make_error_i32 work");
+    } else {
+        println!("✗ make_ok_i32 and make_error_i32 failed");
+    }
+
+    println!("");
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this, the test structure is correct!");
+    println!("Next: Implement result_utils module (GREEN phase)");
+}

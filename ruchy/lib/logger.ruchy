@@ -1,0 +1,158 @@
+// Logger module for Ubuntu Config Scripts
+use std::io::{stdout, stderr}
+use std::time::{SystemTime, UNIX_EPOCH}
+use std::fmt::{Display, Debug}
+use serde::{Serialize, Deserialize}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum LogLevel {
+    Debug = 0,
+    Info = 1,
+    Warn = 2,
+    Error = 3,
+}
+
+#[derive(Debug, Clone)]
+pub struct LoggerOptions {
+    pub level: Option<LogLevel>,
+    pub prefix: Option<String>,
+    pub use_colors: Option<bool>,
+}
+
+impl Default for LoggerOptions {
+    fun default() -> Self {
+        LoggerOptions {
+            level: None,
+            prefix: None,
+            use_colors: None,
+        }
+    }
+}
+
+pub struct Logger {
+    level: LogLevel,
+    prefix: String,
+    use_colors: bool,
+}
+
+impl Logger {
+    pub fun new(options: LoggerOptions) -> Self {
+        Logger {
+            level: options.level.unwrap_or(LogLevel::Info),
+            prefix: options.prefix.unwrap_or_else(|| String::new()),
+            use_colors: options.use_colors.unwrap_or(true),
+        }
+    }
+
+    fun get_timestamp() -> String {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+        
+        let secs = now.as_secs();
+        let nanos = now.subsec_nanos();
+        
+        // Format as ISO 8601
+        format!("{}.{:09}Z", secs, nanos)
+    }
+
+    fun format_message(&self, level: &str, message: &str, args: Vec<String>) -> String {
+        let timestamp = Self::get_timestamp();
+        let prefix = if !self.prefix.is_empty() {
+            format!("[{}] ", self.prefix)
+        } else {
+            String::new()
+        };
+        
+        let formatted_args = if !args.is_empty() {
+            format!(" {}", args.join(" "))
+        } else {
+            String::new()
+        };
+        
+        format!("{} {}[{}] {}{}", timestamp, prefix, level, message, formatted_args)
+    }
+
+    fun log(&self, level: LogLevel, level_name: &str, color: &str, message: &str, args: Vec<String>) {
+        if level >= self.level {
+            let formatted = self.format_message(level_name, message, args);
+            let output = if self.use_colors {
+                format!("{}{}\x1b[0m", color, formatted)
+            } else {
+                formatted
+            };
+
+            if level >= LogLevel::Error {
+                eprintln!("{}", output);
+            } else if level >= LogLevel::Warn {
+                eprintln!("{}", output);
+            } else {
+                println!("{}", output);
+            }
+        }
+    }
+
+    pub fun debug(&self, message: &str, args: Vec<String>) {
+        self.log(LogLevel::Debug, "DEBUG", "\x1b[90m", message, args);
+    }
+
+    pub fun info(&self, message: &str, args: Vec<String>) {
+        self.log(LogLevel::Info, "INFO", "\x1b[34m", message, args);
+    }
+
+    pub fun warn(&self, message: &str, args: Vec<String>) {
+        self.log(LogLevel::Warn, "WARN", "\x1b[33m", message, args);
+    }
+
+    pub fun error(&self, message: &str, args: Vec<String>) {
+        self.log(LogLevel::Error, "ERROR", "\x1b[31m", message, args);
+    }
+
+    pub fun success(&self, message: &str, args: Vec<String>) {
+        self.log(LogLevel::Info, "SUCCESS", "\x1b[32m", message, args);
+    }
+
+    pub fun set_level(&mut self, level: LogLevel) {
+        self.level = level;
+    }
+
+    pub fun child(&self, prefix: &str) -> Logger {
+        let new_prefix = if !self.prefix.is_empty() {
+            format!("{}:{}", self.prefix, prefix)
+        } else {
+            prefix.to_string()
+        };
+        
+        Logger::new(LoggerOptions {
+            level: Some(self.level),
+            prefix: Some(new_prefix),
+            use_colors: Some(self.use_colors),
+        })
+    }
+}
+
+// Global logger instance
+lazy_static! {
+    pub static ref LOGGER: Logger = Logger::new(LoggerOptions::default());
+}
+
+// Convenience functions
+pub fun debug(message: &str) {
+    LOGGER.debug(message, vec![]);
+}
+
+pub fun info(message: &str) {
+    LOGGER.info(message, vec![]);
+}
+
+pub fun warn(message: &str) {
+    LOGGER.warn(message, vec![]);
+}
+
+pub fun error(message: &str) {
+    LOGGER.error(message, vec![]);
+}
+
+pub fun success(message: &str) {
+    LOGGER.success(message, vec![]);
+}

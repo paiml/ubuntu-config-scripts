@@ -1,0 +1,60 @@
+// RUC-013: User Information Library - RED PHASE TEST
+//
+// Test for user information API
+// Will FAIL until user module is implemented
+
+use user;
+
+fun main() {
+    println!("=== RUC-013 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: Get username
+    println!("TEST 1: Get username");
+    match user::get_username() {
+        Ok(name) => {
+            println!("✓ Username: {}", name);
+        }
+        Err(e) => println!("✗ Username failed: {:?}", e),
+    }
+
+    // Test 2: Get UID
+    println!("");
+    println!("TEST 2: Get UID");
+    match user::get_uid() {
+        Ok(uid) => {
+            println!("✓ UID: {}", uid);
+        }
+        Err(e) => println!("✗ UID failed: {:?}", e),
+    }
+
+    // Test 3: Check if root
+    println!("");
+    println!("TEST 3: Root check");
+    match user::is_root() {
+        Ok(true) => println!("✓ Running as root"),
+        Ok(false) => println!("✓ Running as regular user"),
+        Err(e) => println!("✗ Root check failed: {:?}", e),
+    }
+
+    // Test 4: Get complete user info
+    println!("");
+    println!("TEST 4: Complete user info");
+    match user::get_current_user() {
+        Ok(info) => {
+            println!("✓ User info succeeded");
+            println!("  Username: {}", info.username);
+            println!("  UID: {}", info.uid);
+            println!("  GID: {}", info.gid);
+            println!("  Groups: {} groups", info.groups.len());
+            println!("  Home: {}", info.home);
+            println!("  Shell: {}", info.shell);
+        }
+        Err(e) => println!("✗ User info failed: {:?}", e),
+    }
+
+    println!("");
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this, the test structure is correct!");
+    println!("Next: Implement user module (GREEN phase)");
+}

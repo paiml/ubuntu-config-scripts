@@ -1,0 +1,98 @@
+// RUCHY-007: System Command Standalone (RED + GREEN Phase)
+// Self-contained implementation + tests
+
+use std::process::Command;
+
+// Command execution result
+struct CommandResult {
+    stdout: String,
+    stderr: String,
+    code: i32,
+    success: bool,
+}
+
+// Execute command and capture output
+fun run_command(command: &str, args: Vec<String>) -> CommandResult {
+    let mut cmd = Command::new(command);
+
+    for arg in &args {
+        cmd.arg(arg);
+    }
+
+    let result = cmd.output();
+
+    match result {
+        Ok(output) => {
+            let stdout_str = String::from_utf8_lossy(&output.stdout).to_string();
+            let stderr_str = String::from_utf8_lossy(&output.stderr).to_string();
+            let code_val = output.status.code().unwrap_or(-1);
+            let success_val = output.status.success();
+
+            CommandResult {
+                stdout: stdout_str,
+                stderr: stderr_str,
+                code: code_val,
+                success: success_val,
+            }
+        }
+        Err(_) => {
+            CommandResult {
+                stdout: String::new(),
+                stderr: String::from("Failed to execute command"),
+                code: -1,
+                success: false,
+            }
+        }
+    }
+}
+
+// TESTS
+
+fun test_command_result_struct() {
+    println!("Testing CommandResult struct creation...");
+    let result = CommandResult {
+        stdout: String::from("output"),
+        stderr: String::new(),
+        code: 0,
+        success: true,
+    };
+    if result.code != 0 {
+        panic!("Expected code 0");
+    }
+    println!("✅ CommandResult struct test passed");
+}
+
+fun test_run_successful_command() {
+    println!("Testing run with successful command (echo)...");
+    let args = vec![String::from("test")];
+    let result = run_command("echo", args);
+    if !result.success {
+        panic!("Expected command to succeed");
+    }
+    println!("✅ Run successful command test passed");
+}
+
+fun test_run_captures_stdout() {
+    println!("Testing run captures stdout...");
+    let args = vec![String::from("hello")];
+    let result = run_command("echo", args);
+    if !result.stdout.contains("hello") {
+        panic!("Expected stdout to contain 'hello'");
+    }
+    println!("✅ Run captures stdout test passed");
+}
+
+fun main() {
+    println!("========================================");
+    println!("RUCHY-007: System Command Test Suite");
+    println!("Extreme TDD - GREEN Phase");
+    println!("========================================\n");
+
+    test_command_result_struct();
+    test_run_successful_command();
+    test_run_captures_stdout();
+
+    println!("\n========================================");
+    println!("All 3 tests passed! ✅");
+    println!("========================================");
+}

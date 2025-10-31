@@ -1,0 +1,79 @@
+// RUC-006: System Diagnostics Tool - RED Phase Test
+//
+// This demonstrates what we WANT to achieve.
+// RED phase: Will fail until we implement the diagnostics module.
+
+use diagnostics;
+
+fun main() {
+    println!("=== RUC-006 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: Can we import the diagnostics module?
+    println!("TEST 1: Module import");
+    println!("✓ Diagnostics module imported");
+    println!("");
+
+    // Test 2: Audio diagnostics
+    println!("TEST 2: Audio system diagnostics");
+    match diagnostics::diagnose_audio() {
+        Ok(audio) => {
+            println!("✓ Audio diagnostics succeeded");
+            println!("  PipeWire running: {:?}", audio.pipewire_running);
+            println!("  Sinks found: {}", audio.sinks_found);
+            println!("  Sources found: {}", audio.sources_found);
+        }
+        Err(e) => {
+            println!("✗ Audio diagnostics failed: {:?}", e);
+        }
+    }
+    println!("");
+
+    // Test 3: Video diagnostics
+    println!("TEST 3: Video/GPU diagnostics");
+    match diagnostics::diagnose_video() {
+        Ok(video) => {
+            println!("✓ Video diagnostics succeeded");
+            println!("  GPUs found: {}", video.gpus_found.len());
+            let mut i = 0;
+            while i < video.gpus_found.len() {
+                println!("    - {}", video.gpus_found[i]);
+                i = i + 1;
+            }
+        }
+        Err(e) => {
+            println!("✗ Video diagnostics failed: {:?}", e);
+        }
+    }
+    println!("");
+
+    // Test 4: Service diagnostics
+    println!("TEST 4: System services diagnostics");
+    match diagnostics::diagnose_services() {
+        Ok(services) => {
+            println!("✓ Service diagnostics succeeded");
+            println!("  Services checked: {}", services.len());
+        }
+        Err(e) => {
+            println!("✗ Service diagnostics failed: {:?}", e);
+        }
+    }
+    println!("");
+
+    // Test 5: Full diagnostic report
+    println!("TEST 5: Generate full report");
+    match diagnostics::generate_report() {
+        Ok(report) => {
+            println!("✓ Report generation succeeded");
+            diagnostics::print_report(report);
+        }
+        Err(e) => {
+            println!("✗ Report generation failed: {:?}", e);
+        }
+    }
+    println!("");
+
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this, the module structure is correct!");
+    println!("Next: Implement the diagnostic functions (GREEN phase)");
+}

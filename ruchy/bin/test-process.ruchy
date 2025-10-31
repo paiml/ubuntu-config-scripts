@@ -1,0 +1,93 @@
+// RUC-010: Process Management Library - RED PHASE TEST
+//
+// This test demonstrates the desired API for process management.
+// It will FAIL until the process module is implemented (GREEN phase).
+//
+// Test Coverage:
+// 1. Process counting
+// 2. Service status checking
+// 3. System resource summary
+// 4. Complete process management info
+
+use process;
+
+fun main() {
+    println!("=== RUC-010 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: Process counting
+    println!("TEST 1: Process counting");
+    match process::count_processes() {
+        Ok(count) => {
+            println!("✓ Process counting succeeded");
+            println!("  Total processes: {}", count);
+        }
+        Err(e) => println!("✗ Process counting failed: {:?}", e),
+    }
+
+    // Test 2: Service status check
+    println!("");
+    println!("TEST 2: Service status check");
+    match process::check_service_status("systemd".to_string()) {
+        Ok(status) => {
+            println!("✓ Service status check succeeded");
+            println!("  Service: {}", status.name);
+            println!("  State: {}", status.state);
+            println!("  Enabled: {}", status.is_enabled);
+            println!("  Description: {}", status.description);
+        }
+        Err(e) => println!("✗ Service status check failed: {:?}", e),
+    }
+
+    // Test 3: System resources
+    println!("");
+    println!("TEST 3: System resources");
+    match process::get_system_resources() {
+        Ok(resources) => {
+            println!("✓ System resources succeeded");
+            println!("  Process count: {}", resources.process_count);
+            println!("  Running: {}", resources.running_count);
+            println!("  Sleeping: {}", resources.sleeping_count);
+            println!("  Load average (1m): {}", resources.load_average_1m);
+        }
+        Err(e) => println!("✗ System resources failed: {:?}", e),
+    }
+
+    // Test 4: Complete process management info
+    println!("");
+    println!("TEST 4: Complete process management info");
+    match process::get_all_info() {
+        Ok(info) => {
+            println!("✓ Complete info succeeded");
+            println!("  Process info entries: {}", info.processes.len());
+            println!("  Service statuses: {}", info.services.len());
+            println!("  Total processes: {}", info.resources.process_count);
+            println!("  Running processes: {}", info.resources.running_count);
+
+            // Display first process if available
+            if info.processes.len() > 0 {
+                let proc = &info.processes[0];
+                println!("  First process:");
+                println!("    PID: {}", proc.pid);
+                println!("    Name: {}", proc.name);
+                println!("    User: {}", proc.user);
+                println!("    State: {}", proc.state);
+            }
+
+            // Display first service if available
+            if info.services.len() > 0 {
+                let svc = &info.services[0];
+                println!("  First service:");
+                println!("    Name: {}", svc.name);
+                println!("    State: {}", svc.state);
+                println!("    Enabled: {}", svc.is_enabled);
+            }
+        }
+        Err(e) => println!("✗ Complete info failed: {:?}", e),
+    }
+
+    println!("");
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this, the module structure is correct!");
+    println!("Next: Implement the process management functions (GREEN phase)");
+}

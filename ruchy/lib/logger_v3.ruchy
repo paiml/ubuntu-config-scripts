@@ -1,0 +1,76 @@
+// RUCHY-001: Logger Implementation (GREEN Phase - Simplified)
+// Pure Ruchy logger - simplified version
+
+use chrono::Utc;
+
+// Log levels
+enum LogLevel {
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+// Logger struct
+struct Logger {
+    level: LogLevel,
+    prefix: String,
+    use_colors: bool,
+}
+
+impl Logger {
+    // Create new logger with defaults
+    fun new() -> Logger {
+        Logger {
+            level: LogLevel::Info,
+            prefix: String::new(),
+            use_colors: true,
+        }
+    }
+
+    // Helper to get ANSI color code
+    fun get_color(level: &LogLevel, use_colors: bool) -> &'static str {
+        if !use_colors {
+            return "";
+        }
+
+        match level {
+            LogLevel::Debug => "\x1b[90m",  // gray
+            LogLevel::Info => "\x1b[34m",   // blue
+            LogLevel::Warn => "\x1b[33m",   // yellow
+            LogLevel::Error => "\x1b[31m",  // red
+        }
+    }
+
+    // Helper to get reset code
+    fun get_reset(use_colors: bool) -> &'static str {
+        if use_colors {
+            "\x1b[0m"
+        } else {
+            ""
+        }
+    }
+
+    // Format log message
+    fun format(&self, level_name: &str, message: &str) -> String {
+        let timestamp = Utc::now().to_rfc3339();
+        if self.prefix.is_empty() {
+            format!("{} [{}] {}", timestamp, level_name, message)
+        } else {
+            format!("{} [{}] [{}] {}", timestamp, self.prefix, level_name, message)
+        }
+    }
+
+    // Log info message
+    fun info(&self, message: &str) {
+        let level_value = LogLevel::Info as i32;
+        let min_level_value = self.level as i32;
+
+        if level_value >= min_level_value {
+            let formatted = self.format("INFO", message);
+            let color = Logger::get_color(&LogLevel::Info, self.use_colors);
+            let reset = Logger::get_reset(self.use_colors);
+            println!("{}{}{}", color, formatted, reset);
+        }
+    }
+}

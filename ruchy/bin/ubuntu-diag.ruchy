@@ -1,0 +1,177 @@
+// RUC-007: System Diagnostics CLI Tool
+// Created: 2025-10-31
+// Ruchy Version: v3.153.0
+//
+// User-facing CLI for running system diagnostics
+// Provides easy access to audio, video, and service checks
+//
+// Usage:
+//   ubuntu-diag              # Run all diagnostics
+//   ubuntu-diag all          # Run all diagnostics
+//   ubuntu-diag audio        # Audio diagnostics only
+//   ubuntu-diag video        # Video/GPU diagnostics only
+//   ubuntu-diag services     # System services only
+//   ubuntu-diag help         # Show help
+
+use diagnostics;
+use std::env;
+
+// Command handlers
+
+fun cmd_all() {
+    match diagnostics::generate_report() {
+        Ok(report) => {
+            diagnostics::print_report(report);
+        }
+        Err(e) => {
+            println!("Error generating diagnostics report:");
+            println!("{:?}", e);
+        }
+    }
+}
+
+fun cmd_audio() {
+    match diagnostics::diagnose_audio() {
+        Ok(audio) => {
+            println!("=== Audio System Diagnostics ===");
+            println!("");
+
+            // PipeWire status
+            let pw_symbol = diagnostics::status_symbol(audio.pipewire_running);
+            println!("PipeWire:        {}", pw_symbol);
+
+            // Audio sinks
+            let sink_count = audio.sinks_found.to_string();
+            println!("Audio Sinks:     {} found", sink_count);
+
+            // Audio sources
+            let source_count = audio.sources_found.to_string();
+            println!("Audio Sources:   {} found", source_count);
+
+            // Default sink
+            match audio.default_sink {
+                Some(sink) => println!("Default Sink:    {}", sink),
+                None => println!("Default Sink:    (none)"),
+            }
+
+            // Default source
+            match audio.default_source {
+                Some(source) => println!("Default Source:  {}", source),
+                None => println!("Default Source:  (none)"),
+            }
+
+            println!("");
+        }
+        Err(e) => {
+            println!("Error diagnosing audio system:");
+            println!("{:?}", e);
+        }
+    }
+}
+
+fun cmd_video() {
+    match diagnostics::diagnose_video() {
+        Ok(video) => {
+            println!("=== Video/GPU Diagnostics ===");
+            println!("");
+
+            // GPU count
+            let gpu_count = video.gpus_found.len();
+            println!("GPUs Found:      {}", gpu_count.to_string());
+
+            // GPU names
+            if video.gpus_found.len() > 0 {
+                println!("");
+                println!("Detected GPUs:");
+                let mut i: i32 = 0;
+                while (i as usize) < video.gpus_found.len() {
+                    let gpu_num = (i + 1).to_string();
+                    println!("  GPU {}: {}", gpu_num, video.gpus_found[i as usize]);
+                    i = i + 1;
+                }
+            }
+
+            println!("");
+        }
+        Err(e) => {
+            println!("Error diagnosing video system:");
+            println!("{:?}", e);
+        }
+    }
+}
+
+fun cmd_services() {
+    match diagnostics::diagnose_services() {
+        Ok(services) => {
+            println!("=== System Services Diagnostics ===");
+            println!("");
+
+            if services.len() == 0 {
+                println!("No services checked");
+            } else {
+                let mut i = 0;
+                while i < services.len() {
+                    let service = &services[i];
+                    // Clone status since DiagnosticStatus doesn't implement Copy yet
+                    let status_copy = match service.status {
+                        diagnostics::DiagnosticStatus::Pass => diagnostics::DiagnosticStatus::Pass,
+                        diagnostics::DiagnosticStatus::Warn => diagnostics::DiagnosticStatus::Warn,
+                        diagnostics::DiagnosticStatus::Fail => diagnostics::DiagnosticStatus::Fail,
+                        _ => diagnostics::DiagnosticStatus::Unknown,
+                    };
+                    let symbol = diagnostics::status_symbol(status_copy);
+                    let state_text = if service.active { "active" } else { "inactive" };
+                    println!("{} {} ({})", symbol, service.service_name, state_text);
+                    i = i + 1;
+                }
+            }
+
+            println!("");
+        }
+        Err(e) => {
+            println!("Error diagnosing services:");
+            println!("{:?}", e);
+        }
+    }
+}
+
+fun cmd_help() {
+    println!("ubuntu-diag - System Diagnostics Tool");
+    println!("");
+    println!("USAGE:");
+    println!("    ubuntu-diag [COMMAND]");
+    println!("");
+    println!("COMMANDS:");
+    println!("    (none)      Run all diagnostics (default)");
+    println!("    all         Run all diagnostics");
+    println!("    audio       Audio system diagnostics");
+    println!("    video       Video/GPU diagnostics");
+    println!("    services    System services status");
+    println!("    help        Show this help message");
+    println!("");
+    println!("EXAMPLES:");
+    println!("    ubuntu-diag              # Full diagnostic report");
+    println!("    ubuntu-diag audio        # Audio diagnostics only");
+    println!("    ubuntu-diag video        # Video diagnostics only");
+    println!("    ubuntu-diag services     # Services diagnostics only");
+    println!("");
+}
+
+// Main entry point
+
+fun main() {
+    // NOTE: Due to Issue #103 (compilation broken) and ruchy interpreter limitations,
+    // we cannot parse command-line arguments in interpreter mode.
+    // For now, always run all diagnostics.
+    //
+    // Future: When Issue #103 is fixed and binary compilation works,
+    // implement full argument parsing as designed in the RUC-007 spec.
+
+    cmd_all();
+
+    // Original design (blocked by tooling limitations):
+    // let args = env::args();
+    // let command_index = if is_interpreted { 2 } else { 1 };
+    // let command = args[command_index];
+    // match command { "audio" => cmd_audio(), ... }
+}

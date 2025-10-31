@@ -1,0 +1,111 @@
+// Refresh KDE desktop environment
+use crate::lib::common::{run_command, file_exists}
+use crate::lib::logger::{info, warn, success}
+
+pub fun restart_plasmashell() -> Result<(), String> {
+    info("Restarting KDE Plasma Shell");
+    
+    // Kill plasmashell
+    let kill_result = run_command(vec!["kquitapp5".to_string(), "plasmashell".to_string()], None);
+    
+    if !kill_result.success {
+        // Try alternative method
+        let _ = run_command(vec!["killall".to_string(), "plasmashell".to_string()], None);
+    }
+    
+    // Wait a moment
+    std::thread::sleep(std::time::Duration::from_secs(2));
+    
+    // Restart plasmashell
+    let start_result = run_command(vec!["plasmashell".to_string(), "&".to_string()], None);
+    
+    if !start_result.success {
+        warn("Failed to restart plasmashell automatically");
+        println!("Please run manually: plasmashell &");
+    }
+    
+    Ok(())
+}
+
+pub fun restart_kwin() -> Result<(), String> {
+    info("Restarting KDE Window Manager");
+    
+    let result = run_command(vec!["kwin_x11".to_string(), "--replace".to_string(), "&".to_string()], None);
+    
+    if !result.success {
+        // Try Wayland version
+        let wayland_result = run_command(vec!["kwin_wayland".to_string(), "--replace".to_string(), "&".to_string()], None);
+        
+        if !wayland_result.success {
+            return Err("Failed to restart KWin".to_string());
+        }
+    }
+    
+    Ok(())
+}
+
+pub fun clear_kde_cache() -> Result<(), String> {
+    info("Clearing KDE cache");
+    
+    let home = std::env::var("HOME").map_err(|e| format!("Failed to get HOME: {}", e))?;
+    let cache_dirs = vec![
+        format!("{}/.cache/plasmashell", home),
+        format!("{}/.cache/plasma-desktop", home),
+        format!("{}/.cache/kwin", home),
+    ];
+    
+    for dir in cache_dirs {
+        if file_exists(&dir) {
+            let result = run_command(vec!["rm".to_string(), "-rf".to_string(), dir], None);
+            if !result.success {
+                warn(&format!("Failed to clear cache: {}", dir));
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+pub fun rebuild_kde_config() -> Result<(), String> {
+    info("Rebuilding KDE configuration cache");
+    
+    let result = run_command(vec!["kbuildsycoca5".to_string(), "--noincremental".to_string()], None);
+    
+    if !result.success {
+        return Err(format!("Failed to rebuild KDE config: {}", result.stderr));
+    }
+    
+    Ok(())
+}
+
+pub fun run() -> Result<(), String> {
+    info("Refreshing KDE desktop environment");
+    
+    // Check if KDE is running
+    let kde_check = run_command(vec!["pgrep".to_string(), "-x".to_string(), "plasmashell".to_string()], None);
+    
+    if !kde_check.success {
+        return Err("KDE Plasma Shell is not running".to_string());
+    }
+    
+    // Clear cache
+    clear_kde_cache()?;
+    
+    // Rebuild config
+    rebuild_kde_config()?;
+    
+    // Restart components
+    restart_plasmashell()?;
+    
+    println!("\nWould you like to restart the window manager? This may close windows. [y/N]: ");
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
+    
+    if input.trim().to_lowercase().starts_with('y') {
+        restart_kwin()?;
+    }
+    
+    success("KDE desktop refreshed successfully");
+    
+    Ok(())
+}
