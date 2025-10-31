@@ -1,0 +1,105 @@
+// RUC-018: Format Utilities Library - RED PHASE TEST
+//
+// Test for format utility functions
+// Will FAIL until format_utils module is implemented
+
+use format_utils;
+
+fun main() {
+    println!("=== RUC-018 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: Pad left
+    println!("TEST 1: Pad left with zeros");
+    let padded = format_utils::pad_left("42", 5, "0");
+    println!("  pad_left('42', 5, '0') = '{}'", padded);
+    if padded == "00042" {
+        println!("✓ Pad left works");
+    } else {
+        println!("✗ Pad left failed: expected '00042', got '{}'", padded);
+    }
+
+    // Test 2: Pad right
+    println!("");
+    println!("TEST 2: Pad right with spaces");
+    let padded = format_utils::pad_right("hello", 10, " ");
+    println!("  pad_right('hello', 10, ' ').len() = {}", padded.len());
+    if padded.len() == 10 {
+        println!("✓ Pad right works");
+    } else {
+        println!("✗ Pad right failed");
+    }
+
+    // Test 3: Pad zeros
+    println!("");
+    println!("TEST 3: Pad number with zeros");
+    let padded = format_utils::pad_zeros(42, 4);
+    println!("  pad_zeros(42, 4) = '{}'", padded);
+    if padded == "0042" {
+        println!("✓ Pad zeros works");
+    } else {
+        println!("✗ Pad zeros failed: expected '0042', got '{}'", padded);
+    }
+
+    // Test 4: Align right
+    println!("");
+    println!("TEST 4: Align text right");
+    let aligned = format_utils::align_right("test", 10);
+    println!("  align_right('test', 10).len() = {}", aligned.len());
+    println!("  align_right('test', 10) = '{}'", aligned);
+    if aligned.len() == 10 {
+        println!("✓ Align right works");
+    } else {
+        println!("✗ Align right failed");
+    }
+
+    // Test 5: Align left
+    println!("");
+    println!("TEST 5: Align text left");
+    let aligned = format_utils::align_left("test", 10);
+    println!("  align_left('test', 10).len() = {}", aligned.len());
+    if aligned.len() == 10 {
+        println!("✓ Align left works");
+    } else {
+        println!("✗ Align left failed");
+    }
+
+    // Test 6: Align center
+    println!("");
+    println!("TEST 6: Center text");
+    let centered = format_utils::align_center("hi", 10);
+    println!("  align_center('hi', 10).len() = {}", centered.len());
+    println!("  align_center('hi', 10) = '{}'", centered);
+    if centered.len() == 10 {
+        println!("✓ Align center works");
+    } else {
+        println!("✗ Align center failed");
+    }
+
+    // Test 7: Repeat char
+    println!("");
+    println!("TEST 7: Repeat character");
+    let repeated = format_utils::repeat_char("-", 5);
+    println!("  repeat_char('-', 5) = '{}'", repeated);
+    if repeated == "-----" {
+        println!("✓ Repeat char works");
+    } else {
+        println!("✗ Repeat char failed: expected '-----', got '{}'", repeated);
+    }
+
+    // Test 8: Repeat string
+    println!("");
+    println!("TEST 8: Repeat string");
+    let repeated = format_utils::repeat_string("ab", 3);
+    println!("  repeat_string('ab', 3) = '{}'", repeated);
+    if repeated == "ababab" {
+        println!("✓ Repeat string works");
+    } else {
+        println!("✗ Repeat string failed: expected 'ababab', got '{}'", repeated);
+    }
+
+    println!("");
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this, the test structure is correct!");
+    println!("Next: Implement format_utils module (GREEN phase)");
+}

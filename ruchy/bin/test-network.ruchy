@@ -1,0 +1,39 @@
+// RUC-011: Network Information Library - RED PHASE TEST
+//
+// Simplified test for network information API
+// Will FAIL until network module is implemented
+
+use network;
+
+fun main() {
+    println!("=== RUC-011 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: Interface counting
+    println!("TEST 1: Interface counting");
+    match network::count_interfaces() {
+        Ok(count) => {
+            println!("✓ Interface counting succeeded");
+            println!("  Total interfaces: {}", count);
+        }
+        Err(e) => println!("✗ Interface counting failed: {:?}", e),
+    }
+
+    // Test 2: Network information summary
+    println!("");
+    println!("TEST 2: Network information");
+    match network::get_network_info() {
+        Ok(info) => {
+            println!("✓ Network info succeeded");
+            println!("  Interface count: {}", info.interface_count);
+            println!("  Active interfaces: {}", info.active_interfaces);
+            println!("  Default gateway: {}", info.default_gateway);
+        }
+        Err(e) => println!("✗ Network info failed: {:?}", e),
+    }
+
+    println!("");
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this, the module structure is correct!");
+    println!("Next: Implement network information functions (GREEN phase)");
+}

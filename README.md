@@ -9,11 +9,43 @@
 
 A collection of system configuration and management tools for Ubuntu, available in both TypeScript (legacy) and Ruchy (modern, high-performance) implementations.
 
-**Latest:** Self-hosted runner configuration system with 82% test coverage ✅
+**Latest:** ⏸️ Ruchy port blocked - I/O not implemented ([Issue #85](https://github.com/paiml/ruchy/issues/85))
 
-## 🦀 Ruchy Port - Complete!
+## 🦀 Ruchy Port - BLOCKED (I/O Missing)
 
-This repository features a complete port to [Ruchy](https://github.com/paiml/ruchy), a modern systems programming language. The Ruchy implementation provides significant performance improvements and enhanced reliability through comprehensive PMAT quality gates.
+**Status**: ⏸️ **BLOCKED** - Command execution not available
+
+**Progress**:
+- ✅ [Issue #82](https://github.com/paiml/ruchy/issues/82): chrono::Utc fixed in v3.147.9
+- ✅ [Issue #83](https://github.com/paiml/ruchy/issues/83): format! macro fixed in v3.147.9
+- ✅ [Issue #79](https://github.com/paiml/ruchy/issues/79): Enum casts working (15/15 variants)
+- ✅ RED phase complete (property tests ready)
+- ❌ [Issue #85](https://github.com/paiml/ruchy/issues/85): Command execution not implemented
+
+**Blocker**: Ruchy lacks `std::process::Command` - cannot execute system commands like `pactl`, `systemctl`, etc. This blocks ALL system integration modules.
+
+**Strategy**: Using Rust/TypeScript for production, will port to Ruchy when I/O becomes available.
+
+**See**: [UPSTREAM-BLOCKERS.md](UPSTREAM-BLOCKERS.md) | [GREEN-PHASE-BLOCKED.md](docs/RUC-001-RUCHY-GREEN-PHASE-BLOCKED.md)
+
+### ✅ Completed: RUC-001 Audio Configuration (Rust)
+
+**Methodology**: Extreme TDD with property-based testing
+
+```rust
+// Audio speaker configuration with graceful error handling
+let devices = detect_audio_devices()?;
+configure_speaker(&device.name)?;
+// Automatic rollback on failure
+```
+
+**Results**:
+- 8/8 property tests passing ✅
+- Zero clippy warnings ✅
+- Full error handling with rollback ✅
+- 100% integration test coverage ✅
+
+**Documentation**: [docs/RUC-001-COMPLETE.md](docs/RUC-001-COMPLETE.md)
 
 ### 🚀 Performance Improvements
 - **3-5x faster execution** compared to TypeScript

@@ -1,0 +1,121 @@
+// Example: String Utility Functions
+//
+// This example demonstrates how to use the string processing utilities
+// for common text manipulation tasks.
+//
+// Usage:
+//   cd ~/.local/share/ruchy-ubuntu-scripts
+//   ruchy examples/string_utilities.ruchy
+
+use string_utils;
+use format_utils;
+use validation;
+
+fun main() {
+    println!("==============================================");
+    println!("  String Utilities Demo");
+    println!("==============================================");
+    println!("");
+
+    // Example 1: String processing pipeline
+    println!("Example 1: String Processing Pipeline");
+    println!("--------------------------------------");
+
+    let input = "hello world";
+    println!("Input: '{}'", input);
+
+    // Check if empty
+    let is_empty = string_utils::is_empty_or_whitespace(input);
+    println!("Is empty/whitespace: {}", is_empty.to_string());
+
+    // Count words
+    let word_count = string_utils::word_count(input);
+    println!("Word count: {}", word_count.to_string());
+
+    // Get string length
+    let length = input.len();
+    println!("Length: {} characters", length.to_string());
+
+    // Format with padding
+    let padded = format_utils::pad_right(input, 20, ".");
+    println!("Padded right (20): '{}'", padded);
+
+    // Validate length
+    let length_valid = validation::is_valid_length(padded, 15, 25);
+    println!("Length valid (15-25): {}", length_valid.to_string());
+
+    println!("");
+
+    // Example 2: Formatting numbers
+    println!("Example 2: Number Formatting");
+    println!("-----------------------------");
+
+    let numbers = vec![5, 42, 100, 1, 999];
+
+    let mut i = 0;
+    while i < numbers.len() {
+        let num = numbers[i];
+
+        // Pad with zeros
+        let padded_num = format_utils::pad_zeros(num, 5);
+        println!("  {} → '{}'", num.to_string(), padded_num);
+
+        i = i + 1;
+    }
+
+    println!("");
+
+    // Example 3: String alignment
+    println!("Example 3: String Alignment");
+    println!("---------------------------");
+
+    let words = vec!["apple", "banana", "cherry", "date"];
+
+    println!("Left-aligned:");
+    let mut i = 0;
+    while i < words.len() {
+        let word = words[i];
+        let aligned = format_utils::pad_right(word, 10, " ");
+        println!("  '{}'", aligned);
+        i = i + 1;
+    }
+
+    println!("");
+    println!("Right-aligned:");
+    let mut i = 0;
+    while i < words.len() {
+        let word = words[i];
+        let aligned = format_utils::pad_left(word, 10, " ");
+        println!("  '{}'", aligned);
+        i = i + 1;
+    }
+
+    println!("");
+
+    // Example 4: Validation
+    println!("Example 4: Input Validation");
+    println!("----------------------------");
+
+    let test_strings = vec!["", "   ", "hello", "a very long string"];
+
+    let mut i = 0;
+    while i < test_strings.len() {
+        let s = test_strings[i];
+
+        let is_empty = string_utils::is_empty_or_whitespace(s);
+        let is_not_empty = validation::is_not_empty(s);
+        let valid_length = validation::is_valid_length(s, 1, 10);
+
+        println!("  '{}':", s);
+        println!("    Empty/whitespace: {}", is_empty.to_string());
+        println!("    Not empty: {}", is_not_empty.to_string());
+        println!("    Length 1-10: {}", valid_length.to_string());
+
+        i = i + 1;
+    }
+
+    println!("");
+    println!("==============================================");
+    println!("  String Utilities Demo Complete!");
+    println!("==============================================");
+}

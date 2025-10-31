@@ -27,9 +27,9 @@ quickcheck = "1.0"
 criterion = "0.5"
 mockall = "0.12"
 
-# [lib]
-# name = "ubuntu_config_scripts"
-# path = "src/lib.rs"
+[lib]
+name = "ubuntu_config_scripts"
+path = "src/lib.rs"
 
 [workspace]
 

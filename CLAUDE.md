@@ -2,6 +2,40 @@
 
 This document provides context for Claude or other AI assistants working on this project.
 
+## CRITICAL REQUIREMENTS - RUCHY BUG FILING
+
+**MANDATORY - STOP THE LINE**: When discovering Ruchy bugs or unoptimal behavior, you MUST:
+
+1. **Use Debugging Tools Before Filing**:
+   ```bash
+   # Parse AST to show what was parsed
+   ruchy parse file.ruchy
+
+   # Run with trace and verbose
+   ruchy --verbose --trace run file.ruchy
+
+   # Use ruchyruchy debugging tools
+   ruchydbg run file.ruchy
+   ```
+
+2. **Include in Bug Report**:
+   - Minimal reproduction case
+   - AST output from `ruchy parse`
+   - Trace output from `ruchy --verbose --trace run`
+   - Expected vs actual behavior
+   - Impact on development
+
+3. **Toyota Way - Stop the Line**:
+   - Halt implementation immediately when bug discovered
+   - Don't waste time on workarounds for unknown issues
+   - File comprehensive bug report with debugging data
+   - Document blocker in project docs
+
+4. **Never Skip Debugging Tools**:
+   - Always run `ruchy parse` to see AST
+   - Always run `ruchy --trace` to see execution
+   - Use `ruchydbg` for timeout and execution analysis
+
 ## CRITICAL REQUIREMENTS - PMAT QUALITY GATES
 
 **MANDATORY**: PMAT MUST be used ONLY via MCP (Model Context Protocol) registration:
@@ -112,29 +146,29 @@ Ubuntu Config Scripts is a collection of system configuration and management too
 
 ### Ruchy Implementation (Primary)
 Located in `/ruchy/` directory - **This is the main, production-ready version:**
-- **Language**: Ruchy v3.147.4+ (modern systems programming language, self-hosting compiler)
+- **Language**: Ruchy v3.147.8 (modern systems programming language, self-hosting compiler)
 - **Compiler**: Install via `cargo install ruchy` (main Ruchy project: https://github.com/paiml/ruchy)
 - **Performance**: 3-5x faster than TypeScript, <100ms startup
 - **Type Safety**: Compile-time type checking with runtime validation
 - **Testing**: Comprehensive property-based testing with QuickCheck/PropTest
-- **Debugging Tools**: RuchyRuchy toolkit (`cargo install ruchyruchy`) for bug detection
+- **Debugging Tools**: RuchyRuchy toolkit v1.6.1+ (`cargo install ruchyruchy`) for bug detection
 - **Quality Gates**: Strict PMAT enforcement (80% coverage, complexity limits)
-- **CI/CD**: Gunner integration with cost-effective AWS spot instances
+- **CI/CD**: Self-hosted GitHub Actions runners
 - **Distribution**: Single binary, .deb packages, AppImage support
 
 ### TypeScript Implementation (Legacy)
 Located in project root - **Maintained for compatibility:**
 - **Language**: Deno TypeScript
-- **Type Safety**: Strict TypeScript with runtime validation  
+- **Type Safety**: Strict TypeScript with runtime validation
 - **Testing**: Property-based testing with fast-check
 - **Quality Gates**: PMAT enforcement for all code
-- **CI/CD**: Gunner integration for cost-effective builds
+- **CI/CD**: Self-hosted GitHub Actions runners
 - **Architecture**: No bash scripts allowed - all TypeScript
 
 ## Key Design Decisions
 
 ### 1. Ruchy-First Development (Primary)
-- **Language**: Ruchy v3.147.4+ with Rust interoperability
+- **Language**: Ruchy v3.147.8 with Rust interoperability
 - **Installation**: `cargo install ruchy` (production compiler from https://github.com/paiml/ruchy)
 - **Performance**: Compiled binaries with zero runtime dependencies
 - **Type Safety**: Compile-time guarantees with runtime validation
@@ -170,9 +204,8 @@ Located in project root - **Maintained for compatibility:**
 - Categories: audio, system, dev
 - Auto-update Deno before commands
 
-### 5. Gunner CI/CD Integration
-- Runs on AWS spot instances
-- Configuration in `gunner.yaml`
+### 5. Self-Hosted CI/CD
+- Self-hosted GitHub Actions runners
 - Workflows in `.github/workflows/`
 
 ## Ruchy Ecosystem
@@ -180,9 +213,13 @@ Located in project root - **Maintained for compatibility:**
 ### Main Ruchy Project (Production Compiler)
 - **Repository**: https://github.com/paiml/ruchy
 - **Status**: ✅ Self-hosting compiler (August 2025)
-- **Installation**: `cargo install ruchy`
-- **Version**: v3.147.4+ (active development)
+- **Installation**: `cargo install ruchy --version 3.147.9`
+- **Version**: **v3.147.9+** (REQUIRED - stdlib issues resolved)
 - **Purpose**: Production Ruchy compiler
+- **Fixed Issues**:
+  - ✅ Issue #79: Enum field casts (v3.147.6+)
+  - ✅ Issue #82: chrono::Utc support (v3.147.9+)
+  - ✅ Issue #83: format! macro (v3.147.9+)
 
 ### RuchyRuchy Project (Bootstrap & Debugging Tools)
 - **Repository**: https://github.com/pragmatic-ai-labs/ruchyruchy
@@ -242,7 +279,6 @@ ubuntu-config-scripts/
 │   ├── system/             # TypeScript system scripts
 │   └── dev/                # TypeScript development scripts
 ├── Makefile                # TypeScript build system
-├── gunner.yaml             # CI/CD configuration
 └── README.md               # Main project documentation
 ```
 
@@ -373,11 +409,9 @@ fc.assert(
 - Use `make test-watch` for debugging
 
 ### CI Issues
-- Gunner runners use capitalized labels: `[self-hosted, Linux, X64]`
-- Job names must start with "Test", "Build" or contain "Quality Gate" for Gunner
+- Self-hosted runners use labels: `[self-hosted, Linux, X64]`
 - Runner may lack tools like `unzip` - we install Deno manually
 - Auto-update is disabled in CI (`AUTO_UPDATE_DENO=false`)
-- We ONLY use Gunner runners, never standard GitHub runners
 
 ## Important Notes
 
@@ -442,36 +476,46 @@ fc.assert(
 
 ## Known Issues and Solutions
 
-### Ruchy Compiler Bugs (v3.147.4)
+### Ruchy Compiler Status (v3.147.9) ✅ ALL ISSUES RESOLVED
 
-**Critical Bug - Enum Field Cast via &self** (Issue #79)
-- **Symptom**: Program hangs when casting enum fields accessed via `&self`
-- **Pattern**: `self.level as i32` inside impl methods
-- **Status**: Partially fixed in v3.147.4 (literals work, `&self` access still hangs)
-- **Workaround**: Extract field outside method: `let level = logger.level; let val = level as i32;` (ugly, not recommended)
-- **Impact**: Blocks Logger/Common/Schema conversions
-- **Test**: See [RUCHY-V3.147.4-TEST-RESULTS.md](RUCHY-V3.147.4-TEST-RESULTS.md)
+**✅ FIXED - Enum Field Cast via &self** (Issue #79)
+- **Status**: ✅ **FULLY FIXED in v3.147.6** (verified across v3.147.6/7/8/9)
+- **Coverage**: 15/15 enum cast variants pass (100%)
+- **Testing**: Comprehensive schema-based testing with ruchydbg v1.6.1
+- **Details**: See [RUCHY-V3.147.9-TEST-RESULTS.md](RUCHY-V3.147.9-TEST-RESULTS.md)
 
-**Other Known Bugs**:
-- **Issue #75**: Command.output() hang
-- **Missing Features**: async/await, I/O operations not yet implemented
+**✅ FIXED - chrono::Utc Support** (Issue #82)
+- **Status**: ✅ **FIXED in v3.147.9**
+- **Available**: `use chrono::Utc;`, `Utc::now()`, debug formatting
+- **Minor Limitation**: `.to_rfc3339()` method not yet implemented (can work around)
+
+**✅ FIXED - format! Macro** (Issue #83)
+- **Status**: ✅ **FIXED in v3.147.9**
+- **Available**: `format!("text: {}", value)`, `{:?}` debug formatting, multiple args
+
+**Other Known Issues**:
+- **Issue #75**: Command.output() hang (still present)
+- **Minor**: chrono `.to_rfc3339()` method not implemented (non-blocking)
+
+**Status**: ✅ **Development UNBLOCKED** - All blocking issues resolved!
 
 **Testing for Bugs**:
 ```bash
-# Always test with timeout to catch hangs
-timeout 1 ruchy run your_script.ruchy
+# Use ruchydbg run for proper timeout detection
+ruchydbg run your_script.ruchy --timeout 5000
 
-# Expected results:
-# Exit 0 = Success
-# Exit 124 = Timeout (BUG!)
-# Other = Crash (BUG!)
+# Exit codes:
+# 0 = Success
+# 124 = Timeout (potential hang/infinite loop)
+# 1+ = Runtime error or crash
 ```
 
 **Bug Reporting**: File detailed issues at https://github.com/paiml/ruchy/issues with:
 1. Minimal reproduction case (< 20 lines)
 2. Ruchy version (`ruchy --version`)
-3. Expected vs. actual behavior
-4. Test results showing the hang/crash
+3. RuchyRuchy version (`ruchydbg --version`)
+4. Expected vs. actual behavior
+5. Test results from `ruchydbg run` showing exit code
 
 ### DaVinci Resolve Audio on Linux
 - DaVinci on Linux has issues with AAC audio codec

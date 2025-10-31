@@ -1,0 +1,371 @@
+// RUC-001: Audio Speaker Configuration - Property Tests (RED Phase)
+//
+// Extreme TDD: These tests are written BEFORE full implementation
+// Expected: ALL TESTS FAIL until we complete GREEN phase
+//
+// Ported from Rust reference implementation
+
+use std::process::Command;
+
+// Import our module (adjust path as needed for Ruchy)
+// For now, inline the structs until we figure out imports
+
+struct AudioDevice {
+    id: String,
+    name: String,
+    description: String,
+    is_default: bool,
+}
+
+struct SpeakerConfig {
+    device_id: String,
+    volume: i32,
+    is_muted: bool,
+}
+
+enum ConfigError {
+    CommandFailed(String),
+    ParseError(String),
+    DeviceNotFound(String),
+    InvalidState(String),
+}
+
+// Stub functions (will import from module in GREEN phase)
+fun detect_audio_devices() -> Result<Vec<AudioDevice>, ConfigError> {
+    Err(ConfigError::CommandFailed("Not implemented yet".to_string()))
+}
+
+fun get_current_speaker_config() -> Result<SpeakerConfig, ConfigError> {
+    Err(ConfigError::CommandFailed("Not implemented yet".to_string()))
+}
+
+fun configure_speaker(device_id: String) -> Result<(), ConfigError> {
+    Err(ConfigError::CommandFailed("Not implemented yet".to_string()))
+}
+
+fun validate_device_id(device_id: String) -> bool {
+    false
+}
+
+// ============================================================================
+// PROPERTY TEST 1: Audio device detection is idempotent
+// ============================================================================
+//
+// Property: Running detection multiple times should return identical results
+// Rationale: System state shouldn't change between detection calls
+// Expected: FAIL (unimplemented)
+
+fun test_device_detection_idempotent() {
+    println!("🧪 TEST 1: Device detection idempotence");
+
+    // Detect devices first time
+    let devices1 = match detect_audio_devices() {
+        Ok(d) => d,
+        Err(e) => {
+            println!("❌ FAIL: First detection failed - not implemented");
+            return;
+        }
+    };
+
+    // Detect devices second time
+    let devices2 = match detect_audio_devices() {
+        Ok(d) => d,
+        Err(e) => {
+            println!("❌ FAIL: Second detection failed");
+            return;
+        }
+    };
+
+    // Both calls should return identical results
+    if devices1.len() != devices2.len() {
+        println!("❌ FAIL: Different number of devices");
+        return;
+    }
+
+    // Check each device matches
+    let mut all_match = true;
+    for i in 0..devices1.len() {
+        let d1 = &devices1[i];
+        let d2 = &devices2[i];
+
+        if d1.id != d2.id || d1.name != d2.name {
+            all_match = false;
+            break;
+        }
+    }
+
+    if !all_match {
+        println!("❌ FAIL: Devices don't match between calls");
+        return;
+    }
+
+    println!("✅ PASS: Device detection is idempotent");
+}
+
+// ============================================================================
+// PROPERTY TEST 2: Speaker configuration is reversible
+// ============================================================================
+//
+// Property: Applying config A, then B, then A again should restore original state
+// Rationale: Configuration changes should be fully reversible
+// Expected: FAIL (unimplemented)
+
+fun test_speaker_config_reversible() {
+    println!("🧪 TEST 2: Speaker config reversibility");
+
+    // Get current configuration
+    let original_config = match get_current_speaker_config() {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ FAIL: Cannot get initial config - not implemented");
+            return;
+        }
+    };
+
+    // Get available devices
+    let devices = match detect_audio_devices() {
+        Ok(d) => d,
+        Err(e) => {
+            println!("❌ FAIL: Cannot detect devices");
+            return;
+        }
+    };
+
+    if devices.len() < 2 {
+        println!("⏭️  SKIP: Need at least 2 devices for reversibility test");
+        return;
+    }
+
+    // Apply configuration for first device
+    let device_a = &devices[0];
+    match configure_speaker(device_a.name.clone()) {
+        Ok(_) => {},
+        Err(e) => {
+            println!("❌ FAIL: Cannot configure first device");
+            return;
+        }
+    }
+
+    // Verify it was applied
+    let config_a = match get_current_speaker_config() {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ FAIL: Cannot get config after first change");
+            return;
+        }
+    };
+    if config_a.device_id != device_a.name {
+        println!("❌ FAIL: First device not configured correctly");
+        return;
+    }
+
+    // Apply configuration for second device
+    let device_b = &devices[1];
+    let config_result_b = configure_speaker(device_b.name.clone());
+    if config_result_b.is_err() {
+        println!("❌ FAIL: Cannot configure second device");
+        return;
+    }
+
+    // Restore original configuration
+    let restore_result = configure_speaker(original_config.device_id.clone());
+    if restore_result.is_err() {
+        println!("❌ FAIL: Cannot restore original config");
+        return;
+    }
+
+    // Verify we're back to original state
+    let restored_config_result = get_current_speaker_config();
+    if restored_config_result.is_err() {
+        println!("❌ FAIL: Cannot get final config");
+        return;
+    }
+
+    let restored_config = restored_config_result.unwrap();
+
+    if restored_config.device_id != original_config.device_id {
+        println!("❌ FAIL: Configuration not fully reversible");
+        return;
+    }
+
+    println!("✅ PASS: Configuration is fully reversible");
+}
+
+// ============================================================================
+// PROPERTY TEST 3: Invalid device IDs fail gracefully
+// ============================================================================
+
+fun test_invalid_device_fails_gracefully() {
+    println!("🧪 TEST 3: Invalid device IDs fail gracefully");
+
+    // Get current valid config
+    let original_config_result = get_current_speaker_config();
+    if original_config_result.is_err() {
+        println!("❌ FAIL: Cannot get initial state - {}", "not implemented");
+        return;
+    }
+
+    let original_config = original_config_result.unwrap();
+
+    // Try invalid device IDs
+    let invalid_ids = vec![
+        "definitely-not-a-real-device-id-12345",
+        "",
+        "../../etc/passwd",
+        "device\\0null",
+    ];
+
+    let mut all_failed_correctly = true;
+
+    for invalid_id in invalid_ids {
+        let result = configure_speaker(invalid_id.to_string());
+
+        // Should return an error
+        if result.is_ok() {
+            println!("❌ FAIL: Invalid device ID '{}' should return error", invalid_id);
+            all_failed_correctly = false;
+            break;
+        }
+
+        // System should still be in valid state
+        let current_config_result = get_current_speaker_config();
+        if current_config_result.is_err() {
+            println!("❌ FAIL: System in invalid state after error");
+            all_failed_correctly = false;
+            break;
+        }
+
+        let current_config = current_config_result.unwrap();
+        if current_config.device_id != original_config.device_id {
+            println!("❌ FAIL: Failed config attempt changed system state");
+            all_failed_correctly = false;
+            break;
+        }
+    }
+
+    if all_failed_correctly {
+        println!("✅ PASS: Invalid devices fail gracefully");
+    }
+}
+
+// ============================================================================
+// PROPERTY TEST 4: Configuration persists across queries
+// ============================================================================
+
+fun test_config_persists() {
+    println!("🧪 TEST 4: Configuration persistence");
+
+    // Get available devices
+    let devices_result = detect_audio_devices();
+    if devices_result.is_err() {
+        println!("❌ FAIL: Cannot detect devices - {}", "not implemented");
+        return;
+    }
+
+    let devices = devices_result.unwrap();
+
+    if devices.is_empty() {
+        println!("⏭️  SKIP: No devices available");
+        return;
+    }
+
+    let test_device = &devices[0];
+
+    // Configure the device
+    let config_result = configure_speaker(test_device.name.clone());
+    if config_result.is_err() {
+        println!("❌ FAIL: Cannot configure device");
+        return;
+    }
+
+    // Query config multiple times
+    let mut all_consistent = true;
+    for i in 0..5 {
+        let current_config_result = get_current_speaker_config();
+        if current_config_result.is_err() {
+            println!("❌ FAIL: Query {} failed", i + 1);
+            all_consistent = false;
+            break;
+        }
+
+        let current_config = current_config_result.unwrap();
+        if current_config.device_id != test_device.name {
+            println!("❌ FAIL: Config changed on query {}", i + 1);
+            all_consistent = false;
+            break;
+        }
+    }
+
+    if all_consistent {
+        println!("✅ PASS: Configuration persists across queries");
+    }
+}
+
+// ============================================================================
+// PROPERTY TEST 5: Device ID validation is consistent
+// ============================================================================
+
+fun test_device_validation_consistent() {
+    println!("🧪 TEST 5: Device validation consistency");
+
+    let test_cases = vec![
+        ("valid-device-1", true),
+        ("", false),
+        ("device with spaces", false),
+        ("../../etc/passwd", false),
+    ];
+
+    let mut all_consistent = true;
+
+    for test_case in test_cases {
+        let (device_id, expected_valid) = test_case;
+
+        // Validate multiple times
+        for _ in 0..3 {
+            let is_valid = validate_device_id(device_id.to_string());
+            if is_valid != expected_valid {
+                println!("❌ FAIL: Validation inconsistent for '{}'", device_id);
+                all_consistent = false;
+                break;
+            }
+        }
+
+        if !all_consistent {
+            break;
+        }
+    }
+
+    if all_consistent {
+        println!("✅ PASS: Device validation is consistent");
+    } else {
+        println!("❌ FAIL: Validation is inconsistent (or all returning false in RED phase)");
+    }
+}
+
+// ============================================================================
+// Main Test Runner
+// ============================================================================
+
+fun main() {
+    println!("🔴 RED PHASE: Audio Speaker Configuration Tests");
+    println!("Expected: Tests should FAIL with 'not implemented' errors\n");
+
+    // Run all property tests
+    test_device_detection_idempotent();
+    println!("");
+
+    test_speaker_config_reversible();
+    println!("");
+
+    test_invalid_device_fails_gracefully();
+    println!("");
+
+    test_config_persists();
+    println!("");
+
+    test_device_validation_consistent();
+    println!("");
+
+    println!("🔴 RED PHASE COMPLETE");
+    println!("Next: Implement functions to make tests pass (GREEN phase)");
+}

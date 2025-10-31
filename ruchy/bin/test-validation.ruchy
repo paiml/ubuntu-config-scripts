@@ -1,0 +1,88 @@
+// RUC-016: Validation Utilities Library - RED PHASE TEST
+//
+// Test for validation utility functions
+// Will FAIL until validation module is implemented
+
+use validation;
+
+fun main() {
+    println!("=== RUC-016 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: Range validation
+    println!("TEST 1: Range validation");
+    let in_range = validation::in_range(50, 0, 100);
+    let out_high = validation::in_range(150, 0, 100);
+    let out_low = validation::in_range(-10, 0, 100);
+    println!("  in_range(50, 0, 100) = {}", in_range);
+    println!("  in_range(150, 0, 100) = {}", out_high);
+    println!("  in_range(-10, 0, 100) = {}", out_low);
+    if in_range && !out_high && !out_low {
+        println!("✓ Range validation works");
+    } else {
+        println!("✗ Range validation failed");
+    }
+
+    // Test 2: Percentage validation
+    println!("");
+    println!("TEST 2: Percentage validation");
+    let valid_pct = validation::is_valid_percentage(75);
+    let invalid_pct = validation::is_valid_percentage(150);
+    println!("  is_valid_percentage(75) = {}", valid_pct);
+    println!("  is_valid_percentage(150) = {}", invalid_pct);
+    if valid_pct && !invalid_pct {
+        println!("✓ Percentage validation works");
+    } else {
+        println!("✗ Percentage validation failed");
+    }
+
+    // Test 3: String length validation
+    println!("");
+    println!("TEST 3: String length validation");
+    let valid_len = validation::is_valid_length("hello", 3, 10);
+    let too_short = validation::is_valid_length("hi", 3, 10);
+    let too_long = validation::is_valid_length("verylongstring", 3, 10);
+    println!("  is_valid_length('hello', 3, 10) = {}", valid_len);
+    println!("  is_valid_length('hi', 3, 10) = {}", too_short);
+    println!("  is_valid_length('verylongstring', 3, 10) = {}", too_long);
+    if valid_len && !too_short && !too_long {
+        println!("✓ String length validation works");
+    } else {
+        println!("✗ String length validation failed");
+    }
+
+    // Test 4: Port validation
+    println!("");
+    println!("TEST 4: Port validation");
+    let valid_port = validation::is_valid_port(8080);
+    let invalid_port_low = validation::is_valid_port(0);
+    let invalid_port_high = validation::is_valid_port(70000);
+    println!("  is_valid_port(8080) = {}", valid_port);
+    println!("  is_valid_port(0) = {}", invalid_port_low);
+    println!("  is_valid_port(70000) = {}", invalid_port_high);
+    if valid_port && !invalid_port_low && !invalid_port_high {
+        println!("✓ Port validation works");
+    } else {
+        println!("✗ Port validation failed");
+    }
+
+    // Test 5: Non-empty validation
+    println!("");
+    println!("TEST 5: Non-empty validation");
+    let not_empty = validation::is_not_empty("hello");
+    let is_empty = validation::is_not_empty("");
+    let is_whitespace = validation::is_not_empty("   ");
+    println!("  is_not_empty('hello') = {}", not_empty);
+    println!("  is_not_empty('') = {}", is_empty);
+    println!("  is_not_empty('   ') = {}", is_whitespace);
+    if not_empty && !is_empty && !is_whitespace {
+        println!("✓ Non-empty validation works");
+    } else {
+        println!("✗ Non-empty validation failed");
+    }
+
+    println!("");
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this, the test structure is correct!");
+    println!("Next: Implement validation module (GREEN phase)");
+}

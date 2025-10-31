@@ -1,0 +1,111 @@
+// RUC-018: Format Utilities Library
+//
+// Pure string formatting under 120 LOC (Issue #92 constraint)
+// No I/O, commands, or external dependencies
+
+// Pad string on left side with specified character
+fun pad_left(s: String, width: i32, pad_char: String) -> String {
+    let len = s.len() as i32;
+    if len >= width {
+        return s;
+    }
+
+    let padding_needed = width - len;
+    let mut result = String::new();
+
+    let mut i = 0;
+    while i < padding_needed {
+        result = result + &pad_char;
+        i = i + 1;
+    }
+
+    result + &s
+}
+
+// Pad string on right side with specified character
+fun pad_right(s: String, width: i32, pad_char: String) -> String {
+    let len = s.len() as i32;
+    if len >= width {
+        return s;
+    }
+
+    let padding_needed = width - len;
+    let mut result = String::new();
+    result = result + &s;
+
+    let mut i = 0;
+    while i < padding_needed {
+        result = result + &pad_char;
+        i = i + 1;
+    }
+
+    result
+}
+
+// Pad number with leading zeros
+fun pad_zeros(n: i32, width: i32) -> String {
+    let s = n.to_string();
+    pad_left(s, width, "0")
+}
+
+// Align text to the right (pad left with spaces)
+fun align_right(s: String, width: i32) -> String {
+    pad_left(s, width, " ")
+}
+
+// Align text to the left (pad right with spaces)
+fun align_left(s: String, width: i32) -> String {
+    pad_right(s, width, " ")
+}
+
+// Center text with equal padding on both sides
+fun align_center(s: String, width: i32) -> String {
+    let len = s.len() as i32;
+    if len >= width {
+        return s;
+    }
+
+    let total_padding = width - len;
+    let left_padding = total_padding / 2;
+    let right_padding = total_padding - left_padding;
+
+    let mut result = String::new();
+
+    let mut i = 0;
+    while i < left_padding {
+        result = result + " ";
+        i = i + 1;
+    }
+
+    result = result + &s;
+
+    i = 0;
+    while i < right_padding {
+        result = result + " ";
+        i = i + 1;
+    }
+
+    result
+}
+
+// Repeat single character n times
+fun repeat_char(c: String, count: i32) -> String {
+    let mut result = String::new();
+    let mut i = 0;
+    while i < count {
+        result = result + &c;
+        i = i + 1;
+    }
+    result
+}
+
+// Repeat string n times
+fun repeat_string(s: String, count: i32) -> String {
+    let mut result = String::new();
+    let mut i = 0;
+    while i < count {
+        result = result + &s;
+        i = i + 1;
+    }
+    result
+}

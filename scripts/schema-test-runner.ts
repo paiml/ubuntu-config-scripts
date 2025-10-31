@@ -4,7 +4,12 @@
  * Schema-Based Test Runner for Ruchy Bug Variants
  *
  * Implements comprehensive testing per RuchyRuchy Whack-A-Mole Guide
- * Generates and runs test variants from YAML schemas
+ * Generates and runs test variants from YAML schemas using ruchydbg
+ *
+ * Uses ruchydbg run for proper timeout detection and standardized exit codes:
+ * - Exit 0: Test passed
+ * - Exit 124: Test timed out
+ * - Exit 1+: Test failed or error
  */
 
 import { parse as parseYaml } from "https://deno.land/std@0.224.0/yaml/mod.ts";
@@ -108,36 +113,31 @@ async function runTest(
     await Deno.writeTextFile(tempFile, code);
 
     try {
-      // Run with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout_ms);
-
-      const command = new Deno.Command("ruchy", {
-        args: ["run", tempFile],
+      // Use ruchydbg run with built-in timeout detection
+      // Exit codes: 0=success, 124=timeout, 1+=error
+      const command = new Deno.Command("ruchydbg", {
+        args: ["run", tempFile, "--timeout", timeout_ms.toString()],
         stdout: "piped",
         stderr: "piped",
-        signal: controller.signal,
       });
 
       const process = command.spawn();
       const { code: exitCode, stdout, stderr } = await process.output();
 
-      clearTimeout(timeoutId);
-
       const duration_ms = Date.now() - start;
       const output = new TextDecoder().decode(stdout);
       const error = new TextDecoder().decode(stderr);
 
+      // Handle exit codes per ruchydbg spec
       if (exitCode === 0) {
         return { result: TestResult.Pass, duration_ms, output };
+      } else if (exitCode === 124) {
+        return { result: TestResult.Timeout, duration_ms };
       } else {
         return { result: TestResult.Fail, duration_ms, output, error };
       }
     } catch (error) {
       const duration_ms = Date.now() - start;
-      if (error instanceof Error && error.name === "AbortError") {
-        return { result: TestResult.Timeout, duration_ms };
-      }
       return { result: TestResult.Error, duration_ms, error: error.toString() };
     } finally {
       try {

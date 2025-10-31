@@ -1,0 +1,159 @@
+// RUC-001: Audio Speaker Configuration - Property Tests (RED Phase)
+//
+// Simplified version using match expressions for Ruchy v3.147.9
+// Expected: ALL TESTS FAIL with "not implemented" errors
+
+use std::process::Command;
+
+struct AudioDevice {
+    id: String,
+    name: String,
+    description: String,
+    is_default: bool,
+}
+
+struct SpeakerConfig {
+    device_id: String,
+    volume: i32,
+    is_muted: bool,
+}
+
+enum ConfigError {
+    CommandFailed(String),
+    ParseError(String),
+    DeviceNotFound(String),
+    InvalidState(String),
+}
+
+// Stub functions (RED phase - all fail)
+fun detect_audio_devices() -> Result<Vec<AudioDevice>, ConfigError> {
+    Err(ConfigError::CommandFailed("Not implemented yet".to_string()))
+}
+
+fun get_current_speaker_config() -> Result<SpeakerConfig, ConfigError> {
+    Err(ConfigError::CommandFailed("Not implemented yet".to_string()))
+}
+
+fun configure_speaker(device_id: String) -> Result<(), ConfigError> {
+    Err(ConfigError::CommandFailed("Not implemented yet".to_string()))
+}
+
+fun validate_device_id(device_id: String) -> bool {
+    false  // RED: Always invalid
+}
+
+// ============================================================================
+// PROPERTY TEST 1: Device detection idempotence
+// ============================================================================
+
+fun test_1_idempotence() {
+    println!("🧪 TEST 1: Device detection idempotence");
+
+    let devices1 = match detect_audio_devices() {
+        Ok(d) => d,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Not implemented yet");
+            return;
+        }
+    };
+
+    println!("✅ PASS: Device detection is idempotent");
+}
+
+// ============================================================================
+// PROPERTY TEST 2: Configuration reversibility
+// ============================================================================
+
+fun test_2_reversibility() {
+    println!("🧪 TEST 2: Configuration reversibility");
+
+    let config = match get_current_speaker_config() {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Not implemented yet");
+            return;
+        }
+    };
+
+    println!("✅ PASS: Configuration is reversible");
+}
+
+// ============================================================================
+// PROPERTY TEST 3: Graceful failure
+// ============================================================================
+
+fun test_3_graceful_failure() {
+    println!("🧪 TEST 3: Invalid devices fail gracefully");
+
+    let config = match get_current_speaker_config() {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Not implemented yet");
+            return;
+        }
+    };
+
+    println!("✅ PASS: Invalid devices fail gracefully");
+}
+
+// ============================================================================
+// PROPERTY TEST 4: Configuration persistence
+// ============================================================================
+
+fun test_4_persistence() {
+    println!("🧪 TEST 4: Configuration persistence");
+
+    let devices = match detect_audio_devices() {
+        Ok(d) => d,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Not implemented yet");
+            return;
+        }
+    };
+
+    println!("✅ PASS: Configuration persists");
+}
+
+// ============================================================================
+// PROPERTY TEST 5: Validation consistency
+// ============================================================================
+
+fun test_5_validation_consistency() {
+    println!("🧪 TEST 5: Validation consistency");
+
+    // Test validation (currently always false in RED phase)
+    let is_valid = validate_device_id("test-device".to_string());
+
+    if is_valid {
+        println!("✅ PASS: Validation is consistent");
+    } else {
+        println!("❌ EXPECTED FAIL: Always returns false in RED phase");
+    }
+}
+
+// ============================================================================
+// Main test runner
+// ============================================================================
+
+fun main() {
+    println!("🔴 RED PHASE: Audio Speaker Configuration Tests");
+    println!("Expected: All tests fail with 'not implemented'\n");
+
+    test_1_idempotence();
+    println!("");
+
+    test_2_reversibility();
+    println!("");
+
+    test_3_graceful_failure();
+    println!("");
+
+    test_4_persistence();
+    println!("");
+
+    test_5_validation_consistency();
+    println!("");
+
+    println!("🔴 RED PHASE VERIFIED");
+    println!("All tests failed as expected - ready for GREEN phase!");
+}

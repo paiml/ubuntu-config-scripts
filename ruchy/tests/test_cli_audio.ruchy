@@ -1,0 +1,148 @@
+// RUC-002: CLI Interface Tests - RED Phase
+//
+// Tests for ubuntu-audio CLI tool
+// Expected: All tests FAIL (no implementation yet)
+
+// ============================================================================
+// Test Data Structures
+// ============================================================================
+
+enum TestResult {
+    Pass,
+    Fail(String),
+}
+
+// ============================================================================
+// RED Phase Tests - Should All Fail
+// ============================================================================
+
+fun test_cli_help() -> TestResult {
+    println!("🧪 TEST 1: Help command");
+
+    // Expected: CLI should show help text when --help is passed
+    // RED: No CLI implementation yet, this should fail
+
+    println!("❌ EXPECTED FAIL: CLI not implemented");
+    TestResult::Fail("No CLI implementation".to_string())
+}
+
+fun test_cli_list_command() -> TestResult {
+    println!("🧪 TEST 2: List command");
+
+    // Expected: CLI should list audio devices
+    // RED: No CLI implementation yet, this should fail
+
+    println!("❌ EXPECTED FAIL: CLI not implemented");
+    TestResult::Fail("No CLI implementation".to_string())
+}
+
+fun test_cli_current_command() -> TestResult {
+    println!("🧪 TEST 3: Current command");
+
+    // Expected: CLI should show current speaker config
+    // RED: No CLI implementation yet, this should fail
+
+    println!("❌ EXPECTED FAIL: CLI not implemented");
+    TestResult::Fail("No CLI implementation".to_string())
+}
+
+fun test_cli_set_command() -> TestResult {
+    println!("🧪 TEST 4: Set command");
+
+    // Expected: CLI should configure speaker
+    // RED: No CLI implementation yet, this should fail
+
+    println!("❌ EXPECTED FAIL: CLI not implemented");
+    TestResult::Fail("No CLI implementation".to_string())
+}
+
+fun test_cli_validate_command() -> TestResult {
+    println!("🧪 TEST 5: Validate command");
+
+    // Expected: CLI should validate device IDs
+    // RED: No CLI implementation yet, this should fail
+
+    println!("❌ EXPECTED FAIL: CLI not implemented");
+    TestResult::Fail("No CLI implementation".to_string())
+}
+
+fun test_cli_invalid_command() -> TestResult {
+    println!("🧪 TEST 6: Invalid command handling");
+
+    // Expected: CLI should show error for invalid commands
+    // RED: No CLI implementation yet, this should fail
+
+    println!("❌ EXPECTED FAIL: CLI not implemented");
+    TestResult::Fail("No CLI implementation".to_string())
+}
+
+// ============================================================================
+// Test Runner
+// ============================================================================
+
+fun main() {
+    println!("🔴 RED PHASE: CLI Interface Tests");
+    println!("Expected: All tests fail (no implementation)\n");
+
+    let mut failed = 0;
+    let mut total = 0;
+
+    // Run all tests
+    total = total + 1;
+    match test_cli_help() {
+        TestResult::Pass => println!(""),
+        TestResult::Fail(_) => {
+            failed = failed + 1;
+            println!("");
+        }
+    }
+
+    total = total + 1;
+    match test_cli_list_command() {
+        TestResult::Pass => println!(""),
+        TestResult::Fail(_) => {
+            failed = failed + 1;
+            println!("");
+        }
+    }
+
+    total = total + 1;
+    match test_cli_current_command() {
+        TestResult::Pass => println!(""),
+        TestResult::Fail(_) => {
+            failed = failed + 1;
+            println!("");
+        }
+    }
+
+    total = total + 1;
+    match test_cli_set_command() {
+        TestResult::Pass => println!(""),
+        TestResult::Fail(_) => {
+            failed = failed + 1;
+            println!("");
+        }
+    }
+
+    total = total + 1;
+    match test_cli_validate_command() {
+        TestResult::Pass => println!(""),
+        TestResult::Fail(_) => {
+            failed = failed + 1;
+            println!("");
+        }
+    }
+
+    total = total + 1;
+    match test_cli_invalid_command() {
+        TestResult::Pass => println!(""),
+        TestResult::Fail(_) => {
+            failed = failed + 1;
+            println!("");
+        }
+    }
+
+    println!("🔴 RED PHASE VERIFIED");
+    println!("Failed: {}/{} tests", failed, total);
+    println!("All tests failed as expected - ready for GREEN phase!");
+}

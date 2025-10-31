@@ -1,22 +1,44 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
+name: Feature Request
+about: Suggest a new feature or enhancement
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''
 ---
 
 ## Feature Description
-A clear and concise description of what you want to happen.
 
-## Problem It Solves
-Describe the problem this feature would solve.
+A clear and concise description of the feature you'd like to see.
+
+## Use Case
+
+Why do you need this feature? What problem does it solve?
 
 ## Proposed Solution
-How you think this should work.
+
+How do you think this feature should work? Be as specific as possible.
+
+## Example Usage
+
+If applicable, show how you would use this feature:
+
+```ruchy
+// Example code
+use proposed_module;
+
+let result = proposed_module::new_function();
+```
 
 ## Alternatives Considered
-Any alternative solutions or features you've considered.
+
+What other approaches have you thought about or tried?
 
 ## Additional Context
-Add any other context or screenshots about the feature request here.
+
+Add any other context, screenshots, or examples about the feature request.
+
+## Checklist
+
+- [ ] I have searched existing issues to avoid duplicates
+- [ ] I have described a clear use case
+- [ ] I have considered alternatives

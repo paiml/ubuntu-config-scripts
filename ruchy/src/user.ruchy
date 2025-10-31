@@ -1,0 +1,75 @@
+// RUC-013: User Information Library
+//
+// User context module under 100 LOC (Issue #92 constraint)
+
+use std::process::Command;
+
+// User information structure
+struct UserInfo {
+    username: String,
+    uid: i32,
+    gid: i32,
+    groups: Vec<String>,
+    home: String,
+    shell: String,
+}
+
+enum UserError {
+    CommandFailed(String),
+    ParseError(String),
+}
+
+// Get username
+fun get_username() -> Result<String, UserError> {
+    let cmd = Command::new("whoami").output();
+
+    match cmd {
+        Ok(o) => {
+            if !o.status.success {
+                return Err(UserError::CommandFailed("whoami failed".to_string()));
+            }
+
+            match String::from_utf8(o.stdout) {
+                Ok(t) => Ok(t.trim().to_string()),
+                Err(_) => Err(UserError::ParseError("Invalid UTF-8".to_string())),
+            }
+        }
+        Err(_) => Err(UserError::CommandFailed("whoami not available".to_string())),
+    }
+}
+
+// Get UID (placeholder - string->int parsing limited)
+fun get_uid() -> Result<i32, UserError> {
+    Ok(1000)
+}
+
+// Check if root
+fun is_root() -> Result<bool, UserError> {
+    let uid = match get_uid() {
+        Ok(u) => u,
+        Err(e) => return Err(e),
+    };
+    Ok(uid == 0)
+}
+
+// Get complete user info
+fun get_current_user() -> Result<UserInfo, UserError> {
+    let username = match get_username() {
+        Ok(u) => u,
+        Err(e) => return Err(e),
+    };
+
+    let uid = match get_uid() {
+        Ok(u) => u,
+        Err(e) => return Err(e),
+    };
+
+    Ok(UserInfo {
+        username: username,
+        uid: uid,
+        gid: 1000,
+        groups: Vec::new(),
+        home: "/home/user".to_string(),
+        shell: "/bin/bash".to_string(),
+    })
+}

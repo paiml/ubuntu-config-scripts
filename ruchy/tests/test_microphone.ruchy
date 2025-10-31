@@ -1,0 +1,475 @@
+// RUC-003: Microphone Configuration - RED Phase
+//
+// Property-based tests for microphone configuration library
+// Expected: All tests FAIL (no implementation yet)
+//
+// Following RUC-001 pattern with 5 property tests
+
+use std::process::Command;
+
+// ============================================================================
+// Data Structures
+// ============================================================================
+
+struct MicDevice {
+    id: String,
+    name: String,
+    description: String,
+    card: String,
+    device: String,
+    is_default: bool,
+}
+
+struct MicConfig {
+    device_id: String,
+    volume: i32,
+    is_muted: bool,
+}
+
+enum ConfigError {
+    CommandFailed(String),
+    ParseError(String),
+    DeviceNotFound(String),
+    InvalidState(String),
+    InvalidVolume(i32),
+}
+
+// ============================================================================
+// Stub Implementations (RED Phase - Should Fail)
+// ============================================================================
+
+fun detect_microphone_devices() -> Result<Vec<MicDevice>, ConfigError> {
+    Err(ConfigError::CommandFailed("Not implemented yet".to_string()))
+}
+
+fun get_current_mic_config() -> Result<MicConfig, ConfigError> {
+    Err(ConfigError::CommandFailed("Not implemented yet".to_string()))
+}
+
+fun configure_microphone(device_id: String) -> Result<(), ConfigError> {
+    Err(ConfigError::CommandFailed("Not implemented yet".to_string()))
+}
+
+fun set_mic_volume(device_id: String, volume: i32) -> Result<(), ConfigError> {
+    if volume < 0 || volume > 100 {
+        return Err(ConfigError::InvalidVolume(volume));
+    }
+    Err(ConfigError::CommandFailed("Not implemented yet".to_string()))
+}
+
+fun set_mic_mute(device_id: String, muted: bool) -> Result<(), ConfigError> {
+    Err(ConfigError::CommandFailed("Not implemented yet".to_string()))
+}
+
+fun validate_mic_device_id(device_id: String) -> bool {
+    // Basic validation even in RED phase
+    if device_id.len() == 0 { return false; }
+    if device_id.contains("\0") { return false; }
+    if device_id.contains("..") { return false; }
+    if device_id.contains("/") { return false; }
+    if device_id.contains(" ") { return false; }
+    true
+}
+
+// ============================================================================
+// Property Tests
+// ============================================================================
+
+fun test_mic_detection_idempotent() {
+    println!("🧪 TEST 1: Microphone detection is idempotent");
+    println!("Property: Calling detect_microphone_devices() twice returns same results");
+    println!("");
+
+    // First detection
+    let devices1 = match detect_microphone_devices() {
+        Ok(d) => d,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: First detection failed");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    };
+
+    // Second detection
+    let devices2 = match detect_microphone_devices() {
+        Ok(d) => d,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Second detection failed");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    };
+
+    // Should be equal
+    if devices1.len() != devices2.len() {
+        println!("❌ EXPECTED FAIL: Device counts differ");
+        return;
+    }
+
+    println!("✓ Detection is idempotent (found {} devices)", devices1.len());
+}
+
+fun test_mic_config_reversible() {
+    println!("🧪 TEST 2: Microphone configuration is reversible");
+    println!("Property: Configure A → B → A leaves system in original state");
+    println!("");
+
+    // Get initial configuration
+    let initial_config = match get_current_mic_config() {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot get initial config");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    };
+
+    println!("Initial device: {}", initial_config.device_id);
+
+    // Get available devices
+    let devices = match detect_microphone_devices() {
+        Ok(d) => d,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot detect devices");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    };
+
+    if devices.len() < 2 {
+        println!("⚠️  SKIP: Need at least 2 microphones for reversibility test");
+        return;
+    }
+
+    // Find a different device
+    let mut other_device = "";
+    let mut i = 0;
+    while i < devices.len() {
+        if devices[i].name != initial_config.device_id {
+            other_device = &devices[i].name;
+            break;
+        }
+        i = i + 1;
+    }
+
+    if other_device.len() == 0 {
+        println!("⚠️  SKIP: No alternative device found");
+        return;
+    }
+
+    // Configure to other device
+    match configure_microphone(other_device.to_string()) {
+        Ok(_) => {},
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot configure to other device");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    }
+
+    // Configure back to original
+    match configure_microphone(initial_config.device_id.to_string()) {
+        Ok(_) => {},
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot configure back to original");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    }
+
+    // Verify back to original
+    let final_config = match get_current_mic_config() {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot get final config");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    };
+
+    if final_config.device_id == initial_config.device_id {
+        println!("✓ Configuration is reversible");
+    } else {
+        println!("❌ EXPECTED FAIL: Configuration not reversed");
+    }
+}
+
+fun test_mic_volume_bounds() {
+    println!("🧪 TEST 3: Microphone volume respects bounds (0-100)");
+    println!("Property: Volume is clamped/validated to 0-100 range");
+    println!("");
+
+    // Get current device
+    let config = match get_current_mic_config() {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot get current config");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    };
+
+    let device = config.device_id;
+
+    // Test valid volume (50%)
+    match set_mic_volume(device.to_string(), 50) {
+        Ok(_) => println!("✓ Valid volume (50) accepted"),
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot set valid volume");
+            println!("   Reason: {:?}", e);
+        }
+    }
+
+    // Test boundary (0%)
+    match set_mic_volume(device.to_string(), 0) {
+        Ok(_) => println!("✓ Boundary volume (0) accepted"),
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot set volume to 0");
+            println!("   Reason: {:?}", e);
+        }
+    }
+
+    // Test boundary (100%)
+    match set_mic_volume(device.to_string(), 100) {
+        Ok(_) => println!("✓ Boundary volume (100) accepted"),
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot set volume to 100");
+            println!("   Reason: {:?}", e);
+        }
+    }
+
+    // Test invalid (negative)
+    match set_mic_volume(device.to_string(), -10) {
+        Ok(_) => println!("❌ FAIL: Negative volume should be rejected"),
+        Err(err1) => {
+            match err1 {
+                ConfigError::InvalidVolume(_) => println!("✓ Negative volume rejected"),
+                _ => println!("❌ Wrong error type for negative volume"),
+            }
+        }
+    }
+
+    // Test invalid (>100)
+    match set_mic_volume(device.to_string(), 150) {
+        Ok(_) => println!("❌ FAIL: Volume >100 should be rejected"),
+        Err(err2) => {
+            match err2 {
+                ConfigError::InvalidVolume(_) => println!("✓ Volume >100 rejected"),
+                _ => println!("❌ Wrong error type for volume >100"),
+            }
+        }
+    }
+}
+
+fun test_mic_mute_toggle() {
+    println!("🧪 TEST 4: Microphone mute toggle is consistent");
+    println!("Property: Mute → Unmute → Mute maintains state correctly");
+    println!("");
+
+    // Get current device
+    let config = match get_current_mic_config() {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot get current config");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    };
+
+    let device = config.device_id;
+    let initial_mute = config.is_muted;
+
+    println!("Initial mute state: {}", initial_mute);
+
+    // Toggle mute on
+    match set_mic_mute(device.to_string(), true) {
+        Ok(_) => {},
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot mute microphone");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    }
+
+    // Verify muted
+    let muted_config = match get_current_mic_config() {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot verify mute state");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    };
+
+    if !muted_config.is_muted {
+        println!("❌ EXPECTED FAIL: Microphone not muted");
+        return;
+    }
+    println!("✓ Microphone muted");
+
+    // Toggle mute off
+    match set_mic_mute(device.to_string(), false) {
+        Ok(_) => {},
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot unmute microphone");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    }
+
+    // Verify unmuted
+    let unmuted_config = match get_current_mic_config() {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot verify unmute state");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    };
+
+    if unmuted_config.is_muted {
+        println!("❌ EXPECTED FAIL: Microphone still muted");
+        return;
+    }
+    println!("✓ Microphone unmuted");
+
+    // Restore initial state
+    match set_mic_mute(device.to_string(), initial_mute) {
+        Ok(_) => println!("✓ Mute toggle is consistent"),
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot restore initial state");
+            println!("   Reason: {:?}", e);
+        }
+    }
+}
+
+fun test_invalid_device_graceful() {
+    println!("🧪 TEST 5: Invalid device configuration fails gracefully");
+    println!("Property: Configuring non-existent device returns error, doesn't panic");
+    println!("");
+
+    // Get current config (to restore later)
+    let original_config = match get_current_mic_config() {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot get current config");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    };
+
+    // Try to configure invalid device
+    let invalid_device = "nonexistent-device-12345".to_string();
+    match configure_microphone(invalid_device) {
+        Ok(_) => {
+            println!("❌ FAIL: Invalid device should not succeed");
+        }
+        Err(err3) => {
+            match err3 {
+                ConfigError::DeviceNotFound(_) => println!("✓ Invalid device rejected with DeviceNotFound"),
+                _ => println!("✓ Invalid device rejected"),
+            }
+        }
+    }
+
+    // Verify original config unchanged
+    let final_config = match get_current_mic_config() {
+        Ok(c) => c,
+        Err(e) => {
+            println!("❌ EXPECTED FAIL: Cannot verify config unchanged");
+            println!("   Reason: {:?}", e);
+            return;
+        }
+    };
+
+    if final_config.device_id == original_config.device_id {
+        println!("✓ Original configuration preserved after error");
+    } else {
+        println!("❌ FAIL: Configuration changed despite error");
+    }
+}
+
+// ============================================================================
+// Validation Tests
+// ============================================================================
+
+fun test_device_id_validation() {
+    println!("🧪 TEST 6: Device ID validation (security)");
+    println!("Property: Only safe device IDs are accepted");
+    println!("");
+
+    // Valid device IDs
+    let valid_ids = vec![
+        "test-device".to_string(),
+        "alsa_input.usb-device".to_string(),
+        "device123".to_string(),
+    ];
+
+    let mut i = 0;
+    while i < valid_ids.len() {
+        if validate_mic_device_id(valid_ids[i].to_string()) {
+            println!("✓ Valid ID accepted: '{}'", valid_ids[i]);
+        } else {
+            println!("❌ FAIL: Valid ID rejected: '{}'", valid_ids[i]);
+        }
+        i = i + 1;
+    }
+
+    // Invalid device IDs (security issues)
+    let invalid_ids = vec![
+        "".to_string(),                    // Empty
+        "../etc/passwd".to_string(),       // Path traversal
+        "device with spaces".to_string(),  // Spaces
+        "device/with/slash".to_string(),   // Slashes
+    ];
+
+    let mut i = 0;
+    while i < invalid_ids.len() {
+        if !validate_mic_device_id(invalid_ids[i].to_string()) {
+            println!("✓ Invalid ID rejected: '{}'", invalid_ids[i]);
+        } else {
+            println!("❌ FAIL: Invalid ID accepted: '{}'", invalid_ids[i]);
+        }
+        i = i + 1;
+    }
+}
+
+// ============================================================================
+// Test Runner
+// ============================================================================
+
+fun main() {
+    println!("🔴 RED PHASE: Microphone Configuration Tests");
+    println!("RUC-003: Property-Based Testing");
+    println!("Expected: All tests fail (no implementation)");
+    println!("");
+
+    // Run all property tests
+    test_mic_detection_idempotent();
+    println!("");
+
+    test_mic_config_reversible();
+    println!("");
+
+    test_mic_volume_bounds();
+    println!("");
+
+    test_mic_mute_toggle();
+    println!("");
+
+    test_invalid_device_graceful();
+    println!("");
+
+    test_device_id_validation();
+    println!("");
+
+    println!("🔴 RED PHASE COMPLETE");
+    println!("");
+    println!("Summary:");
+    println!("- 6 property tests created");
+    println!("- All tests expected to fail");
+    println!("- Data structures defined");
+    println!("- Stub implementations in place");
+    println!("");
+    println!("✅ Ready for GREEN phase implementation!");
+}

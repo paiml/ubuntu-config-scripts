@@ -1,0 +1,56 @@
+// RUC-004: Ubuntu Microphone CLI - RED Phase Test
+//
+// This file demonstrates what we WANT to achieve.
+// RED phase: This should initially fail gracefully while we build it.
+
+use microphone_module;
+
+fun main() {
+    println!("=== RUC-004 RED PHASE TEST ===");
+    println!("");
+
+    // Test 1: Can we import the module?
+    println!("TEST 1: Module import");
+    println!("✓ Module imported successfully");
+    println!("");
+
+    // Test 2: Can we call detect function?
+    println!("TEST 2: Detect microphone devices");
+    match microphone_module::detect_microphone_devices() {
+        Ok(devices) => {
+            println!("✓ Detection succeeded");
+            println!("  Found {} microphones", devices.len());
+        }
+        Err(_) => {
+            println!("✗ Detection failed (expected in RED phase)");
+        }
+    }
+    println!("");
+
+    // Test 3: Can we get current config?
+    println!("TEST 3: Get current microphone config");
+    match microphone_module::get_current_mic_config() {
+        Ok(config) => {
+            println!("✓ Got config");
+            println!("  Device: {}", config.device_id);
+            println!("  Volume: {}%", config.volume);
+        }
+        Err(_) => {
+            println!("✗ Get config failed (expected in RED phase)");
+        }
+    }
+    println!("");
+
+    // Test 4: Can we validate device ID?
+    println!("TEST 4: Validate device ID");
+    let valid = microphone_module::validate_mic_device_id("test-device".to_string());
+    if valid {
+        println!("✓ Validation works");
+    } else {
+        println!("✗ Validation failed");
+    }
+    println!("");
+
+    println!("=== RED PHASE COMPLETE ===");
+    println!("If you see this message, the module system is working!");
+}

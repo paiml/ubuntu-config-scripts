@@ -1,0 +1,162 @@
+// Example: Math and Collection Utilities
+//
+// This example demonstrates how to use math and collection utilities
+// for data processing and analysis.
+//
+// Usage:
+//   cd ~/.local/share/ruchy-ubuntu-scripts
+//   ruchy examples/math_and_collections.ruchy
+
+use math_utils;
+use collection_utils;
+use validation;
+use format_utils;
+
+fun main() {
+    println!("==============================================");
+    println!("  Math & Collection Utilities Demo");
+    println!("==============================================");
+    println!("");
+
+    // Example 1: Basic math operations
+    println!("Example 1: Math Operations on Collections");
+    println!("------------------------------------------");
+
+    let numbers = vec![15, 42, 7, 23, 100, 8, 91, 3];
+
+    println!("Numbers: 15, 42, 7, 23, 100, 8, 91, 3");
+    println!("");
+
+    // Calculate statistics
+    let sum = math_utils::sum(numbers);
+    let avg = math_utils::average(numbers);
+
+    println!("  Sum: {}", sum.to_string());
+    println!("  Average: {}", avg.to_string());
+
+    println!("");
+
+    // Example 2: Collection operations
+    println!("Example 2: Collection Analysis");
+    println!("-------------------------------");
+
+    let max_val = collection_utils::max_in_vec(numbers);
+    let min_val = collection_utils::min_in_vec(numbers);
+    let all_pos = collection_utils::all_positive(numbers);
+
+    println!("  Maximum: {}", max_val.to_string());
+    println!("  Minimum: {}", min_val.to_string());
+    println!("  Range: {}", (max_val - min_val).to_string());
+    println!("  All positive: {}", all_pos.to_string());
+
+    println!("");
+
+    // Example 3: Percentage calculations
+    println!("Example 3: Percentage Calculations");
+    println!("-----------------------------------");
+
+    let total = 200;
+    let values = vec![50, 100, 150, 200];
+
+    println!("Percentages of {} total:", total.to_string());
+
+    let mut i = 0;
+    while i < values.len() {
+        let value = values[i];
+        let pct = math_utils::percentage(value, total);
+
+        // Format nicely
+        let value_str = format_utils::pad_left(value.to_string(), 4, " ");
+        let pct_str = format_utils::pad_zeros(pct, 3);
+
+        println!("  {} = {}%", value_str, pct_str);
+
+        i = i + 1;
+    }
+
+    println!("");
+
+    // Example 4: Validation with math
+    println!("Example 4: Data Validation");
+    println!("--------------------------");
+
+    let test_numbers = vec![-5, 0, 10, 50, 100, 150];
+
+    let mut i = 0;
+    while i < test_numbers.len() {
+        let num = test_numbers[i];
+
+        let is_pos = validation::is_positive(num);
+        let in_range_0_100 = validation::in_range(num, 0, 100);
+
+        let num_str = format_utils::pad_left(num.to_string(), 5, " ");
+
+        println!("  {} - Positive: {}, In 0-100: {}",
+                 num_str,
+                 is_pos.to_string(),
+                 in_range_0_100.to_string());
+
+        i = i + 1;
+    }
+
+    println!("");
+
+    // Example 5: Real-world example - analyzing scores
+    println!("Example 5: Real-World - Test Score Analysis");
+    println!("--------------------------------------------");
+
+    let scores = vec![85, 92, 78, 95, 88, 73, 90];
+
+    println!("Test scores: 85, 92, 78, 95, 88, 73, 90");
+    println!("");
+
+    // Calculate statistics
+    let avg_score = math_utils::average(scores);
+    let max_score = collection_utils::max_in_vec(scores);
+    let min_score = collection_utils::min_in_vec(scores);
+    let all_passing = collection_utils::all_positive(scores); // All > 0
+
+    println!("  Average Score: {}", avg_score.to_string());
+    println!("  Highest Score: {}", max_score.to_string());
+    println!("  Lowest Score:  {}", min_score.to_string());
+    println!("  Range: {}", (max_score - min_score).to_string());
+    println!("");
+
+    // Count scores by grade
+    let mut a_count = 0;  // 90+
+    let mut b_count = 0;  // 80-89
+    let mut c_count = 0;  // 70-79
+    let mut d_count = 0;  // 60-69
+    let mut f_count = 0;  // <60
+
+    let mut i = 0;
+    while i < scores.len() {
+        let score = scores[i];
+
+        if validation::in_range(score, 90, 100) {
+            a_count = a_count + 1;
+        } else if validation::in_range(score, 80, 89) {
+            b_count = b_count + 1;
+        } else if validation::in_range(score, 70, 79) {
+            c_count = c_count + 1;
+        } else if validation::in_range(score, 60, 69) {
+            d_count = d_count + 1;
+        } else {
+            f_count = f_count + 1;
+        }
+
+        i = i + 1;
+    }
+
+    println!("Grade Distribution:");
+    println!("  A (90-100): {}", a_count.to_string());
+    println!("  B (80-89):  {}", b_count.to_string());
+    println!("  C (70-79):  {}", c_count.to_string());
+    println!("  D (60-69):  {}", d_count.to_string());
+    println!("  F (<60):    {}", f_count.to_string());
+
+    println!("");
+    println!("==============================================");
+    println!("  Math & Collection Demo Complete!");
+    println!("==============================================");
+}

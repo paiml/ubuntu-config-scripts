@@ -1,0 +1,116 @@
+// RUC-015: Math Utilities Library
+//
+// Pure mathematical operations under 120 LOC (Issue #92 constraint)
+
+// Minimum of two values
+fun min(a: i32, b: i32) -> i32 {
+    if a < b {
+        a
+    } else {
+        b
+    }
+}
+
+// Maximum of two values
+fun max(a: i32, b: i32) -> i32 {
+    if a > b {
+        a
+    } else {
+        b
+    }
+}
+
+// Absolute value
+fun abs(x: i32) -> i32 {
+    if x < 0 {
+        -x
+    } else {
+        x
+    }
+}
+
+// Clamp value to range [min_val, max_val]
+fun clamp(value: i32, min_val: i32, max_val: i32) -> i32 {
+    if value < min_val {
+        return min_val;
+    }
+    if value > max_val {
+        return max_val;
+    }
+    value
+}
+
+// Square of a number
+fun square(x: i32) -> i32 {
+    x * x
+}
+
+// Cube of a number
+fun cube(x: i32) -> i32 {
+    x * x * x
+}
+
+// Power function (base^exp)
+fun pow(base: i32, exp: i32) -> i32 {
+    if exp == 0 {
+        return 1;
+    }
+
+    let mut result = 1;
+    let mut i = 0;
+    while i < exp {
+        result = result * base;
+        i = i + 1;
+    }
+    result
+}
+
+// Sum of vector elements
+fun sum(numbers: Vec<i32>) -> i32 {
+    let mut total = 0;
+    let mut i = 0;
+    while i < numbers.len() {
+        total = total + numbers[i];
+        i = i + 1;
+    }
+    total
+}
+
+// Average of vector elements
+fun average(numbers: Vec<i32>) -> i32 {
+    if numbers.len() == 0 {
+        return 0;
+    }
+
+    let total = sum(numbers);
+    total / (numbers.len() as i32)
+}
+
+// Sign of a number (-1, 0, or 1)
+fun sign(x: i32) -> i32 {
+    if x < 0 {
+        -1
+    } else if x > 0 {
+        1
+    } else {
+        0
+    }
+}
+
+// Percentage calculation
+fun percentage(value: i32, total: i32) -> i32 {
+    if total == 0 {
+        return 0;
+    }
+    (value * 100) / total
+}
+
+// Check if even
+fun is_even(x: i32) -> bool {
+    x % 2 == 0
+}
+
+// Check if odd
+fun is_odd(x: i32) -> bool {
+    x % 2 != 0
+}
