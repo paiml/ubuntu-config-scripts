@@ -1,0 +1,271 @@
+name: Ruchy Integration Tests
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'ruchy/**'
+      - 'install.sh'
+      - 'uninstall.sh'
+      - '.github/workflows/ruchy-integration-tests.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'ruchy/**'
+      - 'install.sh'
+      - 'uninstall.sh'
+  workflow_dispatch:
+
+env:
+  RUCHY_MIN_VERSION: '3.153.0'
+  RUST_VERSION: stable
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  test-integration:
+    name: Test Integration Suite
+    runs-on: [self-hosted, Linux, X64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ruchy-${{ env.RUCHY_MIN_VERSION }}
+
+      - name: Install Ruchy
+        run: |
+          # Check if Ruchy is already installed with correct version
+          if command -v ruchy &> /dev/null; then
+            CURRENT_VERSION=$(ruchy --version | grep -oP '\d+\.\d+\.\d+' | head -n1)
+            echo "Found Ruchy v$CURRENT_VERSION"
+
+            # Compare versions (basic check)
+            if [[ "$CURRENT_VERSION" == "${{ env.RUCHY_MIN_VERSION }}" ]] || \
+               [[ "$CURRENT_VERSION" > "${{ env.RUCHY_MIN_VERSION }}" ]]; then
+              echo "✓ Ruchy version is sufficient"
+              exit 0
+            fi
+          fi
+
+          # Install Ruchy from crates.io
+          echo "Installing Ruchy v${{ env.RUCHY_MIN_VERSION }}..."
+          cargo install ruchy --version ${{ env.RUCHY_MIN_VERSION }} || \
+          cargo install ruchy --version 3.154.0 || \
+          cargo install ruchy  # Latest version as fallback
+
+          # Verify installation
+          ruchy --version
+          echo "✓ Ruchy installed successfully"
+
+      - name: Test System Health Integration
+        run: |
+          cd ruchy
+          echo "Running: test_system_health.ruchy"
+          ruchy tests/integration/test_system_health.ruchy
+          echo "✓ System health integration test passed"
+
+      - name: Test Utility Chain Integration
+        run: |
+          cd ruchy
+          echo "Running: test_utility_chain.ruchy"
+          ruchy tests/integration/test_utility_chain.ruchy
+          echo "✓ Utility chain integration test passed"
+
+      - name: Test All Integration Scenarios
+        run: |
+          cd ruchy/tests/integration
+
+          PASSED=0
+          FAILED=0
+
+          for test_file in test_*.ruchy; do
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Running: $test_file"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            if ruchy "$test_file"; then
+              echo "✓ PASSED: $test_file"
+              PASSED=$((PASSED + 1))
+            else
+              echo "✗ FAILED: $test_file"
+              FAILED=$((FAILED + 1))
+            fi
+            echo ""
+          done
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Integration Test Results:"
+          echo "  Passed: $PASSED"
+          echo "  Failed: $FAILED"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          if [ $FAILED -gt 0 ]; then
+            exit 1
+          fi
+
+  test-installation:
+    name: Test Installation Flow
+    runs-on: [self-hosted, Linux, X64]
+    needs: test-integration
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust (for Ruchy)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Ruchy
+        run: |
+          cargo install ruchy --version ${{ env.RUCHY_MIN_VERSION }} || \
+          cargo install ruchy --version 3.154.0 || \
+          cargo install ruchy
+          ruchy --version
+
+      - name: Test install.sh
+        run: |
+          echo "Testing installation script..."
+          ./install.sh
+
+          # Verify ubuntu-diag command exists
+          if command -v ubuntu-diag &> /dev/null; then
+            echo "✓ ubuntu-diag command installed"
+          else
+            echo "✗ ubuntu-diag command not found"
+            exit 1
+          fi
+
+      - name: Test ubuntu-diag execution
+        run: |
+          echo "Testing ubuntu-diag CLI..."
+          ubuntu-diag
+          echo "✓ ubuntu-diag executed successfully"
+
+      - name: Verify installation files
+        run: |
+          echo "Verifying installation..."
+
+          # Check installation directory
+          if [ -d "$HOME/.local/share/ruchy-ubuntu-scripts" ]; then
+            echo "✓ Installation directory exists"
+          else
+            echo "✗ Installation directory not found"
+            exit 1
+          fi
+
+          # Check bin wrapper
+          if [ -f "$HOME/.local/bin/ubuntu-diag" ]; then
+            echo "✓ CLI wrapper exists"
+          else
+            echo "✗ CLI wrapper not found"
+            exit 1
+          fi
+
+          echo "✓ Installation verified"
+
+      - name: Test uninstall.sh
+        run: |
+          echo "Testing uninstallation script..."
+          ./uninstall.sh <<< "y"
+
+          # Verify ubuntu-diag removed
+          if command -v ubuntu-diag &> /dev/null; then
+            echo "✗ ubuntu-diag still exists after uninstall"
+            exit 1
+          else
+            echo "✓ ubuntu-diag removed successfully"
+          fi
+
+          # Verify installation directory removed
+          if [ -d "$HOME/.local/share/ruchy-ubuntu-scripts" ]; then
+            echo "✗ Installation directory still exists"
+            exit 1
+          else
+            echo "✓ Installation directory removed"
+          fi
+
+          echo "✓ Uninstallation verified"
+
+  test-examples:
+    name: Test Usage Examples
+    runs-on: [self-hosted, Linux, X64]
+    needs: test-integration
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Ruchy
+        run: |
+          cargo install ruchy --version ${{ env.RUCHY_MIN_VERSION }} || \
+          cargo install ruchy
+          ruchy --version
+
+      - name: Test string utilities example
+        run: |
+          cd ruchy
+          echo "Testing string_utilities.ruchy example..."
+          ruchy examples/string_utilities.ruchy
+          echo "✓ String utilities example passed"
+
+      - name: Test system health check example
+        run: |
+          cd ruchy
+          echo "Testing system_health_check.ruchy example..."
+          ruchy examples/system_health_check.ruchy
+          echo "✓ System health check example passed"
+
+      - name: Test network info example
+        run: |
+          cd ruchy
+          echo "Testing network_info.ruchy example..."
+          ruchy examples/network_info.ruchy
+          echo "✓ Network info example passed"
+
+      - name: Test math and collections example
+        run: |
+          cd ruchy
+          echo "Testing math_and_collections.ruchy example..."
+          ruchy examples/math_and_collections.ruchy
+          echo "✓ Math and collections example passed"
+
+  quality-gate:
+    name: Quality Gate Summary
+    runs-on: [self-hosted, Linux, X64]
+    needs: [test-integration, test-installation, test-examples]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  Quality Gate Summary"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "Integration Tests: ${{ needs.test-integration.result }}"
+          echo "Installation Tests: ${{ needs.test-installation.result }}"
+          echo "Example Tests: ${{ needs.test-examples.result }}"
+          echo ""
+
+          if [[ "${{ needs.test-integration.result }}" == "success" ]] && \
+             [[ "${{ needs.test-installation.result }}" == "success" ]] && \
+             [[ "${{ needs.test-examples.result }}" == "success" ]]; then
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ ALL QUALITY GATES PASSED"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            exit 0
+          else
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "❌ QUALITY GATES FAILED"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            exit 1
+          fi
