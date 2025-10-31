@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
 
 env:
-  RUCHY_MIN_VERSION: '3.153.0'
+  RUCHY_MIN_VERSION: '3.155.0'
   RUST_VERSION: stable
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
