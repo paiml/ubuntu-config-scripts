@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Distribution & Installation
 - **install.sh** - Automated installation script with:
-  - Ruchy version validation (v3.153.0+)
+  - Ruchy version validation (v3.155.0+)
   - Directory structure verification
   - Automated file installation
   - CLI tool wrapper creation
@@ -106,8 +106,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### System Requirements
 
 - **Operating System**: Ubuntu 20.04+ (or compatible Linux distribution)
-- **Ruchy Compiler**: v3.153.0 or higher
-  - Install with: `cargo install ruchy --version 3.153.0`
+- **Ruchy Compiler**: v3.155.0 or higher (recommended)
+  - Install with: `cargo install ruchy --version 3.155.0`
+  - Minimum: v3.153.0 (backward compatible)
 - **Bash**: For installation/uninstallation scripts
 - **Disk Space**: ~50MB for installation
 - **Memory**: Minimal (< 100MB during execution)
