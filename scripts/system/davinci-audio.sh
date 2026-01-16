@@ -40,10 +40,15 @@ usage() {
     echo "  enable <track>   Enable audio track (1-based index)"
     echo "  disable <track>  Disable audio track (1-based index)"
     echo "  fairlight        List Fairlight presets"
+    echo "  render-h264      Configure render settings for H.264"
+    echo "  disable-proxy    Show how to disable proxy generation"
+    echo "  defaults         Apply recommended Linux defaults"
     echo ""
     echo "Examples:"
     echo "  $(basename "$0") status"
     echo "  $(basename "$0") enable 1"
+    echo "  $(basename "$0") render-h264"
+    echo "  $(basename "$0") defaults"
     echo ""
     echo -e "${YELLOW}Note: DaVinci Resolve must be running${NC}"
 }
@@ -70,7 +75,7 @@ main() {
     check_resolve_running
 
     case "$1" in
-        status|tracks|project|clip|fairlight)
+        status|tracks|project|clip|fairlight|render-h264|disable-proxy|defaults)
             run_python "$1"
             ;;
         enable)

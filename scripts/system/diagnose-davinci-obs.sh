@@ -190,6 +190,52 @@ check_davinci_cloud() {
 }
 
 #######################################
+# Check for proxy/sync folder clutter
+# Returns:
+#   0 if clean, 1 if clutter found
+#######################################
+check_davinci_clutter() {
+    local scratch_dirs=(
+        "$HOME/Videos/ScratchDrive"
+        "$HOME/Videos"
+        "/mnt/nvme-raid0/videos"
+    )
+
+    local found_clutter=false
+
+    for dir in "${scratch_dirs[@]}"; do
+        if [[ ! -d "$dir" ]]; then
+            continue
+        fi
+
+        # Check for .blackmagicsync folders
+        local sync_folders
+        sync_folders=$(find "$dir" -maxdepth 2 -type d -name ".blackmagicsync*" 2>/dev/null | wc -l)
+        if [[ "$sync_folders" -gt 0 ]]; then
+            print_warn "Found ${sync_folders} Blackmagic sync folder(s) in ${dir}"
+            print_info "Remove with: find \"${dir}\" -type d -name '.blackmagicsync*' -exec rm -rf {} +"
+            found_clutter=true
+        fi
+
+        # Check for nested Proxy folders
+        local proxy_folders
+        proxy_folders=$(find "$dir" -maxdepth 4 -type d -name "Proxy" 2>/dev/null | wc -l)
+        if [[ "$proxy_folders" -gt 0 ]]; then
+            print_warn "Found ${proxy_folders} Proxy folder(s) in ${dir}"
+            print_info "These may contain duplicate files"
+            print_info "Disable in DaVinci: Playback → Proxy Mode → Off"
+            found_clutter=true
+        fi
+    done
+
+    if [[ "$found_clutter" == false ]]; then
+        print_pass "No proxy/sync clutter found"
+        return 0
+    fi
+    return 1
+}
+
+#######################################
 # Check if OBS Studio is installed
 # Returns:
 #   0 if installed, 1 otherwise
@@ -460,6 +506,7 @@ run_davinci_diagnostics() {
     check_davinci_running || true
     check_davinci_logs || true
     check_davinci_cloud || true
+    check_davinci_clutter || true
 }
 
 #######################################

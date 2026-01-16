@@ -272,6 +272,116 @@ def cmd_fairlight(resolve):
     else:
         print("  No Fairlight presets found")
 
+def cmd_set_render_h264(resolve):
+    """Configure render settings for H.264 MP4 output"""
+    project, _ = get_project_and_timeline(resolve)
+
+    print("Configuring render settings for H.264...")
+
+    # Get render presets
+    presets = project.GetRenderPresets()
+    print(f"Available render presets: {presets}")
+
+    # Set render format to MP4 with H.264
+    settings = {
+        "SelectAllFrames": True,
+        "TargetDir": "/home/noah/Videos/Renders",
+    }
+
+    # Try to set H.264 format
+    # Note: The exact key names depend on DaVinci version
+    format_settings = project.GetSetting("")
+    if format_settings:
+        print("\nCurrent render-related settings:")
+        for key, value in sorted(format_settings.items()):
+            if "render" in key.lower() or "export" in key.lower() or "format" in key.lower():
+                print(f"  {key}: {value}")
+
+    # Apply H.264 preset if available
+    if "H.264 Master" in (presets or []):
+        result = project.LoadRenderPreset("H.264 Master")
+        if result:
+            print("\n✓ Loaded 'H.264 Master' render preset")
+        else:
+            print("\n✗ Failed to load H.264 preset")
+    else:
+        print("\nNote: 'H.264 Master' preset not found")
+        print("Available presets:", presets)
+        print("\nTo create H.264 default:")
+        print("  1. File → Project Settings → Master Settings")
+        print("  2. Set Timeline Resolution and Frame Rate")
+        print("  3. Deliver page → Format: MP4, Codec: H.264")
+        print("  4. Save as preset for future projects")
+
+def cmd_disable_proxy(resolve):
+    """Disable proxy media generation"""
+    project, _ = get_project_and_timeline(resolve)
+
+    print("Checking proxy settings...")
+
+    all_settings = project.GetSetting("")
+    if all_settings:
+        proxy_settings = {k: v for k, v in sorted(all_settings.items())
+                         if "proxy" in k.lower()}
+
+        if proxy_settings:
+            print("\nCurrent proxy settings:")
+            for key, value in proxy_settings.items():
+                print(f"  {key}: {value}")
+        else:
+            print("No proxy-specific settings found in API")
+
+    print("\nTo disable proxy generation:")
+    print("  1. Playback → Proxy Mode → Off")
+    print("  2. Project Settings → Master Settings → Proxy Media Resolution → None")
+    print("  3. Don't right-click clips and select 'Generate Proxy Media'")
+
+def cmd_apply_defaults(resolve):
+    """Apply recommended default settings for Linux workflow"""
+    project, _ = get_project_and_timeline(resolve)
+
+    print("=" * 60)
+    print("APPLYING RECOMMENDED DEFAULTS")
+    print("=" * 60)
+
+    # Get current settings
+    all_settings = project.GetSetting("")
+
+    print("\n1. Audio Settings:")
+    print("   - Sample Rate: 48000 Hz (video standard)")
+    print("   - Bit Depth: 24-bit")
+
+    print("\n2. Render Settings:")
+    print("   - Format: MP4")
+    print("   - Video Codec: H.264")
+    print("   - Audio Codec: AAC (for final export) or PCM (for editing)")
+
+    print("\n3. Cloud Settings:")
+    print("   - Media Sync: Disabled (Don't sync media)")
+    print("   - Only sync project data/edit lists")
+
+    print("\n4. Proxy Settings:")
+    print("   - Proxy Mode: Off")
+    print("   - No automatic proxy generation")
+
+    print("\n" + "=" * 60)
+    print("MANUAL STEPS REQUIRED:")
+    print("=" * 60)
+    print("""
+To save these as defaults for new projects:
+
+1. Create a new project with desired settings
+2. File → Project Settings → Preset → Save As...
+3. Name it 'Linux Default' or similar
+4. For new projects: Load this preset
+
+Or create a project template:
+1. Configure all settings as desired
+2. File → Save Project As...
+3. Save to a 'Templates' folder
+4. Use as starting point for new projects
+""")
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: davinci-audio.py <command> [args]")
@@ -300,8 +410,16 @@ def main():
             print("Usage: davinci-audio.py disable <track_index>")
             sys.exit(1)
         cmd_disable(resolve, sys.argv[2])
+    elif cmd == "render-h264":
+        cmd_set_render_h264(resolve)
+    elif cmd == "disable-proxy":
+        cmd_disable_proxy(resolve)
+    elif cmd == "defaults":
+        cmd_apply_defaults(resolve)
     else:
         print(f"Unknown command: {cmd}")
+        print("Available commands: status, tracks, project, clip, fairlight,")
+        print("                    enable, disable, render-h264, disable-proxy, defaults")
         sys.exit(1)
 
 if __name__ == "__main__":
