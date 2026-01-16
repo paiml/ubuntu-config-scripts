@@ -517,11 +517,75 @@ ruchydbg run your_script.ruchy --timeout 5000
 4. Expected vs. actual behavior
 5. Test results from `ruchydbg run` showing exit code
 
-### DaVinci Resolve Audio on Linux
-- DaVinci on Linux has issues with AAC audio codec
-- Solution: Use WAV, AIFF, or MOV files with PCM audio
-- For OBS recordings: Set format to MOV with pcm_s24le audio encoder
-- Convert existing files: `ffmpeg -i input.mp4 -c:v copy -c:a pcm_s24le output.mov`
+### DaVinci Resolve Audio on Linux (CRITICAL)
+
+**Root Cause**: DaVinci Resolve on Linux CANNOT decode AAC audio. The logs show:
+```
+IO.Audio | ERROR | Failed to decode clip <file.mp4> - Failed to decode the audio samples
+```
+
+**Solution**: Use PCM audio codec instead of AAC.
+
+#### OBS Settings for DaVinci Compatibility
+
+**Required**: Use Advanced Output Mode in OBS:
+1. Settings → Output → **Output Mode: Advanced**
+2. Recording tab:
+   - **Recording Format**: QuickTime (.mov)
+   - **Video Encoder**: NVIDIA NVENC H.264 (FFmpeg)
+   - **Audio Encoder**: FFmpeg PCM (24-bit)
+   - Rate Control: CBR
+
+**Note**: Simple output mode only offers AAC - you MUST use Advanced mode for PCM.
+
+#### Converting Existing Files
+
+```bash
+# Convert AAC to PCM (DaVinci compatible)
+ffmpeg -i input.mp4 -c:v copy -c:a pcm_s24le output.mov
+
+# Convert stereo to mono (if one channel is empty)
+ffmpeg -i input.mp4 -c:v copy -ac 1 -c:a pcm_s24le output-mono.mov
+
+# Batch convert all MP4s in a folder
+for f in *.mp4; do
+  ffmpeg -i "$f" -c:v copy -c:a pcm_s24le "${f%.mp4}-pcm.mov" -y
+done
+```
+
+#### DaVinci Audio Diagnostics Tool
+
+Use the davinci-audio.sh script for diagnostics:
+```bash
+# Check audio status
+./scripts/system/davinci-audio.sh status
+
+# List audio tracks
+./scripts/system/davinci-audio.sh tracks
+
+# Show project settings
+./scripts/system/davinci-audio.sh project
+
+# Show current clip info
+./scripts/system/davinci-audio.sh clip
+```
+
+#### DaVinci Cloud Settings
+
+To prevent cloud storage errors, disable media sync:
+1. File → Project Settings → Blackmagic Cloud
+2. Select **"Don't sync media"**
+3. Only edit list/project data will sync (not proxies/originals)
+
+#### Video Codec Recommendations
+
+| Codec | DaVinci Free | File Size | Recommendation |
+|-------|--------------|-----------|----------------|
+| H.264 | ✓ Full support | Larger | **Use this** |
+| HEVC/H.265 | ⚠️ Limited | ~50% smaller | Needs Studio version |
+
+**Stick with H.264** for maximum compatibility with DaVinci Resolve Free.
+
 - Ensure system uses NVIDIA GPU: `sudo prime-select nvidia`
 
 ### OBS Black Screen on Ubuntu

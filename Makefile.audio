@@ -21,9 +21,13 @@ DENO := $(shell command -v deno 2>/dev/null)
 	audio-configure-speakers \
 	audio-disable-mic \
 	audio-enable-mic \
+	audio-focusrite \
+	audio-focusrite-test \
 	audio-help \
 	audio-list-devices \
 	audio-list-speakers \
+	audio-no-powersave \
+	audio-no-powersave-permanent \
 	audio-pebble \
 	audio-set-volume \
 	audio-test \
@@ -168,3 +172,96 @@ audio-pebble: ## Configure Pebble USB speakers
 		exit 1; \
 	fi
 	@deno run --allow-all scripts/audio/configure-pebble-speakers.ts
+
+audio-focusrite: ## Enable Focusrite Scarlett for live streaming (optionally: VOLUME=<0-100>)
+	@echo "$(CYAN)🎤 Configuring Focusrite Scarlett...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@ARGS=""; \
+	if [ -n "$(VOLUME)" ]; then ARGS="$$ARGS --volume=$(VOLUME)"; fi; \
+	deno run --allow-all scripts/audio/enable-focusrite-scarlett.ts $$ARGS
+
+audio-focusrite-test: ## Enable Focusrite Scarlett and test microphone
+	@echo "$(CYAN)🎤 Configuring and testing Focusrite Scarlett...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-all scripts/audio/enable-focusrite-scarlett.ts --test
+
+audio-no-powersave: ## Disable audio power save (temporary)
+	@echo "$(CYAN)⚡ Disabling audio power save...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-all scripts/audio/disable-audio-powersave.ts
+
+audio-no-powersave-permanent: ## Disable audio power save (permanent, requires sudo)
+	@echo "$(CYAN)⚡ Installing permanent audio power save fixes...$(NC)"
+	@if [ -z "$(DENO)" ]; then \
+		@echo "$(RED)❌ Deno not found. Please install Deno first.$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-all scripts/audio/disable-audio-powersave.ts --permanent
+
+# DaVinci Resolve Audio Tools
+# Note: DaVinci on Linux CANNOT decode AAC audio - use PCM instead
+
+audio-davinci-status: ## Show DaVinci Resolve audio status (requires DaVinci running)
+	@echo "$(CYAN)🎬 Checking DaVinci audio status...$(NC)"
+	@./scripts/system/davinci-audio.sh status
+
+audio-davinci-tracks: ## List DaVinci audio tracks
+	@echo "$(CYAN)🎬 Listing DaVinci audio tracks...$(NC)"
+	@./scripts/system/davinci-audio.sh tracks
+
+audio-davinci-clip: ## Show current clip audio info in DaVinci
+	@echo "$(CYAN)🎬 Showing DaVinci clip info...$(NC)"
+	@./scripts/system/davinci-audio.sh clip
+
+audio-davinci-convert: ## Convert video to DaVinci-compatible format (FILE=<path>)
+	@echo "$(CYAN)🎬 Converting to DaVinci-compatible format...$(NC)"
+	@if [ -z "$(FILE)" ]; then \
+		echo "$(RED)❌ Please specify FILE=<path>$(NC)"; \
+		echo "Example: make audio-davinci-convert FILE=recording.mp4"; \
+		exit 1; \
+	fi
+	@OUTPUT="$$(echo "$(FILE)" | sed 's/\.\(mp4\|mkv\|mov\|avi\)$$/-pcm.mov/')"; \
+	echo "$(CYAN)Input:  $(FILE)$(NC)"; \
+	echo "$(CYAN)Output: $$OUTPUT$(NC)"; \
+	ffmpeg -i "$(FILE)" -c:v copy -c:a pcm_s24le "$$OUTPUT" -y
+
+audio-davinci-convert-mono: ## Convert video to mono PCM for DaVinci (FILE=<path>)
+	@echo "$(CYAN)🎬 Converting to mono PCM for DaVinci...$(NC)"
+	@if [ -z "$(FILE)" ]; then \
+		echo "$(RED)❌ Please specify FILE=<path>$(NC)"; \
+		echo "Example: make audio-davinci-convert-mono FILE=recording.mp4"; \
+		exit 1; \
+	fi
+	@OUTPUT="$$(echo "$(FILE)" | sed 's/\.\(mp4\|mkv\|mov\|avi\)$$/-mono.mov/')"; \
+	echo "$(CYAN)Input:  $(FILE)$(NC)"; \
+	echo "$(CYAN)Output: $$OUTPUT$(NC)"; \
+	ffmpeg -i "$(FILE)" -c:v copy -ac 1 -c:a pcm_s24le "$$OUTPUT" -y
+
+audio-davinci-diagnose: ## Diagnose video file for DaVinci compatibility (FILE=<path>)
+	@echo "$(CYAN)🎬 Diagnosing file for DaVinci compatibility...$(NC)"
+	@if [ -z "$(FILE)" ]; then \
+		echo "$(RED)❌ Please specify FILE=<path>$(NC)"; \
+		exit 1; \
+	fi
+	@deno run --allow-all examples/davinci-obs-workflow.ts --diagnose "$(FILE)"
+
+audio-davinci-batch: ## Batch convert folder to DaVinci format (DIR=<path>)
+	@echo "$(CYAN)🎬 Batch converting folder for DaVinci...$(NC)"
+	@if [ -z "$(DIR)" ]; then \
+		echo "$(RED)❌ Please specify DIR=<path>$(NC)"; \
+		echo "Example: make audio-davinci-batch DIR=~/Videos/OBS"; \
+		exit 1; \
+	fi
+	@deno run --allow-all examples/davinci-obs-workflow.ts --batch "$(DIR)"
+
+audio-obs-guide: ## Show OBS settings for DaVinci compatibility
+	@deno run --allow-all examples/davinci-obs-workflow.ts --guide
